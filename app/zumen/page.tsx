@@ -1,5 +1,5 @@
 "use client";
-
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { InfoTable, SectionTitle } from "../../components/JpInfoTable";
 
@@ -71,13 +71,17 @@ const previewRef = useRef<HTMLDivElement | null>(null);
     <main className="min-h-screen bg-zinc-50 p-6">
           <div className="mx-auto w-full max-w-[1200px]">
         <div className="mb-4 flex items-center justify-between">
-          <a href="/" className="text-sm underline text-zinc-700">← 戻る</a>
-          <span className="text-sm text-zinc-600">/zumen</span>
+                    <Link href="/" className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">← 戻る</Link>
+          <div className="flex items-center gap-2">
+            <button type="button" className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">一時保存</button>
+            <button type="button" className="rounded-md bg-rose-500 px-4 py-2 text-sm font-semibold text-white">次のステップ</button>
+          </div>
         </div>
 
-         <div ref={previewRef} className="overflow-hidden pb-10">
+           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm md:p-6">
+          <div ref={previewRef} className="overflow-hidden">
           {/* ===== A4 Sheet (Landscape) ===== */}
-          <div style={{ height: `${794 * sheetScale}px` }}>
+          <div className="mx-auto" style={{ width: `${1123 * sheetScale}px`, height: `${794 * sheetScale}px` }}>
             <div
               ref={sheetRef}
               className="bg-white text-black border border-black"
@@ -197,9 +201,10 @@ const previewRef = useRef<HTMLDivElement | null>(null);
               </div>
             </div>
           </div>
+          </div>
         </div>
       </div>
-       </div>
+     </div>
     </main>
   );
 }
