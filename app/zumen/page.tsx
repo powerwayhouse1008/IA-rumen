@@ -61,11 +61,11 @@ export default function ZumenPage() {
         </div>
 
         <div className="overflow-auto pb-10">
-          {/* ===== A4 Sheet ===== */}
+             {/* ===== A4 Sheet (Landscape) ===== */}
           <div
             ref={sheetRef}
             className="bg-white text-black border border-black"
-            style={{ width: "794px", minHeight: "1123px" }}
+            style={{ width: "1123px", minHeight: "794px" }}
           >
             {/* Header */}
             <div className="grid grid-cols-[140px_1fr_260px] border-b border-black">
