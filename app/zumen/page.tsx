@@ -44,29 +44,45 @@ function ImgBox({
 export default function ZumenPage() {
   const [data, setData] = useState<ZumenData | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
-
+const previewRef = useRef<HTMLDivElement | null>(null);
+  const [sheetScale, setSheetScale] = useState(1);
   useEffect(() => {
     const saved = localStorage.getItem("zumenData");
     if (saved) setData(JSON.parse(saved));
+  }, []);
+ useEffect(() => {
+    const BASE_WIDTH = 1123;
+
+    const updateScale = () => {
+      const el = previewRef.current;
+      if (!el) return;
+      setSheetScale(Math.min(1, el.clientWidth / BASE_WIDTH));
+    };
+
+    updateScale();
+    window.addEventListener("resize", updateScale);
+
+    return () => window.removeEventListener("resize", updateScale);
   }, []);
 
   if (!data) return null;
 
   return (
     <main className="min-h-screen bg-zinc-50 p-6">
-      <div className="mx-auto max-w-[1100px]">
+          <div className="mx-auto w-full max-w-[1200px]">
         <div className="mb-4 flex items-center justify-between">
           <a href="/" className="text-sm underline text-zinc-700">← 戻る</a>
           <span className="text-sm text-zinc-600">/zumen</span>
         </div>
 
-        <div className="overflow-auto pb-10">
-             {/* ===== A4 Sheet (Landscape) ===== */}
-          <div
-            ref={sheetRef}
-            className="bg-white text-black border border-black"
-            style={{ width: "1123px", minHeight: "794px" }}
-          >
+         <div ref={previewRef} className="overflow-hidden pb-10">
+          {/* ===== A4 Sheet (Landscape) ===== */}
+          <div style={{ height: `${794 * sheetScale}px` }}>
+            <div
+              ref={sheetRef}
+              className="bg-white text-black border border-black"
+              style={{ width: "1123px", minHeight: "794px", transform: `scale(${sheetScale})`, transformOrigin: "top left" }}
+            >
             {/* Header */}
             <div className="grid grid-cols-[140px_1fr_260px] border-b border-black">
               <div className="border-r border-black p-2 flex flex-col items-center justify-center">
@@ -183,6 +199,7 @@ export default function ZumenPage() {
           </div>
         </div>
       </div>
+       </div>
     </main>
   );
 }
