@@ -198,8 +198,9 @@ export default function Page() {
   ];
 
   return (
-      <main className="min-h-screen bg-[#e6f4ff] text-zinc-800">
-             <aside className="border-r border-sky-200 bg-[#f2f9ff] p-4">
+         <main className="min-h-screen bg-[#e6f4ff] text-zinc-800">
+      <div className="grid min-h-screen grid-cols-1 md:grid-cols-[260px,1fr]">
+        <aside className="border-r border-sky-200 bg-[#f2f9ff] p-4">
           <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
             <Image src="/powerway-house-logo.svg" alt="Powerway House logo" width={180} height={180} className="h-auto w-full rounded-xl" priority />
             <div className="mt-3 text-center text-2xl font-extrabold tracking-tight text-sky-700">Powerway House</div>
