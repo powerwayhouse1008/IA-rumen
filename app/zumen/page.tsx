@@ -73,6 +73,18 @@ type ZumenData = {
   imgSub2?: string;
   imgSub3?: string;
   imgQr?: string;
+  contactInfo?: {
+    companyName: string;
+    companyPhone: string;
+    companyAddress: string;
+    companyFax: string;
+    licenseNo: string;
+    transactionType: string;
+    staffName: string;
+    fee: string;
+    inspectionNote: string;
+    propertyNo: string;
+  };
 };
 
 function ImgBox({ src, label, fit = "cover", h }: { src?: string; label: string; fit?: "cover" | "contain"; h: number }) {
@@ -124,8 +136,13 @@ export default function ZumenPage() {
         { label: "所在地", value: data.address },
         { label: "権利", value: data.houseDetails.right || "-" },
         { label: "敷地面積", value: data.houseDetails.landArea ? `${data.houseDetails.landArea}㎡` : "-" },
+        { label: "地目", value: data.houseDetails.lot || "-" },
+        { label: "私道", value: data.houseDetails.privateRoad || "-" },
+        { label: "接道舗装", value: data.houseDetails.roadSurface || "-" },
+        { label: "専有面積", value: data.houseDetails.exclusiveArea ? `${data.houseDetails.exclusiveArea}㎡` : "-" },
         { label: "間取り", value: data.houseDetails.layout || "-" },
         { label: "構造・階数", value: data.houseDetails.structure || "-" },
+        { label: "所在階", value: data.houseDetails.floor || "-" },
         { label: "築年月", value: data.houseDetails.builtAt || "-" },
       ];
     }
@@ -137,6 +154,8 @@ export default function ZumenPage() {
         { label: "専有面積", value: data.mansionDetails.exclusiveArea ? `${data.mansionDetails.exclusiveArea}㎡` : "-" },
         { label: "バルコニー", value: data.mansionDetails.balconyArea ? `${data.mansionDetails.balconyArea}㎡` : "-" },
         { label: "間取り", value: data.mansionDetails.layout || "-" },
+        { label: "構造・階数", value: data.mansionDetails.structure || "-" },
+        { label: "所在階", value: data.mansionDetails.floor || "-" },
         { label: "築年月", value: data.mansionDetails.builtAt || "-" },
       ];
     }
@@ -159,6 +178,7 @@ export default function ZumenPage() {
         { label: "管理費", value: data.mansionDetails.managementFee ? `${data.mansionDetails.managementFee}円` : "-" },
         { label: "修繕積立金", value: data.mansionDetails.reserveFund ? `${data.mansionDetails.reserveFund}円` : "-" },
         { label: "ネット使用料", value: data.mansionDetails.internetFee ? `${data.mansionDetails.internetFee}円` : "-" },
+        { label: "管理会社", value: data.mansionDetails.managementCompany || "-" },
       ];
     }
 
@@ -166,6 +186,8 @@ export default function ZumenPage() {
       return [
         { label: "都市計画", value: data.houseDetails.cityPlan || "-" },
         { label: "用途地域", value: data.houseDetails.zoning || "-" },
+        { label: "建ぺい率", value: data.houseDetails.buildingCoverage || "-" },
+        { label: "容積率", value: data.houseDetails.floorAreaRatio || "-" },
         { label: "駐車場", value: data.houseDetails.parking || "-" },
       ];
     }
@@ -187,6 +209,8 @@ export default function ZumenPage() {
       return [
         { label: "ガス", value: data.houseDetails.gas || "-" },
         { label: "飲用水", value: data.houseDetails.water || "-" },
+        { label: "汚水", value: data.houseDetails.sewage || "-" },
+        { label: "雑排水", value: data.houseDetails.drain || "-" },
         { label: "現況", value: data.houseDetails.status || "-" },
         { label: "引渡", value: data.houseDetails.handover || "-" },
       ];
@@ -200,6 +224,19 @@ export default function ZumenPage() {
   }, [data, isHouse, isMansion]);
 
   const remarks = isMansion ? data?.mansionDetails?.note : isHouse ? data?.houseDetails?.note : "※図面と相違する場合は現況を優先します。";
+
+  const contact = {
+    companyName: data?.contactInfo?.companyName || "株式会社パワーウェイ",
+    companyPhone: data?.contactInfo?.companyPhone || "090-6695-1306",
+    companyAddress: data?.contactInfo?.companyAddress || "〒101-0025 東京都千代田区神田須田町2-2 3-1芝崎ビル4F",
+    companyFax: data?.contactInfo?.companyFax || "03-5207-2768",
+    licenseNo: data?.contactInfo?.licenseNo || "東京都知事（2）第101930号",
+    transactionType: data?.contactInfo?.transactionType || "一般",
+    staffName: data?.contactInfo?.staffName || "野村",
+    fee: data?.contactInfo?.fee || "分かれて",
+    inspectionNote: data?.contactInfo?.inspectionNote || "☚内見、物件確認",
+    propertyNo: data?.contactInfo?.propertyNo || "1368",
+  };
 
   if (!data) return null;
 
@@ -239,13 +276,13 @@ export default function ZumenPage() {
 
                 <div className="grid grid-cols-[320px_1fr_260px]">
                   <div className="border-r border-black p-2">
-                    <ImgBox src={data.imgMain} label="外観画像（左上）" h={260} />
+                    <ImgBox src={data.imgMain} label="外観画像（左上）" h={230} />
                     <div className="mt-2 grid grid-cols-2 gap-2">
-                      <ImgBox src={data.imgSub1} label="共用（左中）" h={150} />
-                      <ImgBox src={data.imgSub2} label="室内（左中）" h={150} />
+                      <ImgBox src={data.imgSub1} label="共用（左中）" h={130} />
+                      <ImgBox src={data.imgSub2} label="室内（左中）" h={130} />
                     </div>
                     <div className="mt-2">
-                      <ImgBox src={data.imgSub3} label="ラウンジ等（左下）" h={150} />
+                      <ImgBox src={data.imgSub3} label="ラウンジ等（左下）" h={135} />
                     </div>
                     <div className="mt-3 text-[10px] leading-5">
                       <div>・共用施設リスト（任意）</div>
@@ -254,10 +291,10 @@ export default function ZumenPage() {
                   </div>
 
                   <div className="border-r border-black p-2">
-                    <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={440} fit="contain" />
+                    <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={400} fit="contain" />
                     <div className="mt-2 grid grid-cols-2 gap-2">
-                      <ImgBox src={data.imgSub2} label="室内（中央下左）" h={220} />
-                      <ImgBox src={data.imgSub3} label="共用（中央下右）" h={220} />
+                      <ImgBox src={data.imgSub2} label="室内（中央下左）" h={185} />
+                      <ImgBox src={data.imgSub3} label="共用（中央下右）" h={185} />
                     </div>
                   </div>
 
@@ -279,16 +316,51 @@ export default function ZumenPage() {
 
                     <div className="mt-2">
                       <SectionTitle>備考</SectionTitle>
-                      <div className="min-h-[150px] whitespace-pre-wrap border border-black border-t-0 p-2 text-[11px]">
+                      <div className="min-h-[120px] whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px]">
                         {remarks || "※図面と相違する場合は現況を優先します。"}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-[1fr_260px] border-t border-black">
-                  <div className="bg-[#b30000] px-3 py-2 font-extrabold tracking-widest text-white">POWERWAY HOUSE</div>
-                  <div className="border-l border-black px-2 py-2 text-[10px]">担当者：野村　／　取引形態：一般</div>
+                <div className="grid grid-cols-[210px_1fr] border-t border-black">
+                  <div className="bg-[#b30000] px-3 py-2 text-white">
+                    <div className="text-2xl font-extrabold leading-tight tracking-widest">POWERWAY HOUSE</div>
+                    <div className="mt-0.5 text-[11px]">不動産　販売・賃貸・管理</div>
+                  </div>
+                  <div className="grid grid-cols-[1fr_58px_220px]">
+                    <div className="px-2 py-1 text-[10px] leading-4">
+                      <div className="grid grid-cols-[1fr_auto] gap-2">
+                        <div className="font-semibold">{contact.licenseNo}</div>
+                        <div className="font-semibold">FAX：{contact.companyFax}</div>
+                      </div>
+                      <div className="text-[21px] font-extrabold leading-tight">{contact.companyName}</div>
+                      <div className="font-semibold">担当者：{contact.companyPhone}</div>
+                      <div className="truncate text-[10px]">{contact.companyAddress}</div>
+                    </div>
+                    <div className="flex items-center justify-center border-l border-black px-1 py-1">
+                      {data.imgQr ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={data.imgQr} alt="QR" className="h-12 w-12 object-cover" />
+                      ) : (
+                        <div className="text-[10px] text-zinc-500">QR</div>
+                      )}
+                    </div>
+                    <div className="border-l border-black text-[10px]">
+                      <div className="grid grid-cols-[1fr_1fr] items-start border-b border-black px-2 py-1">
+                        <div>
+                          <div className="font-semibold">{contact.inspectionNote}</div>
+                          <div className="mt-0.5">物番：{contact.propertyNo}</div>
+                        </div>
+                        <div className="text-right">
+                          <div>取引形態：{contact.transactionType}</div>
+                          <div className="mt-0.5">担当者：{contact.staffName}</div>
+                          <div className="mt-0.5">手数料：{contact.fee}</div>
+                        </div>
+                      </div>
+                      <div className="px-2 py-1 text-right text-[9px]">図面と相違する場合は現況を優先します。</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
