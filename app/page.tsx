@@ -209,12 +209,22 @@ export default function Page() {
               <br />
               House
             </div>
-            <div className="rounded-lg bg-rose-500 px-4 py-2.5 font-semibold text-white">物件新規登録</div>
-            <div className="rounded-lg px-4 py-2.5 hover:bg-zinc-100">転売図面履歴</div>
-            <div className="rounded-lg px-4 py-2.5 hover:bg-zinc-100">物件検索</div>
-            <div className="rounded-lg px-4 py-2.5 hover:bg-zinc-100">お気に入り</div>
-            <div className="rounded-lg px-4 py-2.5 hover:bg-zinc-100">プラン管理</div>
-            <div className="rounded-lg px-4 py-2.5 hover:bg-zinc-100">AI図取り</div>
+            </div>
+          <nav className="mt-8 space-y-2 text-sm">
+             {SIDEBAR_LINKS.map((label, index) => {
+              const activeClass =
+                index === 0
+                  ? "bg-emerald-500 font-semibold text-white"
+                  : index === 1
+                    ? "bg-rose-500 font-semibold text-white"
+                    : "hover:bg-zinc-100";
+
+              return (
+                <div key={label} className={`rounded-lg px-4 py-2.5 ${activeClass}`}>
+                  {label}
+                </div>
+              );
+            })}
           </nav>
         </aside>
 
