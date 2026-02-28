@@ -40,7 +40,7 @@ const CATEGORY_PRESETS: Record<CategoryKey, CategoryPreset> = {
       address: "東京都中央区晴海５丁目5-7",
     },
   },
-@@ -76,164 +77,220 @@ const CATEGORY_PRESETS: Record<CategoryKey, CategoryPreset> = {
+-76,164 +77,220 const CATEGORY_PRESETS: Record<CategoryKey, CategoryPreset> = {
       access: "東京メトロ銀座線 外苑前",
       walk: "4",
       address: "東京都港区南青山2-10-5",
