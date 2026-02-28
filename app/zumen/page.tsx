@@ -115,7 +115,7 @@ export default function ZumenPage() {
     const updateScale = () => {
       const el = previewRef.current;
       if (!el) return;
-      setSheetScale(Math.min(1.18, el.clientWidth / BASE_WIDTH));
+      setSheetScale(Math.min(1, el.clientWidth / BASE_WIDTH));
     };
 
     updateScale();
@@ -252,7 +252,7 @@ export default function ZumenPage() {
         </div>
 
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4">
-          <div ref={previewRef} className="overflow-auto">
+          <div ref={previewRef} className="overflow-x-auto overflow-y-hidden">
             <div className="mx-auto" style={{ width: `${1123 * sheetScale}px`, height: `${794 * sheetScale}px` }}>
               <div className="border border-black bg-white text-black" style={{ width: "1123px", minHeight: "794px", transform: `scale(${sheetScale})`, transformOrigin: "top left" }}>
                 <div className="grid grid-cols-[140px_1fr_260px] border-b border-black">
