@@ -14,6 +14,7 @@ type ZumenData = {
   imgSub1?: string;
   imgSub2?: string;
   imgSub3?: string;
+  imgQr?: string;
 };
 type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion";
 
@@ -160,7 +161,7 @@ export default function Page() {
   }
 
   async function onPick(
-    key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3">,
+      key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr">,
     file?: File
   ) {
     if (!file) return;
@@ -168,7 +169,7 @@ export default function Page() {
     update(key, url);
   }
 
-  function removeImage(key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3">) {
+   function removeImage(key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr">) {
     update(key, undefined);
   }
 
@@ -190,12 +191,13 @@ export default function Page() {
     setPropertyType(preset.propertyType);
   }
 
-  const uploadItems: Array<{ key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3">; label: string }> = [
+  const uploadItems: Array<{ key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr">; label: string }> = [
     { key: "imgMain", label: "全体区画図 or 住宅写真" },
     { key: "imgPlan", label: "物件メイン画像" },
     { key: "imgSub1", label: "物件サブ画像（1）" },
     { key: "imgSub2", label: "物件サブ画像（2）" },
     { key: "imgSub3", label: "物件サブ画像（3）" },
+    { key: "imgQr", label: "物件QRコード" },
   ];
 
   return (
