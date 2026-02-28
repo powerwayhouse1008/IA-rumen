@@ -40,40 +40,7 @@ const CATEGORY_PRESETS: Record<CategoryKey, CategoryPreset> = {
       address: "東京都中央区晴海５丁目5-7",
     },
   },
-  "used-house": {
-    label: "中古住宅仮入力",
-    propertyType: "中古住宅",
-    catchCopy: "内装リフォーム済みで即入居可。南向きで陽当たり良好",
-    districts: "1戸",
-    data: {
-      price: "7980",
-      name: "世田谷区桜丘 中古戸建",
-      access: "小田急線 千歳船橋",
-      walk: "8",
-      address: "東京都世田谷区桜丘2-21-10",
-    },
-  },
-  land: {
-    label: "土地仮入力",
-    propertyType: "土地",
-    catchCopy: "徒歩圏内に学校や公園！毎日が便利で快適な住環境の分譲地",
-    districts: "10区画",
-    data: {
-      price: "4980",
-      name: "練馬区石神井町 売地",
-      access: "西武池袋線 石神井公園",
-      walk: "6",
-      address: "東京都練馬区石神井町1-2-8",
-    },
-  },
-  "new-mansion": {
-    label: "新築マンション仮入力",
-    propertyType: "新築分譲マンション",
-    catchCopy: "駅徒歩4分×ホテルライク共用部。都心生活を格上げする1邸",
-    districts: "42戸",
-    data: {
-      price: "13200",
-      name: "パワーウェイレジデンス南青山",
+@@ -76,164 +77,220 @@ const CATEGORY_PRESETS: Record<CategoryKey, CategoryPreset> = {
       access: "東京メトロ銀座線 外苑前",
       walk: "4",
       address: "東京都港区南青山2-10-5",
@@ -98,6 +65,7 @@ const PROPERTY_TYPE_OPTIONS = ["中古マンション", "新築分譲マンシ�
 
 const SALES_TAGS = ["# 2沿線以上利用可", "# 駐車2台可", "# 環境重視の住宅地", "# 閑静な住宅街", "# 平坦地", "# 角地"];
 const FEATURE_TAGS = ["# シャワートイレ", "# DEN", "# LDKカウンターテーブル", "# ダイニング収納", "# 納戸", "# シューズクローク"];
+
 const SIDEBAR_LINKS = ["ホーム", "物件新規登録", "転売図面履歴", "物件検索", "お気に入り", "プラン管理", "AI図取り"] as const;
 
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
@@ -120,6 +88,15 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
 function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
+      {...props}
+      className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+    />
+  );
+}
+
+function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
       {...props}
       className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
     />
@@ -149,6 +126,34 @@ export default function Page() {
   const [savedAt, setSavedAt] = useState<string>("");
   const [salesTags, setSalesTags] = useState<string[]>([]);
   const [featureTags, setFeatureTags] = useState<string[]>([]);
+  const [mansionDetails, setMansionDetails] = useState({
+    right: "所有権",
+    landArea: "25246.57",
+    zoning: "第二種住居地域",
+    exclusiveArea: "104.35",
+    balconyArea: "14.66",
+    layout: "3LDK+WIC+SIC+TR",
+    structure: "鉄筋コンクリート造 地上14階地下2階",
+    floor: "6",
+    builtAt: "2025年3月",
+    developer: "三井不動産レジデンシャル(株)",
+    constructor: "大成建設(株)",
+    totalUnits: "1002",
+    managementCompany: "三井不動産レジデンシャルサービス(株)",
+    managementStyle: "全部委託 管理方式:日勤",
+    managementFee: "85240",
+    reserveFund: "23610",
+    internetFee: "1430",
+    monthlyTotal: "110280",
+    gas: "都市ガス",
+    elevator: "無し",
+    currentStatus: "空室",
+    handover: "即時",
+    note: `●ペット飼育可(細則有り)
+●敷地内駐車場 有空き要確認`,
+  });
+
+  const isMansionCategory = selectedCategory === "new-mansion" || selectedCategory === "used-mansion";
 
   const canGo = useMemo(() => data.price.trim() && data.name.trim() && data.address.trim(), [data]);
 
@@ -156,12 +161,17 @@ export default function Page() {
     setData((prev) => ({ ...prev, [key]: value }));
   }
 
+  function updateMansion(key: keyof typeof mansionDetails, value: string) {
+    setMansionDetails((prev) => ({ ...prev, [key]: value }));
+  }
+
   function toggleTag(tag: string, setter: React.Dispatch<React.SetStateAction<string[]>>) {
     setter((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   }
 
   async function onPick(
-      key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr">,
+  
+    key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr">,
     file?: File
   ) {
     if (!file) return;
@@ -169,7 +179,7 @@ export default function Page() {
     update(key, url);
   }
 
-   function removeImage(key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr">) {
+  function removeImage(key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr">) {
     update(key, undefined);
   }
 
@@ -201,7 +211,8 @@ export default function Page() {
   ];
 
   return (
-          <main className="min-h-screen bg-[#e6f4ff] text-zinc-800">
+    
+    <main className="min-h-screen bg-[#e6f4ff] text-zinc-800">
       <div className="grid min-h-screen grid-cols-1 md:grid-cols-[260px,1fr]">
         <aside className="border-r border-sky-200 bg-[#f2f9ff] p-4">
           <div className="rounded-2xl border border-sky-100 bg-white p-3.5 shadow-sm">
@@ -211,9 +222,10 @@ export default function Page() {
               <br />
               House
             </div>
-            </div>
+          </div>
           <nav className="mt-8 space-y-2 text-sm">
-             {SIDEBAR_LINKS.map((label, index) => {
+            
+            {SIDEBAR_LINKS.map((label, index) => {
               const activeClass =
                 index === 0
                   ? "bg-emerald-500 font-semibold text-white"
@@ -252,90 +264,7 @@ export default function Page() {
                     className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${isSelected ? "bg-emerald-600 text-white shadow-sm" : "bg-orange-500 text-white hover:bg-orange-600"}`}
                   >
                     {preset.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="grid gap-6 xl:grid-cols-2">
-              <div className="space-y-4">
-                <div>
-                  <FieldLabel required>物件名</FieldLabel>
-                  <Input value={data.name} onChange={(e) => update("name", e.target.value)} />
-                </div>
-                <div>
-                  <FieldLabel required>公開先</FieldLabel>
-                  <div className="flex gap-4 text-sm">
-                    <label className="inline-flex items-center gap-2"><input type="checkbox" /> 一般向け公開</label>
-                    <label className="inline-flex items-center gap-2"><input type="checkbox" /> 業者向け公開</label>
-                  </div>
-                </div>
-                <div>
-                  <FieldLabel required>物件管理番号</FieldLabel>
-                  <Input value={managerNo} onChange={(e) => setManagerNo(e.target.value)} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <FieldLabel required>物件種別</FieldLabel>
-                    <Select defaultValue="中古マンション">
-                      <option>中古マンション</option>
-                      <option>戸建</option>
-                      <option>土地</option>
-                    </Select>
-                  </div>
-                  <div>
-                    <FieldLabel required>取引形態</FieldLabel>
-                    <Select defaultValue="売主">
-                      <option>売主</option>
-                      <option>媒介</option>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <FieldLabel required>所在地</FieldLabel>
-                  <Input value={data.address} onChange={(e) => update("address", e.target.value)} />
-                </div>
-                <div>
-                  <FieldLabel required>路線 / 駅 / 駅徒歩（メイン掲載）</FieldLabel>
-                  <Input value={data.access} onChange={(e) => update("access", e.target.value)} />
-                  <div className="mt-2 grid grid-cols-[1fr_80px_40px] gap-2">
-                    <Input placeholder="徒歩" value={data.walk} onChange={(e) => update("walk", e.target.value)} />
-                    <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-center text-sm">分</div>
-                    <div />
-                  </div>
-                </div>
-                <div>
-                  <FieldLabel required>価格（万円）</FieldLabel>
-                  <Input value={data.price} onChange={(e) => update("price", e.target.value)} />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <FieldLabel required>キャッチコピー</FieldLabel>
-                  <Input value={catchCopy} onChange={(e) => setCatchCopy(e.target.value)} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <FieldLabel required>情報公開日</FieldLabel>
-                    <Input type="date" value={publishDate} onChange={(e) => setPublishDate(e.target.value)} />
-                  </div>
-                  <div>
-                    <FieldLabel required>取引条件有効期限</FieldLabel>
-                    <Input type="date" value={expireDate} onChange={(e) => setExpireDate(e.target.value)} />
-                  </div>
-                </div>
-                <div>
-                  <FieldLabel required>総戸数 / 総区画数</FieldLabel>
-                  <Input value={districts} onChange={(e) => setDistricts(e.target.value)} />
-                </div>
-
-                <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-                  <div className="mb-2 text-sm font-semibold">画像アップロード</div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {uploadItems.map(({ key, label }) => (
-                      <div key={key} className="rounded-md border border-zinc-200 bg-white p-2">
-                        <div className="mb-2 text-xs text-zinc-600">{label}</div>
+@@ -324,50 +381,81 @@ export default function Page() {
                         <Input type="file" accept="image/*" onChange={(e) => onPick(key, e.target.files?.[0])} />
                         <div className="mt-2 h-24 overflow-hidden rounded border border-zinc-200 bg-zinc-50">
                           {data[key] ? (
@@ -360,6 +289,37 @@ export default function Page() {
                 </div>
               </div>
             </div>
+
+            {isMansionCategory && (
+              <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+                <div className="mb-3 text-sm font-semibold text-zinc-700">マンション詳細（新築マンション / 中古マンション）</div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div><FieldLabel>権利</FieldLabel><Input value={mansionDetails.right} onChange={(e) => updateMansion("right", e.target.value)} /></div>
+                  <div><FieldLabel>敷地面積 (㎡)</FieldLabel><Input value={mansionDetails.landArea} onChange={(e) => updateMansion("landArea", e.target.value)} /></div>
+                  <div><FieldLabel>用途地域</FieldLabel><Input value={mansionDetails.zoning} onChange={(e) => updateMansion("zoning", e.target.value)} /></div>
+                  <div><FieldLabel>専有面積 (㎡)</FieldLabel><Input value={mansionDetails.exclusiveArea} onChange={(e) => updateMansion("exclusiveArea", e.target.value)} /></div>
+                  <div><FieldLabel>バルコニー面積 (㎡)</FieldLabel><Input value={mansionDetails.balconyArea} onChange={(e) => updateMansion("balconyArea", e.target.value)} /></div>
+                  <div><FieldLabel>間取り</FieldLabel><Input value={mansionDetails.layout} onChange={(e) => updateMansion("layout", e.target.value)} /></div>
+                  <div className="md:col-span-2"><FieldLabel>構造・階数</FieldLabel><Input value={mansionDetails.structure} onChange={(e) => updateMansion("structure", e.target.value)} /></div>
+                  <div><FieldLabel>所在階</FieldLabel><Input value={mansionDetails.floor} onChange={(e) => updateMansion("floor", e.target.value)} /></div>
+                  <div><FieldLabel>築年月</FieldLabel><Input value={mansionDetails.builtAt} onChange={(e) => updateMansion("builtAt", e.target.value)} /></div>
+                  <div><FieldLabel>分譲会社</FieldLabel><Input value={mansionDetails.developer} onChange={(e) => updateMansion("developer", e.target.value)} /></div>
+                  <div><FieldLabel>施工会社</FieldLabel><Input value={mansionDetails.constructor} onChange={(e) => updateMansion("constructor", e.target.value)} /></div>
+                  <div><FieldLabel>総戸数</FieldLabel><Input value={mansionDetails.totalUnits} onChange={(e) => updateMansion("totalUnits", e.target.value)} /></div>
+                  <div><FieldLabel>管理会社</FieldLabel><Input value={mansionDetails.managementCompany} onChange={(e) => updateMansion("managementCompany", e.target.value)} /></div>
+                  <div className="md:col-span-2"><FieldLabel>管理形態</FieldLabel><Input value={mansionDetails.managementStyle} onChange={(e) => updateMansion("managementStyle", e.target.value)} /></div>
+                  <div><FieldLabel>管理費 (円)</FieldLabel><Input value={mansionDetails.managementFee} onChange={(e) => updateMansion("managementFee", e.target.value)} /></div>
+                  <div><FieldLabel>修繕積立金 (円)</FieldLabel><Input value={mansionDetails.reserveFund} onChange={(e) => updateMansion("reserveFund", e.target.value)} /></div>
+                  <div><FieldLabel>インターネット使用料 (円)</FieldLabel><Input value={mansionDetails.internetFee} onChange={(e) => updateMansion("internetFee", e.target.value)} /></div>
+                  <div><FieldLabel>合計 (円)</FieldLabel><Input value={mansionDetails.monthlyTotal} onChange={(e) => updateMansion("monthlyTotal", e.target.value)} /></div>
+                  <div><FieldLabel>ガス</FieldLabel><Input value={mansionDetails.gas} onChange={(e) => updateMansion("gas", e.target.value)} /></div>
+                  <div><FieldLabel>エレベーター</FieldLabel><Input value={mansionDetails.elevator} onChange={(e) => updateMansion("elevator", e.target.value)} /></div>
+                  <div><FieldLabel>現状</FieldLabel><Input value={mansionDetails.currentStatus} onChange={(e) => updateMansion("currentStatus", e.target.value)} /></div>
+                  <div><FieldLabel>引渡</FieldLabel><Input value={mansionDetails.handover} onChange={(e) => updateMansion("handover", e.target.value)} /></div>
+                  <div className="md:col-span-2"><FieldLabel>備考</FieldLabel><Textarea rows={3} value={mansionDetails.note} onChange={(e) => updateMansion("note", e.target.value)} /></div>
+                </div>
+              </div>
+            )}
 
             <div className="mt-6 space-y-5">
               <div>
@@ -386,31 +346,3 @@ export default function Page() {
                 <div className="flex flex-wrap gap-2">
                   {FEATURE_TAGS.map((tag) => {
                     const active = featureTags.includes(tag);
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => toggleTag(tag, setFeatureTags)}
-                        className={`rounded-full border px-3 py-1.5 text-sm ${active ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-zinc-300 bg-white text-zinc-600"}`}
-                      >
-                        {tag}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-              <div className="text-xs text-zinc-500">{savedAt ? `最終保存: ${savedAt}` : "未保存"}</div>
-              <div className="flex gap-2">
-                <button type="button" onClick={onSaveDraft} className="rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white">一時保存</button>
-                <button type="button" onClick={onGenerate} disabled={!canGo} className="rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">図面を生成してプレビュー</button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-    </main>
-  );
-}
