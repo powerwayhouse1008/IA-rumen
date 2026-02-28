@@ -198,15 +198,16 @@ export default function Page() {
   ];
 
   return (
-         <main className="min-h-screen bg-[#e6f4ff] text-zinc-800">
+          <main className="min-h-screen bg-[#e6f4ff] text-zinc-800">
       <div className="grid min-h-screen grid-cols-1 md:grid-cols-[260px,1fr]">
         <aside className="border-r border-sky-200 bg-[#f2f9ff] p-4">
-          <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
-            <Image src="/powerway-house-logo.svg" alt="Powerway House logo" width={120} height={120} className="mx-auto h-auto w-28 rounded-xl" priority />
-            <div className="mt-3 text-center text-2xl font-extrabold tracking-tight text-sky-700">Powerway House</div>
-          </div>
-          <nav className="mt-8 space-y-2 text-sm">
-            <div className="rounded-lg bg-emerald-500 px-4 py-2.5 font-semibold text-white">ホーム</div>
+          <div className="rounded-2xl border border-sky-100 bg-white p-3.5 shadow-sm">
+            <Image src="/powerway-house-logo.svg" alt="Powerway House logo" width={128} height={128} className="mx-auto h-28 w-28 rounded-2xl" priority />
+            <div className="mt-3 text-center text-4xl font-extrabold leading-tight tracking-tight text-sky-700">
+              Powerway
+              <br />
+              House
+            </div>
             <div className="rounded-lg bg-rose-500 px-4 py-2.5 font-semibold text-white">物件新規登録</div>
             <div className="rounded-lg px-4 py-2.5 hover:bg-zinc-100">転売図面履歴</div>
             <div className="rounded-lg px-4 py-2.5 hover:bg-zinc-100">物件検索</div>
