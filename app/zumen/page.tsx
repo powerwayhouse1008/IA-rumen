@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { InfoTable, SectionTitle } from "../../components/JpInfoTable";
@@ -14,7 +15,7 @@ type ZumenData = {
   imgPlan?: string; // 間取り図
   imgSub1?: string; // 共用
   imgSub2?: string; // 室内
-  imgSub3?: string; // ラウンジ等
+  imgSub3?: string; // ラウンジ
 };
 
 function ImgBox({
@@ -42,15 +43,16 @@ function ImgBox({
 }
 
 export default function ZumenPage() {
-  const [data, setData] = useState<ZumenData | null>(null);
-  const sheetRef = useRef<HTMLDivElement | null>(null);
-const previewRef = useRef<HTMLDivElement | null>(null);
-  const [sheetScale, setSheetScale] = useState(1);
-  useEffect(() => {
+  const [data] = useState<ZumenData | null>(() => {
+    if (typeof window === "undefined") return null;
     const saved = localStorage.getItem("zumenData");
-    if (saved) setData(JSON.parse(saved));
-  }, []);
- useEffect(() => {
+    return saved ? JSON.parse(saved) : null;
+  });
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  const previewRef = useRef<HTMLDivElement | null>(null);
+  const [sheetScale, setSheetScale] = useState(1);
+
+  useEffect(() => {
     const BASE_WIDTH = 1123;
 
     const updateScale = () => {
@@ -68,17 +70,17 @@ const previewRef = useRef<HTMLDivElement | null>(null);
   if (!data) return null;
 
   return (
-    <main className="min-h-screen bg-zinc-50 p-6">
-          <div className="mx-auto w-full max-w-[1200px]">
+    <main className="min-h-screen bg-[#f3f4f6] p-4 md:p-8">
+      <div className="mx-auto w-full max-w-[1320px]">
         <div className="mb-4 flex items-center justify-between">
-                    <Link href="/" className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">← 戻る</Link>
+          <Link href="/" className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">← 戻る</Link>
           <div className="flex items-center gap-2">
             <button type="button" className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">一時保存</button>
             <button type="button" className="rounded-md bg-rose-500 px-4 py-2 text-sm font-semibold text-white">次のステップ</button>
           </div>
         </div>
 
-           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm md:p-6">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm md:p-6">
           <div ref={previewRef} className="overflow-hidden">
           {/* ===== A4 Sheet (Landscape) ===== */}
           <div className="mx-auto" style={{ width: `${1123 * sheetScale}px`, height: `${794 * sheetScale}px` }}>
@@ -204,7 +206,7 @@ const previewRef = useRef<HTMLDivElement | null>(null);
           </div>
         </div>
       </div>
-     </div>
+    </div>
     </main>
   );
 }
