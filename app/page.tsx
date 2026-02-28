@@ -30,7 +30,7 @@ const CATEGORY_PRESETS = {
   "new-house": {
     label: "新築住宅仮入力",
     propertyType: "新築分譲住宅",
-    catchCopy: "暮らしやすさ×癒しの家 未来志向のライフデザイン住宅",
+    catchCopy: "暮らしやすさ×癒しの家 未来志向のライデザイン住宅",
     districts: "10区画",
     data: {
       price: "21500",
@@ -247,12 +247,14 @@ export default function Page() {
   }
 
   function onSaveDraft() {
-    localStorage.setItem("zumenData", JSON.stringify(data));
+    const payload = { ...data, category: selectedCategory, propertyType, houseDetails, mansionDetails };
+    localStorage.setItem("zumenData", JSON.stringify(payload));
     setSavedAt(new Date().toLocaleString("ja-JP"));
   }
 
   function onGenerate() {
-    localStorage.setItem("zumenData", JSON.stringify(data));
+    const payload = { ...data, category: selectedCategory, propertyType, houseDetails, mansionDetails };
+    localStorage.setItem("zumenData", JSON.stringify(payload));
     router.push("/zumen");
   }
   function onSelectCategory(category: CategoryKey) {
@@ -350,10 +352,10 @@ export default function Page() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <FieldLabel required>物件種別</FieldLabel>
-                    <Select defaultValue="中古マンション">
-                      <option>中古マンション</option>
-                      <option>戸建</option>
-                      <option>土地</option>
+                    <Select value={propertyType} onChange={(e) => setPropertyType(e.target.value)}>
+                      {PROPERTY_TYPE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
                     </Select>
                   </div>
                   <div>
