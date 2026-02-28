@@ -15,6 +15,85 @@ type ZumenData = {
   imgSub2?: string;
   imgSub3?: string;
 };
+type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion";
+
+type CategoryPreset = {
+  label: string;
+  propertyType: string;
+  catchCopy: string;
+  districts: string;
+  data: ZumenData;
+};
+
+const CATEGORY_PRESETS: Record<CategoryKey, CategoryPreset> = {
+  "new-house": {
+    label: "新築住宅仮入力",
+    propertyType: "新築分譲住宅",
+    catchCopy: "暮らしやすさ×癒しの家 未来志向のライフデザイン住宅",
+    districts: "10区画",
+    data: {
+      price: "21500",
+      name: "東京都港区南青山1期",
+      access: "東京メトロ千代田線 表参道",
+      walk: "5",
+      address: "東京都中央区晴海５丁目5-7",
+    },
+  },
+  "used-house": {
+    label: "中古住宅仮入力",
+    propertyType: "中古住宅",
+    catchCopy: "内装リフォーム済みで即入居可。南向きで陽当たり良好",
+    districts: "1戸",
+    data: {
+      price: "7980",
+      name: "世田谷区桜丘 中古戸建",
+      access: "小田急線 千歳船橋",
+      walk: "8",
+      address: "東京都世田谷区桜丘2-21-10",
+    },
+  },
+  land: {
+    label: "土地仮入力",
+    propertyType: "土地",
+    catchCopy: "徒歩圏内に学校や公園！毎日が便利で快適な住環境の分譲地",
+    districts: "10区画",
+    data: {
+      price: "4980",
+      name: "練馬区石神井町 売地",
+      access: "西武池袋線 石神井公園",
+      walk: "6",
+      address: "東京都練馬区石神井町1-2-8",
+    },
+  },
+  "new-mansion": {
+    label: "新築マンション仮入力",
+    propertyType: "新築分譲マンション",
+    catchCopy: "駅徒歩4分×ホテルライク共用部。都心生活を格上げする1邸",
+    districts: "42戸",
+    data: {
+      price: "13200",
+      name: "パワーウェイレジデンス南青山",
+      access: "東京メトロ銀座線 外苑前",
+      walk: "4",
+      address: "東京都港区南青山2-10-5",
+    },
+  },
+  "used-mansion": {
+    label: "中古マンション仮入力",
+    propertyType: "中古マンション",
+    catchCopy: "眺望良好の角住戸。リノベーション済みで上質な暮らし",
+    districts: "120戸",
+    data: {
+      price: "9150",
+      name: "シティテラス豊洲リバーコート",
+      access: "東京メトロ有楽町線 豊洲",
+      walk: "7",
+      address: "東京都江東区豊洲4-1-20",
+    },
+  },
+};
+
+const PROPERTY_TYPE_OPTIONS = ["中古マンション", "新築分譲マンション", "新築分譲住宅", "中古住宅", "土地"];
 
 const SALES_TAGS = ["# 2沿線以上利用可", "# 駐車2台可", "# 環境重視の住宅地", "# 閑静な住宅街", "# 平坦地", "# 角地"];
 const FEATURE_TAGS = ["# シャワートイレ", "# DEN", "# LDKカウンターテーブル", "# ダイニング収納", "# 納戸", "# シューズクローク"];
@@ -57,19 +136,14 @@ async function fileToDataUrl(file: File): Promise<string> {
 export default function Page() {
   const router = useRouter();
 
-  const [data, setData] = useState<ZumenData>({
-    price: "21500",
-    name: "東京都港区南青山1期",
-    access: "東京メトロ千代田線 表参道",
-    walk: "5",
-    address: "東京都中央区晴海５丁目5-7",
-  });
-
-  const [catchCopy, setCatchCopy] = useState("徒歩圏内に学校や公園！毎日が便利で快適な住環境");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryKey>("new-house");
+  const [propertyType, setPropertyType] = useState(CATEGORY_PRESETS["new-house"].propertyType);
+ const [data, setData] = useState<ZumenData>(CATEGORY_PRESETS["new-house"].data);
+   const [catchCopy, setCatchCopy] = useState(CATEGORY_PRESETS["new-house"].catchCopy);
   const [managerNo, setManagerNo] = useState("12345678");
   const [publishDate, setPublishDate] = useState("2025-06-01");
   const [expireDate, setExpireDate] = useState("2025-12-31");
-  const [districts, setDistricts] = useState("10区画");
+  const [districts, setDistricts] = useState(CATEGORY_PRESETS["new-house"].districts);
   const [savedAt, setSavedAt] = useState<string>("");
   const [salesTags, setSalesTags] = useState<string[]>([]);
   const [featureTags, setFeatureTags] = useState<string[]>([]);
@@ -106,6 +180,14 @@ export default function Page() {
     localStorage.setItem("zumenData", JSON.stringify(data));
     router.push("/zumen");
   }
+  function onSelectCategory(category: CategoryKey) {
+    const preset = CATEGORY_PRESETS[category];
+    setSelectedCategory(category);
+    setData(preset.data);
+    setCatchCopy(preset.catchCopy);
+    setDistricts(preset.districts);
+    setPropertyType(preset.propertyType);
+  }
 
   const uploadItems: Array<{ key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3">; label: string }> = [
     { key: "imgMain", label: "全体区画図 or 住宅写真" },
@@ -116,9 +198,8 @@ export default function Page() {
   ];
 
   return (
-       <main className="min-h-screen bg-[#e6f4ff] text-zinc-800">
-      <div className="grid min-h-screen lg:grid-cols-[220px_1fr]">
-                <aside className="border-r border-sky-200 bg-[#f2f9ff] p-4">
+      <main className="min-h-screen bg-[#e6f4ff] text-zinc-800">
+             <aside className="border-r border-sky-200 bg-[#f2f9ff] p-4">
           <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
             <Image src="/powerway-house-logo.svg" alt="Powerway House logo" width={180} height={180} className="h-auto w-full rounded-xl" priority />
             <div className="mt-3 text-center text-2xl font-extrabold tracking-tight text-sky-700">Powerway House</div>
@@ -146,9 +227,19 @@ export default function Page() {
 
           <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm md:p-6">
             <div className="mb-5 flex flex-wrap gap-2">
-              {["新築住宅仮入力", "中古住宅仮入力", "土地仮入力", "新築マンション仮入力", "中古マンション仮入力"].map((item) => (
-                <span key={item} className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white">{item}</span>
-              ))}
+                {(Object.entries(CATEGORY_PRESETS) as Array<[CategoryKey, CategoryPreset]>).map(([key, preset]) => {
+                const isSelected = selectedCategory === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => onSelectCategory(key)}
+                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${isSelected ? "bg-emerald-600 text-white shadow-sm" : "bg-orange-500 text-white hover:bg-orange-600"}`}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="grid gap-6 xl:grid-cols-2">
