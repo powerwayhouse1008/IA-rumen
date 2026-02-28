@@ -252,8 +252,8 @@ export default function ZumenPage() {
         </div>
 
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4">
-          <div ref={previewRef} className="overflow-x-auto overflow-y-hidden">
-            <div className="mx-auto" style={{ width: `${1123 * sheetScale}px`, height: `${794 * sheetScale}px` }}>
+        <div ref={previewRef} className="overflow-x-auto overflow-y-visible">
+            <div className="mx-auto" style={{ width: `${1123 * sheetScale}px` }}>
               <div className="border border-black bg-white text-black" style={{ width: "1123px", minHeight: "794px", transform: `scale(${sheetScale})`, transformOrigin: "top left" }}>
                 <div className="grid grid-cols-[140px_1fr_260px] border-b border-black">
                   <div className="flex flex-col items-center justify-center border-r border-black p-2">
@@ -274,7 +274,7 @@ export default function ZumenPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-[320px_1fr_260px]">
+                   <div className="grid grid-cols-[300px_1fr_280px]">
                   <div className="border-r border-black p-2">
                     <ImgBox src={data.imgMain} label="外観画像（左上）" h={230} />
                     <div className="mt-2 grid grid-cols-2 gap-2">
