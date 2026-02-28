@@ -40,7 +40,40 @@ const CATEGORY_PRESETS = {
       address: "東京都中央区晴海５丁目5-7",
     },
   },
- const CATEGORY_PRESETS: Record<CategoryKey, CategoryPreset> = {
+  "used-house": {
+    label: "中古住宅仮入力",
+    propertyType: "中古住宅",
+    catchCopy: "内装リフォーム済みで即入居可。南向きで陽当たり良好",
+    districts: "1戸",
+    data: {
+      price: "7980",
+      name: "世田谷区桜丘 中古戸建",
+      access: "小田急線 千歳船橋",
+      walk: "8",
+      address: "東京都世田谷区桜丘2-21-10",
+    },
+  },
+  land: {
+    label: "土地仮入力",
+    propertyType: "土地",
+    catchCopy: "徒歩圏内に学校や公園！毎日が便利で快適な住環境の分譲地",
+    districts: "10区画",
+    data: {
+      price: "4980",
+      name: "練馬区石神井町 売地",
+      access: "西武池袋線 石神井公園",
+      walk: "6",
+      address: "東京都練馬区石神井町1-2-8",
+    },
+  },
+  "new-mansion": {
+    label: "新築マンション仮入力",
+    propertyType: "新築分譲マンション",
+    catchCopy: "駅徒歩4分×ホテルライク共用部。都心生活を格上げする1邸",
+    districts: "42戸",
+    data: {
+      price: "13200",
+      name: "パワーウェイレジデンス南青山",
       access: "東京メトロ銀座線 外苑前",
       walk: "4",
       address: "東京都港区南青山2-10-5",
@@ -59,8 +92,8 @@ const CATEGORY_PRESETS = {
       address: "東京都江東区豊洲4-1-20",
     },
   },
-};
-@@ -69,171 +70,227 @@ const CATEGORY_PRESETS: Record<CategoryKey, CategoryPreset> = {
+} satisfies Record<CategoryKey, CategoryPreset>;
+
 const PROPERTY_TYPE_OPTIONS = ["中古マンション", "新築分譲マンション", "新築分譲住宅", "中古住宅", "土地"];
 
 const SALES_TAGS = ["# 2沿線以上利用可", "# 駐車2台可", "# 環境重視の住宅地", "# 閑静な住宅街", "# 平坦地", "# 角地"];
@@ -170,7 +203,6 @@ export default function Page() {
   }
 
   async function onPick(
-  
     key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr">,
     file?: File
   ) {
@@ -211,7 +243,6 @@ export default function Page() {
   ];
 
   return (
-    
     <main className="min-h-screen bg-[#e6f4ff] text-zinc-800">
       <div className="grid min-h-screen grid-cols-1 md:grid-cols-[260px,1fr]">
         <aside className="border-r border-sky-200 bg-[#f2f9ff] p-4">
@@ -224,7 +255,6 @@ export default function Page() {
             </div>
           </div>
           <nav className="mt-8 space-y-2 text-sm">
-            
             {SIDEBAR_LINKS.map((label, index) => {
               const activeClass =
                 index === 0
@@ -264,7 +294,90 @@ export default function Page() {
                     className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${isSelected ? "bg-emerald-600 text-white shadow-sm" : "bg-orange-500 text-white hover:bg-orange-600"}`}
                   >
                     {preset.label}
-@@ -324,50 +381,81 @@ export default function Page() {
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-2">
+              <div className="space-y-4">
+                <div>
+                  <FieldLabel required>物件名</FieldLabel>
+                  <Input value={data.name} onChange={(e) => update("name", e.target.value)} />
+                </div>
+                <div>
+                  <FieldLabel required>公開先</FieldLabel>
+                  <div className="flex gap-4 text-sm">
+                    <label className="inline-flex items-center gap-2"><input type="checkbox" /> 一般向け公開</label>
+                    <label className="inline-flex items-center gap-2"><input type="checkbox" /> 業者向け公開</label>
+                  </div>
+                </div>
+                <div>
+                  <FieldLabel required>物件管理番号</FieldLabel>
+                  <Input value={managerNo} onChange={(e) => setManagerNo(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <FieldLabel required>物件種別</FieldLabel>
+                    <Select defaultValue="中古マンション">
+                      <option>中古マンション</option>
+                      <option>戸建</option>
+                      <option>土地</option>
+                    </Select>
+                  </div>
+                  <div>
+                    <FieldLabel required>取引形態</FieldLabel>
+                    <Select defaultValue="売主">
+                      <option>売主</option>
+                      <option>媒介</option>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <FieldLabel required>所在地</FieldLabel>
+                  <Input value={data.address} onChange={(e) => update("address", e.target.value)} />
+                </div>
+                <div>
+                  <FieldLabel required>路線 / 駅 / 駅徒歩（メイン掲載）</FieldLabel>
+                  <Input value={data.access} onChange={(e) => update("access", e.target.value)} />
+                  <div className="mt-2 grid grid-cols-[1fr_80px_40px] gap-2">
+                    <Input placeholder="徒歩" value={data.walk} onChange={(e) => update("walk", e.target.value)} />
+                    <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-center text-sm">分</div>
+                    <div />
+                  </div>
+                </div>
+                <div>
+                  <FieldLabel required>価格（万円）</FieldLabel>
+                  <Input value={data.price} onChange={(e) => update("price", e.target.value)} />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <FieldLabel required>キャッチコピー</FieldLabel>
+                  <Input value={catchCopy} onChange={(e) => setCatchCopy(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <FieldLabel required>情報公開日</FieldLabel>
+                    <Input type="date" value={publishDate} onChange={(e) => setPublishDate(e.target.value)} />
+                  </div>
+                  <div>
+                    <FieldLabel required>取引条件有効期限</FieldLabel>
+                    <Input type="date" value={expireDate} onChange={(e) => setExpireDate(e.target.value)} />
+                  </div>
+                </div>
+                <div>
+                  <FieldLabel required>総戸数 / 総区画数</FieldLabel>
+                  <Input value={districts} onChange={(e) => setDistricts(e.target.value)} />
+                </div>
+
+                <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                  <div className="mb-2 text-sm font-semibold">画像アップロード</div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {uploadItems.map(({ key, label }) => (
+                      <div key={key} className="rounded-md border border-zinc-200 bg-white p-2">
+                        <div className="mb-2 text-xs text-zinc-600">{label}</div>
                         <Input type="file" accept="image/*" onChange={(e) => onPick(key, e.target.files?.[0])} />
                         <div className="mt-2 h-24 overflow-hidden rounded border border-zinc-200 bg-zinc-50">
                           {data[key] ? (
@@ -346,3 +459,31 @@ export default function Page() {
                 <div className="flex flex-wrap gap-2">
                   {FEATURE_TAGS.map((tag) => {
                     const active = featureTags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => toggleTag(tag, setFeatureTags)}
+                        className={`rounded-full border px-3 py-1.5 text-sm ${active ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-zinc-300 bg-white text-zinc-600"}`}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+              <div className="text-xs text-zinc-500">{savedAt ? `最終保存: ${savedAt}` : "未保存"}</div>
+              <div className="flex gap-2">
+                <button type="button" onClick={onSaveDraft} className="rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white">一時保存</button>
+                <button type="button" onClick={onGenerate} disabled={!canGo} className="rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">図面を生成してプレビュー</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
