@@ -185,8 +185,35 @@ export default function Page() {
     note: `●ペット飼育可(細則有り)
 ●敷地内駐車場 有空き要確認`,
   });
+  const [houseDetails, setHouseDetails] = useState({
+    right: "所有権",
+    landArea: "2718.30",
+    lot: "",
+    privateRoad: "",
+    roadSurface: "",
+    exclusiveArea: "",
+    layout: "3LDK",
+    structure: "RC造 5階建3階部分",
+    floor: "",
+    builtAt: "",
+    cityPlan: "",
+    zoning: "",
+    buildingCoverage: "",
+    floorAreaRatio: "",
+    parking: "",
+    water: "",
+    gas: "",
+    sewage: "",
+    drain: "",
+    status: "居住中",
+    handover: "即時",
+    note: `●ペット飼育不可
+●駐車場 / 有（継承不可、月額10,000円）
+※空き状況は管理会社へ要確認`,
+  });
 
   const isMansionCategory = selectedCategory === "new-mansion" || selectedCategory === "used-mansion";
+  const isHouseCategory = selectedCategory === "new-house" || selectedCategory === "used-house";
 
   const canGo = useMemo(() => data.price.trim() && data.name.trim() && data.address.trim(), [data]);
 
@@ -196,6 +223,10 @@ export default function Page() {
 
   function updateMansion(key: keyof typeof mansionDetails, value: string) {
     setMansionDetails((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function updateHouse(key: keyof typeof houseDetails, value: string) {
+    setHouseDetails((prev) => ({ ...prev, [key]: value }));
   }
 
   function toggleTag(tag: string, setter: React.Dispatch<React.SetStateAction<string[]>>) {
@@ -402,6 +433,36 @@ export default function Page() {
                 </div>
               </div>
             </div>
+
+            {isHouseCategory && (
+              <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+                <div className="mb-3 text-sm font-semibold text-zinc-700">戸建詳細（新築住宅 / 中古住宅）</div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="md:col-span-2"><FieldLabel>権利</FieldLabel><Input value={houseDetails.right} onChange={(e) => updateHouse("right", e.target.value)} /></div>
+                  <div><FieldLabel>敷地面積 (㎡)</FieldLabel><Input value={houseDetails.landArea} onChange={(e) => updateHouse("landArea", e.target.value)} /></div>
+                  <div><FieldLabel>地目</FieldLabel><Input value={houseDetails.lot} onChange={(e) => updateHouse("lot", e.target.value)} /></div>
+                  <div><FieldLabel>私道</FieldLabel><Input value={houseDetails.privateRoad} onChange={(e) => updateHouse("privateRoad", e.target.value)} /></div>
+                  <div><FieldLabel>接道舗装</FieldLabel><Input value={houseDetails.roadSurface} onChange={(e) => updateHouse("roadSurface", e.target.value)} /></div>
+                  <div><FieldLabel>専有面積 (㎡)</FieldLabel><Input value={houseDetails.exclusiveArea} onChange={(e) => updateHouse("exclusiveArea", e.target.value)} /></div>
+                  <div><FieldLabel>間取り</FieldLabel><Input value={houseDetails.layout} onChange={(e) => updateHouse("layout", e.target.value)} /></div>
+                  <div><FieldLabel>構造・階数</FieldLabel><Input value={houseDetails.structure} onChange={(e) => updateHouse("structure", e.target.value)} /></div>
+                  <div><FieldLabel>所在階</FieldLabel><Input value={houseDetails.floor} onChange={(e) => updateHouse("floor", e.target.value)} /></div>
+                  <div><FieldLabel>築年月</FieldLabel><Input value={houseDetails.builtAt} onChange={(e) => updateHouse("builtAt", e.target.value)} /></div>
+                  <div><FieldLabel>都市計画</FieldLabel><Input value={houseDetails.cityPlan} onChange={(e) => updateHouse("cityPlan", e.target.value)} /></div>
+                  <div><FieldLabel>用途地域</FieldLabel><Input value={houseDetails.zoning} onChange={(e) => updateHouse("zoning", e.target.value)} /></div>
+                  <div><FieldLabel>建ぺい率</FieldLabel><Input value={houseDetails.buildingCoverage} onChange={(e) => updateHouse("buildingCoverage", e.target.value)} /></div>
+                  <div><FieldLabel>容積率</FieldLabel><Input value={houseDetails.floorAreaRatio} onChange={(e) => updateHouse("floorAreaRatio", e.target.value)} /></div>
+                  <div><FieldLabel>駐車場</FieldLabel><Input value={houseDetails.parking} onChange={(e) => updateHouse("parking", e.target.value)} /></div>
+                  <div><FieldLabel>飲用水</FieldLabel><Input value={houseDetails.water} onChange={(e) => updateHouse("water", e.target.value)} /></div>
+                  <div><FieldLabel>ガス</FieldLabel><Input value={houseDetails.gas} onChange={(e) => updateHouse("gas", e.target.value)} /></div>
+                  <div><FieldLabel>汚水</FieldLabel><Input value={houseDetails.sewage} onChange={(e) => updateHouse("sewage", e.target.value)} /></div>
+                  <div><FieldLabel>雑排水</FieldLabel><Input value={houseDetails.drain} onChange={(e) => updateHouse("drain", e.target.value)} /></div>
+                  <div><FieldLabel>現状</FieldLabel><Input value={houseDetails.status} onChange={(e) => updateHouse("status", e.target.value)} /></div>
+                  <div><FieldLabel>引渡</FieldLabel><Input value={houseDetails.handover} onChange={(e) => updateHouse("handover", e.target.value)} /></div>
+                  <div className="md:col-span-2"><FieldLabel>備考</FieldLabel><Textarea rows={4} value={houseDetails.note} onChange={(e) => updateHouse("note", e.target.value)} /></div>
+                </div>
+              </div>
+            )}
 
             {isMansionCategory && (
               <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
