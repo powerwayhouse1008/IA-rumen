@@ -97,6 +97,7 @@ const PROPERTY_TYPE_OPTIONS = ["中古マンション", "新築分譲マンシ�
 
 const SALES_TAGS = ["# 2沿線以上利用可", "# 駐車2台可", "# 環境重視の住宅地", "# 閑静な住宅街", "# 平坦地", "# 角地"];
 const FEATURE_TAGS = ["# シャワートイレ", "# DEN", "# LDKカウンターテーブル", "# ダイニング収納", "# 納戸", "# シューズクローク"];
+const SIDEBAR_LINKS = ["ホーム", "物件新規登録", "転売図面履歴", "物件検索", "お気に入り", "プラン管理", "AI図取り"] as const;
 
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
