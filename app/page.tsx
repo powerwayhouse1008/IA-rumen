@@ -26,7 +26,7 @@ type CategoryPreset = {
   data: ZumenData;
 };
 
-const CATEGORY_PRESETS: Record<CategoryKey, CategoryPreset> = {
+const CATEGORY_PRESETS = {
   "new-house": {
     label: "新築住宅仮入力",
     propertyType: "新築分譲住宅",
@@ -60,7 +60,7 @@ const CATEGORY_PRESETS: Record<CategoryKey, CategoryPreset> = {
     },
   },
 };
-
+@@ -69,171 +70,227 @@ const CATEGORY_PRESETS: Record<CategoryKey, CategoryPreset> = {
 const PROPERTY_TYPE_OPTIONS = ["中古マンション", "新築分譲マンション", "新築分譲住宅", "中古住宅", "土地"];
 
 const SALES_TAGS = ["# 2沿線以上利用可", "# 駐車2台可", "# 環境重視の住宅地", "# 閑静な住宅街", "# 平坦地", "# 角地"];
