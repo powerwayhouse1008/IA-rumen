@@ -1,5 +1,5 @@
 "use client";
-
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -116,10 +116,13 @@ export default function Page() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#f3f4f6] text-zinc-800">
+       <main className="min-h-screen bg-[#e6f4ff] text-zinc-800">
       <div className="grid min-h-screen lg:grid-cols-[220px_1fr]">
-        <aside className="border-r border-zinc-200 bg-white p-4">
-          <div className="text-4xl font-extrabold tracking-tight text-zinc-600">Ret HUB</div>
+                <aside className="border-r border-sky-200 bg-[#f2f9ff] p-4">
+          <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
+            <Image src="/powerway-house-logo.svg" alt="Powerway House logo" width={180} height={180} className="h-auto w-full rounded-xl" priority />
+            <div className="mt-3 text-center text-2xl font-extrabold tracking-tight text-sky-700">Powerway House</div>
+          </div>
           <nav className="mt-8 space-y-2 text-sm">
             <div className="rounded-lg bg-emerald-500 px-4 py-2.5 font-semibold text-white">ホーム</div>
             <div className="rounded-lg bg-rose-500 px-4 py-2.5 font-semibold text-white">物件新規登録</div>
