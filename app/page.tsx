@@ -15,6 +15,18 @@ type ZumenData = {
   imgSub2?: string;
   imgSub3?: string;
   imgQr?: string;
+  contactInfo?: {
+    companyName: string;
+    companyPhone: string;
+    companyAddress: string;
+    companyFax: string;
+    licenseNo: string;
+    transactionType: string;
+    staffName: string;
+    fee: string;
+    inspectionNote: string;
+    propertyNo: string;
+  };
 };
 type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion";
 
@@ -30,7 +42,7 @@ const CATEGORY_PRESETS = {
   "new-house": {
     label: "新築住宅仮入力",
     propertyType: "新築分譲住宅",
-    catchCopy: "暮らしやすさ×癒しの家 未来志向のライデザイン住宅",
+    catchCopy: "暮らしやすさ×癒しの家 未来志向のライフデザイン住宅",
     districts: "10区画",
     data: {
       price: "21500",
@@ -159,6 +171,18 @@ export default function Page() {
   const [savedAt, setSavedAt] = useState<string>("");
   const [salesTags, setSalesTags] = useState<string[]>([]);
   const [featureTags, setFeatureTags] = useState<string[]>([]);
+  const [contactInfo, setContactInfo] = useState({
+    companyName: "株式会社パワーウェイ",
+    companyPhone: "090-6695-1306",
+    companyAddress: "〒101-0025 東京都千代田区神田須田町2-2 3-1芝崎ビル4F",
+    companyFax: "03-5207-2768",
+    licenseNo: "東京都知事（2）第101930号",
+    transactionType: "一般",
+    staffName: "野村",
+    fee: "分かれて",
+    inspectionNote: "☚内見、物件確認",
+    propertyNo: "1368",
+  });
   const [mansionDetails, setMansionDetails] = useState({
     right: "所有権",
     landArea: "25246.57",
@@ -229,6 +253,10 @@ export default function Page() {
     setHouseDetails((prev) => ({ ...prev, [key]: value }));
   }
 
+  function updateContact(key: keyof typeof contactInfo, value: string) {
+    setContactInfo((prev) => ({ ...prev, [key]: value }));
+  }
+
   function toggleTag(tag: string, setter: React.Dispatch<React.SetStateAction<string[]>>) {
     setter((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   }
@@ -247,13 +275,13 @@ export default function Page() {
   }
 
   function onSaveDraft() {
-    const payload = { ...data, category: selectedCategory, propertyType, houseDetails, mansionDetails };
+    const payload = { ...data, category: selectedCategory, propertyType, houseDetails, mansionDetails, contactInfo };
     localStorage.setItem("zumenData", JSON.stringify(payload));
     setSavedAt(new Date().toLocaleString("ja-JP"));
   }
 
   function onGenerate() {
-    const payload = { ...data, category: selectedCategory, propertyType, houseDetails, mansionDetails };
+    const payload = { ...data, category: selectedCategory, propertyType, houseDetails, mansionDetails, contactInfo };
     localStorage.setItem("zumenData", JSON.stringify(payload));
     router.push("/zumen");
   }
@@ -496,6 +524,22 @@ export default function Page() {
                 </div>
               </div>
             )}
+
+            <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+              <div className="mb-3 text-sm font-semibold text-zinc-700">会社・連絡先情報（図面フッター表示）</div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div><FieldLabel>会社名</FieldLabel><Input value={contactInfo.companyName} onChange={(e) => updateContact("companyName", e.target.value)} /></div>
+                <div><FieldLabel>担当者</FieldLabel><Input value={contactInfo.staffName} onChange={(e) => updateContact("staffName", e.target.value)} /></div>
+                <div><FieldLabel>電話番号</FieldLabel><Input value={contactInfo.companyPhone} onChange={(e) => updateContact("companyPhone", e.target.value)} /></div>
+                <div><FieldLabel>FAX</FieldLabel><Input value={contactInfo.companyFax} onChange={(e) => updateContact("companyFax", e.target.value)} /></div>
+                <div className="md:col-span-2"><FieldLabel>住所</FieldLabel><Input value={contactInfo.companyAddress} onChange={(e) => updateContact("companyAddress", e.target.value)} /></div>
+                <div><FieldLabel>免許番号</FieldLabel><Input value={contactInfo.licenseNo} onChange={(e) => updateContact("licenseNo", e.target.value)} /></div>
+                <div><FieldLabel>取引形態</FieldLabel><Input value={contactInfo.transactionType} onChange={(e) => updateContact("transactionType", e.target.value)} /></div>
+                <div><FieldLabel>手数料</FieldLabel><Input value={contactInfo.fee} onChange={(e) => updateContact("fee", e.target.value)} /></div>
+                <div><FieldLabel>物件号</FieldLabel><Input value={contactInfo.propertyNo} onChange={(e) => updateContact("propertyNo", e.target.value)} /></div>
+                <div className="md:col-span-2"><FieldLabel>内見・物件確認文言</FieldLabel><Input value={contactInfo.inspectionNote} onChange={(e) => updateContact("inspectionNote", e.target.value)} /></div>
+              </div>
+            </div>
 
             <div className="mt-6 space-y-5">
               <div>
