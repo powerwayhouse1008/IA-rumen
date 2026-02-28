@@ -1,0 +1,17 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="40" y1="40" x2="472" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5CB8F6"/>
+      <stop offset="1" stop-color="#3098E6"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="64" fill="url(#bg)"/>
+  <circle cx="130" cy="300" r="90" fill="#B8F1E7" fill-opacity="0.82"/>
+  <circle cx="322" cy="238" r="135" fill="#8ED8FF" fill-opacity="0.72"/>
+  <path d="M168 292H336C349.255 292 360 302.745 360 316C360 329.255 349.255 340 336 340H203C196.635 340 190.531 337.471 186.029 332.971L149.029 295.971C144.529 291.469 142 285.365 142 279V258H168V292Z" fill="#F9FBFF" stroke="#2F78B8" stroke-width="8"/>
+  <path d="M206 226L272 166L338 226V282H206V226Z" fill="#F9FBFF" stroke="#2F78B8" stroke-width="8" stroke-linejoin="round"/>
+  <rect x="255" y="242" width="34" height="40" fill="#DDEEFF" stroke="#2F78B8" stroke-width="4"/>
+  <circle cx="272" cy="210" r="8" fill="#2F78B8"/>
+  <text x="256" y="376" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="800" fill="#FFFFFF">POWERWAY</text>
+  <text x="256" y="435" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="800" fill="#FFFFFF">HOUSE</text>
+</svg>
