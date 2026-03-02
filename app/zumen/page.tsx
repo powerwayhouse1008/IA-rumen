@@ -128,6 +128,7 @@ export default function ZumenPage() {
 
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [sheetScale, setSheetScale] = useState(1);
+  const [selectedTheme, setSelectedTheme] = useState<ThemeColorKey>(data?.themeColor ?? "sunset-red");
 
   useEffect(() => {
     const BASE_WIDTH = 1123;
@@ -257,7 +258,7 @@ export default function ZumenPage() {
   };
   const contact = { ...defaultContact, ...data?.contactInfo };
 
-  const theme = THEME_COLORS[data?.themeColor ?? "sunset-red"];
+   const theme = THEME_COLORS[selectedTheme];
 
   if (!data) return null;
 
