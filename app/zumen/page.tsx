@@ -311,7 +311,7 @@ export default function ZumenPage() {
                   </div>
                 </div>
 
-                   <div className="grid grid-cols-[300px_1fr_300px]">
+                   <div className="grid grid-cols-[300px_1fr_280px]">
                   <div className="border-r border-black p-2">
                     <ImgBox src={data.imgMain} label="外観画像（左上）" h={230} />
                     <div className="mt-2 grid grid-cols-2 gap-2">
