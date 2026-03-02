@@ -234,19 +234,20 @@ export default function ZumenPage() {
 
   const remarks = isMansion ? data?.mansionDetails?.note : isHouse ? data?.houseDetails?.note : "※図面と相違する場合は現況を優先します。";
 
-  const contact = {
-    companyName: data?.contactInfo?.companyName || "株式会社パワーウェイ",
-    companyPhone: data?.contactInfo?.companyPhone || "090-6695-1306",
-    companyAddress: data?.contactInfo?.companyAddress || "〒101-0025 東京都千代田区神田須田町2-2 3-1芝崎ビル4F",
-    companyFax: data?.contactInfo?.companyFax || "03-5207-2768",
-    licenseNo: data?.contactInfo?.licenseNo || "東京都知事（2）第101930号",
-    transactionType: data?.contactInfo?.transactionType || "一般",
-    staffName: data?.contactInfo?.staffName || "野村",
-    fee: data?.contactInfo?.fee || "分かれて",
-    inspectionNote: data?.contactInfo?.inspectionNote || "☚内見、物件確認",
-    const theme = THEME_COLORS[data?.themeColor ?? "sunset-red"];
-
+  const defaultContact = {
+    companyName: "株式会社パワーウェイ",
+    companyPhone: "090-6695-1306",
+    companyAddress: "〒101-0025 東京都千代田区神田須田町2-2 3-1芝崎ビル4F",
+    companyFax: "03-5207-2768",
+    licenseNo: "東京都知事（2）第101930号",
+    transactionType: "一般",
+    staffName: "野村",
+    fee: "分かれて",
+    inspectionNote: "☚内見、物件確認",
   };
+  const contact = { ...defaultContact, ...data?.contactInfo };
+
+  const theme = THEME_COLORS[data?.themeColor ?? "sunset-red"];
 
   if (!data) return null;
 
