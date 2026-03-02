@@ -26,19 +26,11 @@ type ZumenData = {
     staffName: string;
     fee: string;
     inspectionNote: string;
-  
   };
 };
 type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion";
-type ThemeColorKey = "sunset-red" | "ocean-blue" | "forest-green" | "royal-purple" | "charcoal-gold";
+type ThemeColorKey = "sunset-red" | "ocean-blue" | "forest-green" | "royal-purple" | "charcoal-gold" | "sky-blue";
 
-const THEME_COLOR_OPTIONS: Array<{ key: ThemeColorKey; label: string; color: string }> = [
-  { key: "sunset-red", label: "Sunset Red", color: "#b30000" },
-  { key: "ocean-blue", label: "Ocean Blue", color: "#1d4ed8" },
-  { key: "forest-green", label: "Forest Green", color: "#0f766e" },
-  { key: "royal-purple", label: "Royal Purple", color: "#6d28d9" },
-  { key: "charcoal-gold", label: "Charcoal Gold", color: "#9a6b00" },
-];
 type CategoryPreset = {
   label: string;
   propertyType: string;
@@ -133,8 +125,8 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
 function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-     {...rest}
-      className={`w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white ${className ?? ""}`}
+      {...props}
+      className={`w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white ${props.className ?? ""}`}
     />
   );
 }
@@ -142,8 +134,8 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
 function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
-      {...rest}
-      className={`w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white ${className ?? ""}`}
+      {...props}
+      className={`w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white ${props.className ?? ""}`}
     />
   );
 }
@@ -151,8 +143,8 @@ function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
 function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
-     {...rest}
-      className={`w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white ${className ?? ""}`}
+      {...props}
+      className={`w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white ${props.className ?? ""}`}
     />
   );
 }
@@ -171,8 +163,8 @@ export default function Page() {
 
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey>("new-house");
   const [propertyType, setPropertyType] = useState(CATEGORY_PRESETS["new-house"].propertyType);
- const [data, setData] = useState<ZumenData>(CATEGORY_PRESETS["new-house"].data);
-   const [catchCopy, setCatchCopy] = useState(CATEGORY_PRESETS["new-house"].catchCopy);
+  const [data, setData] = useState<ZumenData>(CATEGORY_PRESETS["new-house"].data);
+  const [catchCopy, setCatchCopy] = useState(CATEGORY_PRESETS["new-house"].catchCopy);
   const [managerNo, setManagerNo] = useState("12345678");
   const [publishDate, setPublishDate] = useState("2025-06-01");
   const [expireDate, setExpireDate] = useState("2025-12-31");
@@ -190,9 +182,9 @@ export default function Page() {
     staffName: "野村",
     fee: "分かれて",
     inspectionNote: "☚内見、物件確認",
-    
   });
-  const [themeColor, setThemeColor] = useState<ThemeColorKey>("sunset-red");
+  const [themeColor] = useState<ThemeColorKey>("sunset-red");
+  const [highlightSection, setHighlightSection] = useState<"basic" | "house" | "mansion" | "contact" | null>(null);
   const [mansionDetails, setMansionDetails] = useState({
     right: "所有権",
     landArea: "25246.57",
@@ -252,18 +244,22 @@ export default function Page() {
   const canGo = useMemo(() => data.price.trim() && data.name.trim() && data.address.trim(), [data]);
 
   function update<K extends keyof ZumenData>(key: K, value: ZumenData[K]) {
+    setHighlightSection("basic");
     setData((prev) => ({ ...prev, [key]: value }));
   }
 
   function updateMansion(key: keyof typeof mansionDetails, value: string) {
+    setHighlightSection("mansion");
     setMansionDetails((prev) => ({ ...prev, [key]: value }));
   }
 
   function updateHouse(key: keyof typeof houseDetails, value: string) {
+    setHighlightSection("house");
     setHouseDetails((prev) => ({ ...prev, [key]: value }));
   }
 
   function updateContact(key: keyof typeof contactInfo, value: string) {
+    setHighlightSection("contact");
     setContactInfo((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -295,6 +291,7 @@ export default function Page() {
     localStorage.setItem("zumenData", JSON.stringify(payload));
     router.push("/zumen");
   }
+
   function onSelectCategory(category: CategoryKey) {
     const preset = CATEGORY_PRESETS[category];
     setSelectedCategory(category);
@@ -355,7 +352,7 @@ export default function Page() {
 
           <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm md:p-6">
             <div className="mb-5 flex flex-wrap gap-2">
-                {(Object.entries(CATEGORY_PRESETS) as Array<[CategoryKey, CategoryPreset]>).map(([key, preset]) => {
+              {(Object.entries(CATEGORY_PRESETS) as Array<[CategoryKey, CategoryPreset]>).map(([key, preset]) => {
                 const isSelected = selectedCategory === key;
                 return (
                   <button
@@ -475,7 +472,7 @@ export default function Page() {
             </div>
 
             {isHouseCategory && (
-               <div className={`mt-6 rounded-lg border p-4 transition ${highlightSection === "house" ? "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-200" : "border-zinc-200 bg-zinc-50"}`}>
+              <div className={`mt-6 rounded-lg border p-4 transition ${highlightSection === "house" ? "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-200" : "border-zinc-200 bg-zinc-50"}`}>
                 <div className="mb-3 text-sm font-semibold text-zinc-700">戸建詳細（新築住宅 / 中古住宅）</div>
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="md:col-span-2"><FieldLabel>権利</FieldLabel><Input value={houseDetails.right} onChange={(e) => updateHouse("right", e.target.value)} /></div>
@@ -505,7 +502,7 @@ export default function Page() {
             )}
 
             {isMansionCategory && (
-               <div className={`mt-6 rounded-lg border p-4 transition ${highlightSection === "mansion" ? "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-200" : "border-zinc-200 bg-zinc-50"}`}>
+              <div className={`mt-6 rounded-lg border p-4 transition ${highlightSection === "mansion" ? "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-200" : "border-zinc-200 bg-zinc-50"}`}>
                 <div className="mb-3 text-sm font-semibold text-zinc-700">マンション詳細（新築マンション / 中古マンション）</div>
                 <div className="grid gap-3 md:grid-cols-2">
                   <div><FieldLabel>権利</FieldLabel><Input value={mansionDetails.right} onChange={(e) => updateMansion("right", e.target.value)} /></div>
@@ -549,25 +546,7 @@ export default function Page() {
                 <div className="md:col-span-2"><FieldLabel>内見・物件確認文言</FieldLabel><Input value={contactInfo.inspectionNote} onChange={(e) => updateContact("inspectionNote", e.target.value)} /></div>
               </div>
             </div>
-              <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-              <div className="mb-3 text-sm font-semibold text-zinc-700">図面カラーテーマ</div>
-              <div className="grid gap-2 md:grid-cols-3">
-                {THEME_COLOR_OPTIONS.map((theme) => {
-                  const active = theme.key === themeColor;
-                  return (
-                    <button
-                      key={theme.key}
-                      type="button"
-                      onClick={() => setThemeColor(theme.key)}
-                      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition ${active ? "border-zinc-900 bg-white" : "border-zinc-300 bg-white hover:border-zinc-500"}`}
-                    >
-                      <span className="inline-block h-4 w-4 rounded-full" style={{ backgroundColor: theme.color }} />
-                      {theme.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+
             <div className="mt-6 space-y-5">
               <div>
                 <div className="mb-2 text-sm font-semibold text-zinc-700">分譲地特長（6個まで選択可）</div>
