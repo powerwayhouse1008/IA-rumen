@@ -15,6 +15,7 @@ type ZumenData = {
   imgSub2?: string;
   imgSub3?: string;
   imgQr?: string;
+  themeColor?: ThemeColorKey;
   contactInfo?: {
     companyName: string;
     companyPhone: string;
@@ -25,11 +26,19 @@ type ZumenData = {
     staffName: string;
     fee: string;
     inspectionNote: string;
-    propertyNo: string;
+  
   };
 };
 type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion";
+type ThemeColorKey = "sunset-red" | "ocean-blue" | "forest-green" | "royal-purple" | "charcoal-gold";
 
+const THEME_COLOR_OPTIONS: Array<{ key: ThemeColorKey; label: string; color: string }> = [
+  { key: "sunset-red", label: "Sunset Red", color: "#b30000" },
+  { key: "ocean-blue", label: "Ocean Blue", color: "#1d4ed8" },
+  { key: "forest-green", label: "Forest Green", color: "#0f766e" },
+  { key: "royal-purple", label: "Royal Purple", color: "#6d28d9" },
+  { key: "charcoal-gold", label: "Charcoal Gold", color: "#9a6b00" },
+];
 type CategoryPreset = {
   label: string;
   propertyType: string;
@@ -181,8 +190,9 @@ export default function Page() {
     staffName: "野村",
     fee: "分かれて",
     inspectionNote: "☚内見、物件確認",
-    propertyNo: "1368",
+    
   });
+  const [themeColor, setThemeColor] = useState<ThemeColorKey>("sunset-red");
   const [mansionDetails, setMansionDetails] = useState({
     right: "所有権",
     landArea: "25246.57",
@@ -275,13 +285,13 @@ export default function Page() {
   }
 
   function onSaveDraft() {
-    const payload = { ...data, category: selectedCategory, propertyType, houseDetails, mansionDetails, contactInfo };
+    const payload = { ...data, category: selectedCategory, propertyType, houseDetails, mansionDetails, contactInfo, themeColor };
     localStorage.setItem("zumenData", JSON.stringify(payload));
     setSavedAt(new Date().toLocaleString("ja-JP"));
   }
 
   function onGenerate() {
-    const payload = { ...data, category: selectedCategory, propertyType, houseDetails, mansionDetails, contactInfo };
+    const payload = { ...data, category: selectedCategory, propertyType, houseDetails, mansionDetails, contactInfo, themeColor };
     localStorage.setItem("zumenData", JSON.stringify(payload));
     router.push("/zumen");
   }
@@ -536,11 +546,28 @@ export default function Page() {
                 <div><FieldLabel>免許番号</FieldLabel><Input value={contactInfo.licenseNo} onChange={(e) => updateContact("licenseNo", e.target.value)} /></div>
                 <div><FieldLabel>取引形態</FieldLabel><Input value={contactInfo.transactionType} onChange={(e) => updateContact("transactionType", e.target.value)} /></div>
                 <div><FieldLabel>手数料</FieldLabel><Input value={contactInfo.fee} onChange={(e) => updateContact("fee", e.target.value)} /></div>
-                <div><FieldLabel>物件号</FieldLabel><Input value={contactInfo.propertyNo} onChange={(e) => updateContact("propertyNo", e.target.value)} /></div>
                 <div className="md:col-span-2"><FieldLabel>内見・物件確認文言</FieldLabel><Input value={contactInfo.inspectionNote} onChange={(e) => updateContact("inspectionNote", e.target.value)} /></div>
               </div>
             </div>
-
+              <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+              <div className="mb-3 text-sm font-semibold text-zinc-700">図面カラーテーマ</div>
+              <div className="grid gap-2 md:grid-cols-3">
+                {THEME_COLOR_OPTIONS.map((theme) => {
+                  const active = theme.key === themeColor;
+                  return (
+                    <button
+                      key={theme.key}
+                      type="button"
+                      onClick={() => setThemeColor(theme.key)}
+                      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition ${active ? "border-zinc-900 bg-white" : "border-zinc-300 bg-white hover:border-zinc-500"}`}
+                    >
+                      <span className="inline-block h-4 w-4 rounded-full" style={{ backgroundColor: theme.color }} />
+                      {theme.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <div className="mt-6 space-y-5">
               <div>
                 <div className="mb-2 text-sm font-semibold text-zinc-700">分譲地特長（6個まで選択可）</div>
