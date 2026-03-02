@@ -5,6 +5,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { InfoTable, SectionTitle } from "../../components/JpInfoTable";
 
 type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion";
+type ThemeColorKey = "sunset-red" | "ocean-blue" | "forest-green" | "royal-purple" | "charcoal-gold";
+
+const THEME_COLORS: Record<ThemeColorKey, { brand: string; section: string; label: string }> = {
+  "sunset-red": { brand: "#b30000", section: "#f3c9b8", label: "#fde7dd" },
+  "ocean-blue": { brand: "#1d4ed8", section: "#bfd7ff", label: "#e1ecff" },
+  "forest-green": { brand: "#0f766e", section: "#bfe6dc", label: "#e2f5ef" },
+  "royal-purple": { brand: "#6d28d9", section: "#d8c2ff", label: "#eee4ff" },
+  "charcoal-gold": { brand: "#9a6b00", section: "#ecd9ad", label: "#f8edd2" },
+};
 
 type HouseDetails = {
   right: string;
@@ -73,6 +82,7 @@ type ZumenData = {
   imgSub2?: string;
   imgSub3?: string;
   imgQr?: string;
+  themeColor?: ThemeColorKey;
   contactInfo?: {
     companyName: string;
     companyPhone: string;
@@ -83,7 +93,6 @@ type ZumenData = {
     staffName: string;
     fee: string;
     inspectionNote: string;
-    propertyNo: string;
   };
 };
 
@@ -235,7 +244,8 @@ export default function ZumenPage() {
     staffName: data?.contactInfo?.staffName || "野村",
     fee: data?.contactInfo?.fee || "分かれて",
     inspectionNote: data?.contactInfo?.inspectionNote || "☚内見、物件確認",
-    propertyNo: data?.contactInfo?.propertyNo || "1368",
+    const theme = THEME_COLORS[data?.themeColor ?? "sunset-red"];
+
   };
 
   if (!data) return null;
@@ -299,23 +309,23 @@ export default function ZumenPage() {
                   </div>
 
                   <div className="p-2">
-                    <SectionTitle>物件概要</SectionTitle>
-                    <InfoTable rows={summaryRows} />
+                    <SectionTitle bgColor={theme.section}>物件概要</SectionTitle>
+                    <InfoTable rows={summaryRows} labelBgColor={theme.label} />
 
                     {managementRows.length > 0 && (
                       <div className="mt-2">
-                        <SectionTitle>{isMansion ? "管理費等" : "制限・施設"}</SectionTitle>
-                        <InfoTable rows={managementRows} />
+                        <SectionTitle bgColor={theme.section}>{isMansion ? "管理費等" : "制限・施設"}</SectionTitle>
+                        <InfoTable rows={managementRows} labelBgColor={theme.label} />
                       </div>
                     )}
 
                     <div className="mt-2">
-                      <SectionTitle>設備・引渡</SectionTitle>
-                      <InfoTable rows={facilityRows} />
+                      <SectionTitle bgColor={theme.section}>設備・引渡</SectionTitle>
+                      <InfoTable rows={facilityRows} labelBgColor={theme.label} />
                     </div>
 
                     <div className="mt-2">
-                      <SectionTitle>備考</SectionTitle>
+                       <SectionTitle bgColor={theme.section}>備考</SectionTitle>
                       <div className="min-h-[120px] whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px]">
                         {remarks || "※図面と相違する場合は現況を優先します。"}
                       </div>
@@ -324,24 +334,24 @@ export default function ZumenPage() {
                 </div>
 
                 <div className="grid grid-cols-[210px_1fr] border-t border-black">
-                  <div className="bg-[#b30000] px-3 py-2 text-white">
+                  <div className="px-3 py-2 text-white" style={{ backgroundColor: theme.brand }}>
                     <div className="text-2xl font-extrabold leading-tight tracking-widest">POWERWAY HOUSE</div>
                     <div className="mt-0.5 text-[11px]">不動産　販売・賃貸・管理</div>
                   </div>
-                  <div className="grid grid-cols-[1fr_58px_220px]">
+                     <div className="grid grid-cols-[1fr_88px_220px]">
                     <div className="px-2 py-1 text-[10px] leading-4">
                       <div className="grid grid-cols-[1fr_auto] gap-2">
                         <div className="font-semibold">{contact.licenseNo}</div>
-                        <div className="font-semibold">FAX：{contact.companyFax}</div>
+                        <div className="font-semibold">TEL：{contact.companyPhone}　FAX：{contact.companyFax}</div>
                       </div>
                       <div className="text-[21px] font-extrabold leading-tight">{contact.companyName}</div>
-                      <div className="font-semibold">担当者：{contact.companyPhone}</div>
+                       <div className="font-semibold">担当者：{contact.staffName}</div>
                       <div className="truncate text-[10px]">{contact.companyAddress}</div>
                     </div>
                     <div className="flex items-center justify-center border-l border-black px-1 py-1">
                       {data.imgQr ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={data.imgQr} alt="QR" className="h-12 w-12 object-cover" />
+                        <img src={data.imgQr} alt="QR" className="h-20 w-20 object-cover" />
                       ) : (
                         <div className="text-[10px] text-zinc-500">QR</div>
                       )}
@@ -350,7 +360,7 @@ export default function ZumenPage() {
                       <div className="grid grid-cols-[1fr_1fr] items-start border-b border-black px-2 py-1">
                         <div>
                           <div className="font-semibold">{contact.inspectionNote}</div>
-                          <div className="mt-0.5">物番：{contact.propertyNo}</div>
+                      
                         </div>
                         <div className="text-right">
                           <div>取引形態：{contact.transactionType}</div>
