@@ -133,8 +133,8 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
 function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      {...props}
-      className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+     {...rest}
+      className={`w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white ${className ?? ""}`}
     />
   );
 }
@@ -142,8 +142,8 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
 function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
-      {...props}
-      className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+      {...rest}
+      className={`w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white ${className ?? ""}`}
     />
   );
 }
@@ -151,8 +151,8 @@ function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
 function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
-      {...props}
-      className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+     {...rest}
+      className={`w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white ${className ?? ""}`}
     />
   );
 }
@@ -475,7 +475,7 @@ export default function Page() {
             </div>
 
             {isHouseCategory && (
-              <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+               <div className={`mt-6 rounded-lg border p-4 transition ${highlightSection === "house" ? "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-200" : "border-zinc-200 bg-zinc-50"}`}>
                 <div className="mb-3 text-sm font-semibold text-zinc-700">戸建詳細（新築住宅 / 中古住宅）</div>
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="md:col-span-2"><FieldLabel>権利</FieldLabel><Input value={houseDetails.right} onChange={(e) => updateHouse("right", e.target.value)} /></div>
@@ -505,7 +505,7 @@ export default function Page() {
             )}
 
             {isMansionCategory && (
-              <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+               <div className={`mt-6 rounded-lg border p-4 transition ${highlightSection === "mansion" ? "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-200" : "border-zinc-200 bg-zinc-50"}`}>
                 <div className="mb-3 text-sm font-semibold text-zinc-700">マンション詳細（新築マンション / 中古マンション）</div>
                 <div className="grid gap-3 md:grid-cols-2">
                   <div><FieldLabel>権利</FieldLabel><Input value={mansionDetails.right} onChange={(e) => updateMansion("right", e.target.value)} /></div>
@@ -535,7 +535,7 @@ export default function Page() {
               </div>
             )}
 
-            <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+            <div className={`mt-6 rounded-lg border p-4 transition ${highlightSection === "contact" ? "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-200" : "border-zinc-200 bg-zinc-50"}`}>
               <div className="mb-3 text-sm font-semibold text-zinc-700">会社・連絡先情報（図面フッター表示）</div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div><FieldLabel>会社名</FieldLabel><Input value={contactInfo.companyName} onChange={(e) => updateContact("companyName", e.target.value)} /></div>
