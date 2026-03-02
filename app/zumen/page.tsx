@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { InfoTable, SectionTitle } from "../../components/JpInfoTable";
 
 type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion";
-type ThemeColorKey = "sunset-red" | "ocean-blue" | "forest-green" | "royal-purple" | "charcoal-gold";
+type ThemeColorKey = "sunset-red" | "ocean-blue" | "forest-green" | "royal-purple" | "charcoal-gold" | "sky-blue";
 
 const THEME_COLORS: Record<ThemeColorKey, { brand: string; section: string; label: string }> = {
   "sunset-red": { brand: "#b30000", section: "#f3c9b8", label: "#fde7dd" },
@@ -13,7 +13,17 @@ const THEME_COLORS: Record<ThemeColorKey, { brand: string; section: string; labe
   "forest-green": { brand: "#0f766e", section: "#bfe6dc", label: "#e2f5ef" },
   "royal-purple": { brand: "#6d28d9", section: "#d8c2ff", label: "#eee4ff" },
   "charcoal-gold": { brand: "#9a6b00", section: "#ecd9ad", label: "#f8edd2" },
+  "sky-blue": { brand: "#0ea5e9", section: "#d8f1ff", label: "#edf8ff" },
 };
+
+const THEME_PICKER_COLORS: Array<{ key: ThemeColorKey; color: string }> = [
+  { key: "sunset-red", color: "#b30000" },
+  { key: "ocean-blue", color: "#1d4ed8" },
+  { key: "forest-green", color: "#0f766e" },
+  { key: "royal-purple", color: "#6d28d9" },
+  { key: "charcoal-gold", color: "#9a6b00" },
+  { key: "sky-blue", color: "#7dd3fc" },
+];
 
 type HouseDetails = {
   right: string;
@@ -256,7 +266,22 @@ export default function ZumenPage() {
       <div className="mx-auto w-full max-w-[1500px]">
         <div className="mb-3 flex items-center justify-between">
           <Link href="/" className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">← 戻る</Link>
-          <div className="flex items-center gap-2">
+                   <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 rounded-full border border-zinc-300 bg-white px-2 py-1">
+              {THEME_PICKER_COLORS.map((item) => {
+                const active = item.key === selectedTheme;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    aria-label={`theme-${item.key}`}
+                    onClick={() => setSelectedTheme(item.key)}
+                    className={`h-5 w-5 rounded-full border transition ${active ? "scale-110 border-zinc-900" : "border-zinc-300"}`}
+                    style={{ backgroundColor: item.color }}
+                  />
+                );
+              })}
+            </div>
             <button type="button" className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">一時保存</button>
             <button type="button" className="rounded-md bg-rose-500 px-4 py-2 text-sm font-semibold text-white">次のステップ</button>
           </div>
@@ -266,7 +291,7 @@ export default function ZumenPage() {
         <div ref={previewRef} className="overflow-x-auto overflow-y-visible">
             <div className="mx-auto" style={{ width: `${1123 * sheetScale}px` }}>
               <div className="border border-black bg-white text-black" style={{ width: "1123px", minHeight: "794px", transform: `scale(${sheetScale})`, transformOrigin: "top left" }}>
-                <div className="grid grid-cols-[140px_1fr_260px] border-b border-black">
+                   <div className="grid grid-cols-[140px_1fr_300px] border-b border-black">
                   <div className="flex flex-col items-center justify-center border-r border-black p-2">
                     <div className="text-3xl font-extrabold leading-none">{Number(data.price || 0).toLocaleString()}</div>
                     <div className="mt-1 text-xs font-bold">万円</div>
@@ -285,7 +310,7 @@ export default function ZumenPage() {
                   </div>
                 </div>
 
-                   <div className="grid grid-cols-[300px_1fr_280px]">
+                   <div className="grid grid-cols-[300px_1fr_300px]">
                   <div className="border-r border-black p-2">
                     <ImgBox src={data.imgMain} label="外観画像（左上）" h={230} />
                     <div className="mt-2 grid grid-cols-2 gap-2">
