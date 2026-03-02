@@ -112,8 +112,6 @@ const PROPERTY_TYPE_OPTIONS = ["中古マンション", "新築分譲マンシ�
 const SALES_TAGS = ["# 2沿線以上利用可", "# 駐車2台可", "# 環境重視の住宅地", "# 閑静な住宅街", "# 平坦地", "# 角地"];
 const FEATURE_TAGS = ["# シャワートイレ", "# DEN", "# LDKカウンターテーブル", "# ダイニング収納", "# 納戸", "# シューズクローク"];
 
-const SIDEBAR_LINKS = ["ホーム", "物件新規登録", "転売図面履歴", "物件検索", "お気に入り", "プラン管理", "AI図取り"] as const;
-
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
     <label className="mb-1 block text-sm font-semibold text-zinc-700">
@@ -311,38 +309,14 @@ export default function Page() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#e6f4ff] text-zinc-800">
-      <div className="grid min-h-screen grid-cols-1 md:grid-cols-[260px,1fr]">
-        <aside className="border-r border-sky-200 bg-[#f2f9ff] p-4">
-          <div className="rounded-2xl border border-sky-100 bg-white p-3.5 shadow-sm">
-            <Image src="/powerway-house-logo.svg" alt="Powerway House logo" width={128} height={128} className="mx-auto h-28 w-28 rounded-2xl" priority />
-            <div className="mt-3 text-center text-4xl font-extrabold leading-tight tracking-tight text-sky-700">
-              Powerway
-              <br />
-              House
-            </div>
-          </div>
-          <nav className="mt-8 space-y-2 text-sm">
-            {SIDEBAR_LINKS.map((label, index) => {
-              const activeClass =
-                index === 0
-                  ? "bg-emerald-500 font-semibold text-white"
-                  : index === 1
-                    ? "bg-rose-500 font-semibold text-white"
-                    : "hover:bg-zinc-100";
-
-              return (
-                <div key={label} className={`rounded-lg px-4 py-2.5 ${activeClass}`}>
-                  {label}
-                </div>
-              );
-            })}
-          </nav>
-        </aside>
-
-        <section className="p-4 md:p-6">
+   <main className="min-h-screen bg-[#e6f4ff] p-4 text-zinc-800 md:p-6">
+      <div className="mx-auto w-full max-w-[1500px]">
+        <section>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-xl font-bold md:text-2xl">新規登録 STEP1 基本情報</h1>
+            <div className="flex items-center gap-3">
+              <Image src="/powerway-house-logo.svg" alt="Powerway House logo" width={56} height={56} className="h-14 w-14 rounded-xl" priority />
+              <h1 className="text-xl font-bold md:text-2xl">新規登録 STEP1 基本情報</h1>
+            </div>
             <div className="flex flex-wrap gap-2">
               <button type="button" className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">変更を破棄</button>
               <button type="button" onClick={onSaveDraft} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">一時保存</button>
