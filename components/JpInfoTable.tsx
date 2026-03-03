@@ -27,7 +27,7 @@ export function InfoTable({
     ? "grid-cols-[92px_minmax(96px,auto)_92px_minmax(96px,auto)] w-fit"
     : "grid-cols-[92px_1fr_92px_1fr]";
   const valueCellClass = autoValueWidth ? "px-2 py-1 whitespace-nowrap border-r border-black" : "px-2 py-1 whitespace-pre-wrap border-r border-black";
-  const lastValueCellClass = autoValueWidth ? "px-2 py-1 whitespace-nowrap" : "px-2 py-1 whitespace-pre-wrap";";
+    const lastValueCellClass = autoValueWidth ? "px-2 py-1 whitespace-nowrap" : "px-2 py-1 whitespace-pre-wrap";
 
   return (
     <div className={`border border-black border-t-0 text-[11px] ${autoValueWidth ? "w-fit" : ""}`}>
