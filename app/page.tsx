@@ -265,8 +265,16 @@ export default function Page() {
     setContactInfo((prev) => ({ ...prev, [key]: value }));
   }
 
-  function toggleTag(tag: string, setter: React.Dispatch<React.SetStateAction<string[]>>) {
-    setter((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  function toggleTag(tag: string, max: number, setter: React.Dispatch<React.SetStateAction<string[]>>) {
+    setter((prev) => {
+      if (prev.includes(tag)) {
+        return prev.filter((t) => t !== tag);
+      }
+      if (prev.length >= max) {
+        return prev;
+      }
+      return [...prev, tag];
+    });
   }
 
   async function onPick(
@@ -577,16 +585,18 @@ export default function Page() {
               </div>
               
               <div>
-                <div className="mb-2 text-sm font-semibold text-zinc-700">分譲地特長（6個まで選択可）</div>
+                 <div className="mb-2 text-sm font-semibold text-zinc-700">分譲地特長（{salesTags.length}/6）</div>
                 <div className="flex flex-wrap gap-2">
                   {SALES_TAGS.map((tag) => {
                     const active = salesTags.includes(tag);
+                    const limitReached = salesTags.length >= 6 && !active;
                     return (
                       <button
                         key={tag}
                         type="button"
-                        onClick={() => toggleTag(tag, setSalesTags)}
-                        className={`rounded-full border px-3 py-1.5 text-sm ${active ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-zinc-300 bg-white text-zinc-600"}`}
+                         onClick={() => toggleTag(tag, 6, setSalesTags)}
+                        disabled={limitReached}
+                        className={`rounded-full border px-3 py-1.5 text-sm transition ${active ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-zinc-300 bg-white text-zinc-600"} ${limitReached ? "cursor-not-allowed opacity-40" : ""}`}
                       >
                         {tag}
                       </button>
@@ -596,16 +606,18 @@ export default function Page() {
               </div>
 
               <div>
-                <div className="mb-2 text-sm font-semibold text-zinc-700">特徴・仕様（10個まで選択可）</div>
+               <div className="mb-2 text-sm font-semibold text-zinc-700">特徴・仕様（{featureTags.length}/10）</div>
                 <div className="flex flex-wrap gap-2">
                   {FEATURE_TAGS.map((tag) => {
                     const active = featureTags.includes(tag);
+                    const limitReached = featureTags.length >= 10 && !active;
                     return (
                       <button
                         key={tag}
                         type="button"
-                        onClick={() => toggleTag(tag, setFeatureTags)}
-                        className={`rounded-full border px-3 py-1.5 text-sm ${active ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-zinc-300 bg-white text-zinc-600"}`}
+                        onClick={() => toggleTag(tag, 10, setFeatureTags)}
+                        disabled={limitReached}
+                        className={`rounded-full border px-3 py-1.5 text-sm transition ${active ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-zinc-300 bg-white text-zinc-600"} ${limitReached ? "cursor-not-allowed opacity-40" : ""}`}
                       >
                         {tag}
                       </button>
