@@ -260,8 +260,8 @@ export default function ZumenPage() {
 
   const remarks = isMansion ? data?.mansionDetails?.note : isHouse ? data?.houseDetails?.note : "※図面と相違する場合は現況を優先します。";
  const layoutLabel = (isMansion ? data?.mansionDetails?.layout : isHouse ? data?.houseDetails?.layout : data?.propertyType) || "4LDK + WIC";
-  const featureRows = data?.featureTags?.length ? data.featureTags.map((item) => item.replace(/^#\s*/, "")) : ["浴室乾燥", "食洗機", "床暖房", "TVモニタ", "宅配BOX", "追焚", "複層ガラス", "低炭素", "防犯カメラ", "オートロック"];
-  const salesRows = data?.salesTags?.length ? data.salesTags.map((item) => item.replace(/^#\s*/, "")) : ["2沿線以上利用可", "駐車2台可", "環境重視の住宅地", "閑静な住宅街", "平坦地", "角地"];
+  const featureRows = data?.featureTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
+  const salesRows = data?.salesTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
   const lifeInfoRows = useMemo(() => {
     if (summaryRows.length > 1) {
       return summaryRows.slice(1, 7).map((row) => `□${row.label}：${row.value}`);
@@ -322,7 +322,17 @@ export default function ZumenPage() {
     <main className="min-h-screen bg-[#f3f4f6] p-2 md:p-4">
       <div className="mx-auto w-full max-w-[1500px]">
         <div className="mb-3 flex items-center justify-between">
-          <Link href="/" className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">← 戻る</Link>
+          {selectedTemplate ? (
+            <button
+              type="button"
+              onClick={() => setSelectedTemplate(null)}
+              className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700"
+            >
+              ← テンプレート選択に戻る
+            </button>
+          ) : (
+            <Link href="/" className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">← 入力画面に戻る</Link>
+          )}
                    {selectedTemplate && <div className="flex items-center gap-3">
             <div className="text-sm font-semibold">デザインカラー選択</div>
             <div className="flex items-center gap-2 rounded-full border border-zinc-300 bg-white px-2 py-1">
@@ -352,12 +362,12 @@ export default function ZumenPage() {
               {TEMPLATE_OPTIONS.map((template) => (
                 <div key={template.key} className="rounded-xl border border-zinc-200 p-3">
                   <div className="h-36 border border-zinc-400 bg-zinc-100 p-2">
-                    <div className={`h-full w-full border ${template.key === "classic" ? "bg-[#f6f0e6]" : template.key === "pop" ? "bg-[#f1f5f9]" : "bg-[#faf7f5]"}`}>
-                      <div className="h-7 border-b bg-white/70" />
-                      <div className="grid h-[calc(100%-28px)] grid-cols-3 gap-1 p-1">
-                        <div className="bg-zinc-300" />
-                        <div className="bg-zinc-200" />
-                        <div className="bg-zinc-300" />
+                    <div className={`grid h-full w-full gap-1 border p-1 ${template.key === "classic" ? "bg-[#f6f0e6]" : template.key === "pop" ? "bg-[#f1f5f9]" : "bg-[#faf7f5]"}`}>
+                      <div className="h-7 border bg-white/70" />
+                      <div className="grid grid-cols-3 gap-1">
+                        <ImgBox src={data.imgMain} label="メイン" h={72} />
+                        <ImgBox src={data.imgPlan} label="間取り" fit="contain" h={72} />
+                        <ImgBox src={data.imgSub1} label="サブ" h={72} />
                       </div>
                     </div>
                   </div>
@@ -402,11 +412,13 @@ export default function ZumenPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-6 border-b border-black text-center text-sm font-semibold text-white">
-                       {salesRows.slice(0, 6).map((tag) => (
-                        <div key={tag} className="border-r border-black py-2 last:border-r-0" style={{ backgroundColor: theme.brand }}>{tag}</div>
-                      ))}
-                    </div>
+                     {salesRows.length > 0 && (
+                      <div className="grid grid-cols-6 border-b border-black text-center text-sm font-semibold text-white">
+                        {salesRows.slice(0, 6).map((tag) => (
+                          <div key={tag} className="border-r border-black py-2 last:border-r-0" style={{ backgroundColor: theme.brand }}>{tag}</div>
+                        ))}
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-[300px_440px_383px] border-b border-black">
                       <div className="border-r border-black p-2">
@@ -432,12 +444,16 @@ export default function ZumenPage() {
                           <ImgBox src={data.imgSub1} label="サブ画像1" h={180} />
                           <ImgBox src={data.imgSub2} label="サブ画像2" h={180} />
                         </div>
-                          <div className="mt-3 text-lg font-bold" style={{ color: theme.brand }}>建物備・仕様</div>
-                        <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
-                         {featureRows.slice(0, 10).map((item) => (
-                            <div key={item} className="flex h-12 items-center justify-center border border-zinc-400 px-1">{item}</div>
-                          ))}
-                        </div>
+                         {featureRows.length > 0 && (
+                          <>
+                            <div className="mt-3 text-lg font-bold" style={{ color: theme.brand }}>建物備・仕様</div>
+                            <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
+                              {featureRows.slice(0, 10).map((item) => (
+                                <div key={item} className="flex h-12 items-center justify-center border border-zinc-400 px-1">{item}</div>
+                              ))}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -519,16 +535,20 @@ export default function ZumenPage() {
                       </div>
 
                       <div className="p-2">
-                        <div className="grid grid-cols-5 gap-2 text-center text-[10px]">
-                           {featureRows.slice(0, 10).map((item) => (
-                            <div key={item} className="flex h-14 items-center justify-center border border-zinc-400">{item}</div>
-                          ))}
-                        </div>
-                        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm font-bold text-white">
-                           {salesRows.slice(0, 6).map((item) => (
-                            <div key={item} className="border border-[#d2a52b] p-2" style={{ backgroundColor: theme.brand }}>{item}</div>
-                          ))}
-                        </div>
+                         {featureRows.length > 0 && (
+                          <div className="grid grid-cols-5 gap-2 text-center text-[10px]">
+                            {featureRows.slice(0, 10).map((item) => (
+                              <div key={item} className="flex h-14 items-center justify-center border border-zinc-400">{item}</div>
+                            ))}
+                          </div>
+                        )}
+                        {salesRows.length > 0 && (
+                          <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm font-bold text-white">
+                            {salesRows.slice(0, 6).map((item) => (
+                              <div key={item} className="border border-[#d2a52b] p-2" style={{ backgroundColor: theme.brand }}>{item}</div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 
