@@ -331,6 +331,7 @@ export default function ZumenPage() {
              <button type="button" onClick={saveAsImage} disabled={isExporting} className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">画像として保存</button>
             <button type="button" onClick={saveAsPdf} disabled={isExporting} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">PDFとして保存</button>
           </div>}
+           ) : null}
           </div>
         </div>
 
