@@ -527,7 +527,6 @@ export default function ZumenPage() {
                         <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm font-bold text-white">
                            {salesRows.slice(0, 6).map((item) => (
                             <div key={item} className="border border-[#d2a52b] p-2" style={{ backgroundColor: theme.brand }}>{item}</div>
-                            <div key={item} className="border border-[#d2a52b] bg-[#012d4a] p-2">{item}</div>
                           ))}
                         </div>
                       </div>
