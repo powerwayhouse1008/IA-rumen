@@ -246,8 +246,12 @@ export default function ZumenPage() {
       return [
         { label: "都市計画", value: data.houseDetails.cityPlan || "-" },
         { label: "用途地域", value: data.houseDetails.zoning || "-" },
-        { label: "建ぺい率", value: data.houseDetails.buildingCoverage || "-" },
-        { label: "容積率", value: data.houseDetails.floorAreaRatio || "-" },
+         {
+          label: "建ぺい率",
+          value: data.houseDetails.buildingCoverage || "-",
+          label2: "容積率",
+          value2: data.houseDetails.floorAreaRatio || "-",
+        },
         { label: "駐車場", value: data.houseDetails.parking || "-" },
       ];
     }
