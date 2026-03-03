@@ -494,6 +494,7 @@ export default function ZumenPage() {
                           <div>FAX:{contact.companyFax}</div>
                           <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引態様<br/>売主</div>
                         </div>
+                        </div>
                     </div>
                   </>
                 ) : selectedTemplate === "pop" ? (
