@@ -295,6 +295,7 @@ export default function ZumenPage() {
   const remarks = isMansion ? data?.mansionDetails?.note : isHouse ? data?.houseDetails?.note : "※図面と相違する場合は現況を優先します。";
  const layoutLabel = (isMansion ? data?.mansionDetails?.layout : isHouse ? data?.houseDetails?.layout : data?.propertyType) || "4LDK + WIC";
   const featureRows = data?.featureTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
+  const sideFeatureRows = featureRows.slice(0, 6);
   const salesRows = data?.salesTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
   const lifeInfoRows = useMemo(() => {
     if (summaryRows.length > 1) {
@@ -549,12 +550,14 @@ export default function ZumenPage() {
                       </div>
 
                       <div className="border-r border-black p-2">
-                        <div className="grid grid-cols-[78px_1fr_130px] items-start gap-2">
-                          <div className="space-y-1.5 text-center text-[12px]">
-                            {['収納豊富', '南向き', 'ゆとりの間取', '全室2面採光', 'LDK18帖以上', 'LDK20帖以上'].map((item) => (
-                              <div key={item} className="border border-zinc-400 px-1 py-1.5 leading-tight">{item}</div>
-                            ))}
-                          </div>
+                        <div className={`grid items-start gap-2 ${sideFeatureRows.length > 0 ? "grid-cols-[78px_1fr_130px]" : "grid-cols-[1fr_130px]"}`}>
+                          {sideFeatureRows.length > 0 && (
+                            <div className="space-y-1.5 text-center text-[12px]">
+                              {sideFeatureRows.map((item) => (
+                                <div key={item} className="border border-zinc-400 px-1 py-1.5 leading-tight">{item}</div>
+                              ))}
+                            </div>
+                          )}
                           <div>
                               <div className="font-bold text-[#1f2937]" style={adaptiveTextStyle(layoutLabel, 20, 34)}>{layoutLabel}</div>
                             <div className="text-xs">□専有面積/75㎡(22.68坪)</div>
