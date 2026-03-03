@@ -105,12 +105,14 @@ type ZumenData = {
   imgSub2?: string;
   imgSub3?: string;
   imgQr?: string;
+  imgMap?: string;
   themeColor?: ThemeColorKey;
   contactInfo?: {
     companyName: string;
     companyPhone: string;
     companyAddress: string;
     companyFax: string;
+    companyEmail: string;
     licenseNo: string;
     transactionType: string;
     staffName: string;
@@ -294,6 +296,7 @@ export default function ZumenPage() {
     companyPhone: "090-6695-1306",
     companyAddress: "〒101-0025 東京都千代田区神田須田町2-2 3-1芝崎ビル4F",
     companyFax: "03-5207-2768",
+    companyEmail: "lianghf2000@gmail.com",
     licenseNo: "東京都知事（2）第101930号",
     transactionType: "一般",
     staffName: "野村",
@@ -482,7 +485,7 @@ export default function ZumenPage() {
                       {remarks || "※図面と相違する場合は現況を優先します。"}
                     </div>
 
-                    <div className="grid grid-cols-[1.2fr_330px_190px] items-center px-3 py-1.5">
+                    <div className="grid h-[76px] grid-cols-[1.2fr_330px_190px] items-center px-3 py-1.5">
                       <div>
                          <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
@@ -490,9 +493,9 @@ export default function ZumenPage() {
                        <div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 24, 34), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
                       <div className="text-[13px] leading-5 [overflow-wrap:anywhere]">
                         <div className="text-sm leading-7 [overflow-wrap:anywhere]">
-                          <div>Email: lianghf2000@gmail.com</div>
+                           <div>Email: {contact.companyEmail}</div>
                           <div>FAX:{contact.companyFax}</div>
-                          <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引態様<br/>売主</div>
+                           <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引形態<br/>{contact.transactionType || "-"}</div>
                         </div>
                         </div>
                     </div>
@@ -520,7 +523,7 @@ export default function ZumenPage() {
                       </div>
 
                       <div className="p-2">
-                         <ImgBox src={data.imgMain} label="現地MAP" h={185} />
+                         <ImgBox src={data.imgMap ?? data.imgMain} label="現地MAP" h={185} />
                         <div className="px-1 py-0.5 text-center font-bold text-white" style={{ ...adaptiveTextStyle(`NAVI ${data.address} 付近`, 8, 11), backgroundColor: theme.brand, minHeight: "18px" }}>NAVI {data.address} 付近</div>
                       </div>
                     </div>
@@ -576,16 +579,16 @@ export default function ZumenPage() {
                     </div>
 
                     <div className="h-[40px] border-b border-black px-3 py-1 text-[10px] leading-4 overflow-hidden">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
-                    <div className="grid grid-cols-[1.25fr_330px_190px] items-center px-3 py-1.5">
+                    <div className="grid h-[76px] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1.5">
                       <div>
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                       </div>
                        <div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 24, 34), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
                       <div className="text-[13px] leading-5 [overflow-wrap:anywhere]">
-                        <div>Email: lianghf2000@gmail.com</div>
+                          <div>Email: {contact.companyEmail}</div>
                         <div>FAX:{contact.companyFax}</div>
-                        <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引態様<br />売主</div>
+                       <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引形態<br />{contact.transactionType || "-"}</div>
                       </div>
                     </div>
                   </>
