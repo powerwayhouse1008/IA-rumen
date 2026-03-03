@@ -489,11 +489,11 @@ export default function ZumenPage() {
                       </div>
                        <div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 24, 34), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
                       <div className="text-[13px] leading-5 [overflow-wrap:anywhere]">
-                      <div className="text-sm leading-7 [overflow-wrap:anywhere]">
-                        <div>Email: lianghf2000@gmail.com</div>
-                        <div>FAX:{contact.companyFax}</div>
-                        <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引態様<br/>売主</div>
-                      </div>
+                        <div className="text-sm leading-7 [overflow-wrap:anywhere]">
+                          <div>Email: lianghf2000@gmail.com</div>
+                          <div>FAX:{contact.companyFax}</div>
+                          <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引態様<br/>売主</div>
+                        </div>
                     </div>
                   </>
                 ) : selectedTemplate === "pop" ? (
@@ -580,7 +580,7 @@ export default function ZumenPage() {
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                       </div>
-                      <<div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 24, 34), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
+                       <div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 24, 34), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
                       <div className="text-[13px] leading-5 [overflow-wrap:anywhere]">
                         <div>Email: lianghf2000@gmail.com</div>
                         <div>FAX:{contact.companyFax}</div>
