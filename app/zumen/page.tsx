@@ -478,20 +478,21 @@ export default function ZumenPage() {
                       </div>
                     </div>
 
-                    <div className="min-h-[70px] border-b border-black px-3 py-2 text-[10px] leading-4">
+                     <div className="h-[56px] border-b border-black px-3 py-1.5 text-[10px] leading-4 overflow-hidden">
                       {remarks || "※図面と相違する場合は現況を優先します。"}
                     </div>
 
-                    <div className="grid grid-cols-[1fr_280px_280px] items-end px-3 py-2">
+                    <div className="grid grid-cols-[1.2fr_330px_190px] items-center px-3 py-1.5">
                       <div>
                          <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                       </div>
-                      <div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 28, 40), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
+                       <div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 24, 34), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
+                      <div className="text-[13px] leading-5 [overflow-wrap:anywhere]">
                       <div className="text-sm leading-7 [overflow-wrap:anywhere]">
                         <div>Email: lianghf2000@gmail.com</div>
                         <div>FAX:{contact.companyFax}</div>
-                        <div className="inline-block border border-black px-6 py-1 text-center">取引態様<br/>売主</div>
+                        <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引態様<br/>売主</div>
                       </div>
                     </div>
                   </>
@@ -573,17 +574,17 @@ export default function ZumenPage() {
                       </div>
                     </div>
 
-                   <div className="h-[46px] border-b border-black px-3 py-1.5 text-[10px] leading-4 overflow-hidden">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
-                    <div className="grid grid-cols-[1fr_360px_170px] items-end px-3 py-2">
+                    <div className="h-[40px] border-b border-black px-3 py-1 text-[10px] leading-4 overflow-hidden">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
+                    <div className="grid grid-cols-[1.25fr_330px_190px] items-center px-3 py-1.5">
                       <div>
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                       </div>
-                      <div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 28, 40), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
-                      <div className="text-sm leading-6 [overflow-wrap:anywhere]">
+                      <<div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 24, 34), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
+                      <div className="text-[13px] leading-5 [overflow-wrap:anywhere]">
                         <div>Email: lianghf2000@gmail.com</div>
                         <div>FAX:{contact.companyFax}</div>
-                        <div className="inline-block border border-black px-6 py-1 text-center">取引態様<br />売主</div>
+                        <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引態様<br />売主</div>
                       </div>
                     </div>
                   </>
