@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { InfoTable, SectionTitle } from "../../components/JpInfoTable";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
@@ -131,6 +131,27 @@ function ImgBox({ src, label, fit = "cover", h }: { src?: string; label: string;
     </div>
   );
 }
+const SHEET_WIDTH = 1123;
+const SHEET_HEIGHT = 794;
+
+function adaptiveTextStyle(text: string | undefined, minSize: number, maxSize: number): CSSProperties {
+  const normalized = (text ?? "").replace(/\s+/g, "");
+  const length = normalized.length;
+  const minLength = 12;
+  const maxLength = 64;
+
+  if (length <= minLength) {
+    return { fontSize: `${maxSize}px`, lineHeight: 1.2, overflowWrap: "anywhere" };
+  }
+
+  if (length >= maxLength) {
+    return { fontSize: `${minSize}px`, lineHeight: 1.2, overflowWrap: "anywhere" };
+  }
+
+  const ratio = (length - minLength) / (maxLength - minLength);
+  const size = maxSize - (maxSize - minSize) * ratio;
+  return { fontSize: `${size}px`, lineHeight: 1.2, overflowWrap: "anywhere" };
+}
 
 export default function ZumenPage() {
   const [data] = useState<ZumenData | null>(() => {
@@ -146,7 +167,7 @@ export default function ZumenPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   useEffect(() => {
-    const BASE_WIDTH = 1123;
+    const BASE_WIDTH = SHEET_WIDTH;
     const updateScale = () => {
       const el = previewRef.current;
       if (!el) return;
@@ -380,23 +401,23 @@ export default function ZumenPage() {
             </div>
           ) : (
         <div ref={previewRef} className="overflow-x-auto overflow-y-visible">
-            <div className="mx-auto" style={{ width: `${1123 * sheetScale}px` }}>
-              <div ref={sheetRef} className={`border border-black bg-white text-black ${selectedTemplate === "pop" ? "font-semibold" : ""} ${selectedTemplate === "chic" ? "bg-[#fcfbf8]" : ""}`} style={{ width: "1123px", minHeight: "794px", transform: `scale(${sheetScale})`, transformOrigin: "top left" }}>
+             <div className="mx-auto" style={{ width: `${SHEET_WIDTH * sheetScale}px` }}>
+              <div ref={sheetRef} className={`border border-black bg-white text-black ${selectedTemplate === "pop" ? "font-semibold" : ""} ${selectedTemplate === "chic" ? "bg-[#fcfbf8]" : ""}`} style={{ width: `${SHEET_WIDTH}px`, height: `${SHEET_HEIGHT}px`, transform: `scale(${sheetScale})`, transformOrigin: "top left", overflow: "hidden" }}>
                 {selectedTemplate === "classic" ? (
                   <>
                     <div className="grid grid-cols-[470px_380px_273px] border-b border-black">
-                      <div className="border-r border-black p-3">
-                        <div className="text-center text-[38px] text-zinc-300">❦</div>
-                        <div className="text-center text-[40px] leading-[1] text-zinc-300">❧</div>
-                        <div className="mt-2 text-center text-[36px] text-zinc-300">❦</div>
-                        <div className="mt-2 text-center text-[32px] leading-relaxed">{data.name}</div>
+                        <div className="border-r border-black p-2">
+                        <div className="text-center text-[38px] text-zinc-300"></div>
+                        <div className="text-center text-[40px] leading-[1] text-zinc-300"></div>
+                        <div className="mt-2 text-center text-[36px] text-zinc-300"></div>
+                        <div className="mt-2 text-center font-bold leading-tight" style={adaptiveTextStyle(data.name, 24, 38)}>{data.name}</div>
                         <div className="mt-2 text-center text-2xl font-bold text-[#4a2207]">{Number(data.price || 0).toLocaleString()}万円</div>
-                         <div className="mt-2 text-center text-sm">{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境"}</div>
+                        <div className="mt-2 text-center" style={adaptiveTextStyle(data.catchCopy, 11, 15)}>{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境"}</div>
                       </div>
 
-                      <div className="border-r border-black p-3">
+                       <div className="border-r border-black p-2">
                          <div className="border-b border-black pb-1 text-lg font-bold" style={{ color: theme.brand }}>ACCESS</div>
-                        <div className="mt-1 text-sm">{data.access} 駅徒歩{data.walk}分</div>
+                         <div className="mt-1 font-semibold" style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 12, 17)}>{data.access} 駅徒歩{data.walk}分</div>
                          <div className="mt-2 border-b border-black pb-1 text-sm font-bold" style={{ color: theme.brand }}>LIFE INFORMATION</div>
                         <div className="mt-1 text-xs leading-5">
                                          {lifeInfoRows.slice(0, 4).map((row) => (
@@ -408,7 +429,7 @@ export default function ZumenPage() {
 
                       <div className="p-2">
                         <ImgBox src={data.imgMain} label="MAP" h={210} />
-                        <div className="border-t border-black p-1 text-center text-xs">NAVI {data.address}</div>
+                        <div className="border-t border-black p-1 text-center" style={adaptiveTextStyle(`NAVI ${data.address}`, 9, 12)}>NAVI {data.address}</div>
                       </div>
                     </div>
 
@@ -423,14 +444,14 @@ export default function ZumenPage() {
                     <div className="grid grid-cols-[300px_440px_383px] border-b border-black">
                       <div className="border-r border-black p-2">
                         <div className="flex items-end justify-between" style={{ color: theme.brand }}>
-                          <div className="text-sm font-bold">{data.districts || "1区画"}</div>
-                          <div className="text-4xl font-bold">{layoutLabel}</div>
+                           <div className="font-bold" style={adaptiveTextStyle(data.districts, 10, 14)}>{data.districts || "1区画"}</div>
+                          <div className="font-bold" style={adaptiveTextStyle(layoutLabel, 28, 40)}>{layoutLabel}</div>
                         </div>
-                        <div className="mt-1 text-lg text-[#9a1e1e]">販売価格 {Number(data.price || 0).toLocaleString()}万円</div>
+                        <div className="mt-1 text-[#9a1e1e]" style={adaptiveTextStyle(`販売価格 ${Number(data.price || 0).toLocaleString()}万円`, 18, 28)}>販売価格 {Number(data.price || 0).toLocaleString()}万円</div>
                         <div className="mt-2"><ImgBox src={data.imgPlan} label="間取り図" h={290} fit="contain" /></div>
                         <div className="mt-2 space-y-1 text-xs">
                           {summaryRows.slice(0, 6).map((row) => (
-                            <div key={row.label} className="border border-black px-2 py-1">{row.label}: {row.value}</div>
+                            <div key={row.label} className="border border-black px-2 py-1 text-[11px] leading-tight [overflow-wrap:anywhere]">{row.label}: {row.value}</div>
                           ))}
                         </div>
                       </div>
@@ -463,11 +484,11 @@ export default function ZumenPage() {
 
                     <div className="grid grid-cols-[1fr_280px_280px] items-end px-3 py-2">
                       <div>
-                        <div className="text-5xl font-serif text-[#243b64]">{contact.companyName}</div>
-                        <div className="text-[10px]">{contact.companyAddress}</div>
+                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
+                        <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                       </div>
-                      <div className="text-center text-6xl font-serif text-[#a21717]">TEL {contact.companyPhone}</div>
-                      <div className="text-sm leading-7">
+                      <div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 28, 40), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
+                      <div className="text-sm leading-7 [overflow-wrap:anywhere]">
                         <div>Email: lianghf2000@gmail.com</div>
                         <div>FAX:{contact.companyFax}</div>
                         <div className="inline-block border border-black px-6 py-1 text-center">取引態様<br/>売主</div>
@@ -476,59 +497,59 @@ export default function ZumenPage() {
                   </>
                 ) : selectedTemplate === "pop" ? (
                   <>
-                    <div className="grid grid-cols-[380px_420px_323px] border-b border-black">
-                       <div className="border-r border-black p-3 text-white" style={{ backgroundColor: theme.brand }}>
-                        <div className="text-center text-lg font-bold">{data.propertyType || "中古マンション"} {data.districts || "全10区画"}</div>
-                        <div className="mt-3 text-center text-5xl font-serif">{data.name}</div>
-                        <div className="mt-3 text-center text-base">{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}</div>
+                     <div className="grid grid-cols-[470px_330px_323px] border-b border-black">
+                       <div className="border-r border-black p-2 text-white" style={{ backgroundColor: theme.brand }}>
+                        <div className="text-center font-bold leading-tight" style={adaptiveTextStyle(`${data.propertyType || "中古マンション"} ${data.districts || "全10区画"}`, 15, 20)}>{data.propertyType || "中古マンション"} {data.districts || "全10区画"}</div>
+                        <div className="mt-1.5 text-center font-serif leading-[1.03]" style={{ ...adaptiveTextStyle(data.name, 24, 40), maxHeight: "162px", overflow: "hidden" }}>{data.name}</div>
+                        <div className="mt-1 text-center leading-tight" style={{ ...adaptiveTextStyle(data.catchCopy, 10, 14), maxHeight: "34px", overflow: "hidden" }}>{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}</div>
                       </div>
 
-                      <div className="border-r border-black p-3">
-                        <div className="text-right text-2xl font-bold">{data.access} 駅徒歩<span style={{ color: theme.brand }}>{data.walk}</span>分</div>
-                        <div className="mt-2 px-2 py-1 text-sm font-bold tracking-widest text-white" style={{ backgroundColor: theme.brand }}>LIFE INFORMATION</div>
+                      <div className="border-r border-black p-2">
+                        <div className="text-right font-bold" style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 16, 28)}>{data.access} 駅徒歩<span style={{ color: theme.brand }}>{data.walk}</span>分</div>
+                        <div className="mt-1.5 px-2 py-0.5 text-xs font-bold tracking-widest text-white" style={{ backgroundColor: theme.brand }}>LIFE INFORMATION</div>
                         <div className="grid grid-cols-[1fr_170px] gap-2">
-                          <div className="text-sm leading-6">
+                           <div className="text-[12px] leading-5 [overflow-wrap:anywhere]">
                            {lifeInfoRows.slice(0, 6).map((row) => (
                               <div key={row}>{row}</div>
                             ))}
                           </div>
-                          <ImgBox src={data.imgSub3} label="拡大図" h={152} />
+                         <ImgBox src={data.imgSub3} label="拡大図" h={128} />
                         </div>
                       </div>
 
                       <div className="p-2">
-                        <ImgBox src={data.imgMain} label="現地MAP" h={265} />
-                      <div className="py-1 text-center text-sm font-bold text-white" style={{ backgroundColor: theme.brand }}>NAVI {data.address} 付近</div>
+                         <ImgBox src={data.imgMain} label="現地MAP" h={185} />
+                        <div className="px-1 py-0.5 text-center font-bold text-white" style={{ ...adaptiveTextStyle(`NAVI ${data.address} 付近`, 8, 11), backgroundColor: theme.brand, minHeight: "18px" }}>NAVI {data.address} 付近</div>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-[380px_420px_323px] border-b border-black">
-                     <div className="border-r border-black p-3" style={{ backgroundColor: theme.brand }}>
-                        <ImgBox src={data.imgMain} label="メイン画像" h={335} />
+                     <div className="border-r border-black p-2" style={{ backgroundColor: theme.brand }}>
+                        <ImgBox src={data.imgMain} label="メイン画像" h={220} />
                         <div className="mt-2 grid grid-cols-2 gap-2">
-                          <ImgBox src={data.imgSub1} label="サブ1" h={130} />
-                          <ImgBox src={data.imgSub2} label="サブ2" h={130} />
+                           <ImgBox src={data.imgSub1} label="サブ1" h={85} />
+                          <ImgBox src={data.imgSub2} label="サブ2" h={85} />
                         </div>
                       </div>
 
-                      <div className="border-r border-black p-3">
+                      <div className="border-r border-black p-2">
                         <div className="grid grid-cols-[78px_1fr_130px] items-start gap-2">
-                          <div className="space-y-2 text-center text-sm">
+                          <div className="space-y-1.5 text-center text-[12px]">
                             {['収納豊富', '南向き', 'ゆとりの間取', '全室2面採光', 'LDK18帖以上', 'LDK20帖以上'].map((item) => (
-                              <div key={item} className="border border-zinc-400 px-1 py-2">{item}</div>
+                              <div key={item} className="border border-zinc-400 px-1 py-1.5 leading-tight">{item}</div>
                             ))}
                           </div>
                           <div>
-                             <div className="text-2xl font-bold text-[#1f2937]">{layoutLabel}</div>
-                            <div className="text-sm">□専有面積/75㎡(22.68坪)</div>
-                            <div className="text-sm">□バルコニー面積/10㎡(3.02坪)</div>
+                              <div className="font-bold text-[#1f2937]" style={adaptiveTextStyle(layoutLabel, 20, 34)}>{layoutLabel}</div>
+                            <div className="text-xs">□専有面積/75㎡(22.68坪)</div>
+                            <div className="text-xs">□バルコニー面積/10㎡(3.02坪)</div>
                             <div className="mt-2">
-                              <ImgBox src={data.imgPlan} label="間取り" h={300} fit="contain" />
+                              <ImgBox src={data.imgPlan} label="間取り" h={205} fit="contain" />
                             </div>
                           </div>
                           <div className="text-center">
-                            <div className="text-sm">販売価格</div>
-                            <div className="text-6xl font-serif leading-none text-[#9a031e]">{Number(data.price || 0).toLocaleString()}</div>
+                            <div className="text-sm font-semibold">販売価格</div>
+                            <div className="font-serif leading-none text-[#9a031e]" style={{ ...adaptiveTextStyle(Number(data.price || 0).toLocaleString(), 34, 52), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>{Number(data.price || 0).toLocaleString()}</div>
                             <div className="text-2xl">万円</div>
                           </div>
                         </div>
@@ -543,24 +564,23 @@ export default function ZumenPage() {
                           </div>
                         )}
                         {salesRows.length > 0 && (
-                          <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm font-bold text-white">
+                           <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs font-bold text-white">
                             {salesRows.slice(0, 6).map((item) => (
-                              <div key={item} className="border border-[#d2a52b] p-2" style={{ backgroundColor: theme.brand }}>{item}</div>
+                            <div key={item} className="border border-[#d2a52b] px-1 py-1.5" style={{ backgroundColor: theme.brand }}>{item}</div>
                             ))}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="min-h-[58px] border-b border-black px-3 py-2 text-[10px] leading-4">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
-
+                   <div className="h-[46px] border-b border-black px-3 py-1.5 text-[10px] leading-4 overflow-hidden">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
                     <div className="grid grid-cols-[1fr_360px_170px] items-end px-3 py-2">
                       <div>
-                        <div className="text-5xl font-serif text-[#243b64]">{contact.companyName}</div>
-                        <div className="text-[10px]">{contact.companyAddress}</div>
+                        <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
+                        <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                       </div>
-                      <div className="text-center text-6xl font-serif text-[#a21717]">TEL {contact.companyPhone}</div>
-                      <div className="text-sm leading-6">
+                      <div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 28, 40), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
+                      <div className="text-sm leading-6 [overflow-wrap:anywhere]">
                         <div>Email: lianghf2000@gmail.com</div>
                         <div>FAX:{contact.companyFax}</div>
                         <div className="inline-block border border-black px-6 py-1 text-center">取引態様<br />売主</div>
