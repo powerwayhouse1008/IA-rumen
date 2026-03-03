@@ -9,6 +9,10 @@ type ZumenData = {
   access: string;
   walk: string;
   address: string;
+  catchCopy?: string;
+  districts?: string;
+  salesTags?: string[];
+  featureTags?: string[];
   imgMain?: string;
   imgPlan?: string;
   imgSub1?: string;
@@ -181,7 +185,7 @@ export default function Page() {
     fee: "分かれて",
     inspectionNote: "☚内見、物件確認",
   });
-  const [themeColor] = useState<ThemeColorKey>("sunset-red");
+  const [themeColor, setThemeColor] = useState<ThemeColorKey>("sunset-red");
   const [highlightSection, setHighlightSection] = useState<"basic" | "house" | "mansion" | "contact" | null>(null);
   const [mansionDetails, setMansionDetails] = useState({
     right: "所有権",
@@ -279,13 +283,37 @@ export default function Page() {
   }
 
   function onSaveDraft() {
-    const payload = { ...data, category: selectedCategory, propertyType, houseDetails, mansionDetails, contactInfo, themeColor };
+     const payload = {
+      ...data,
+      catchCopy,
+      districts,
+      salesTags,
+      featureTags,
+      category: selectedCategory,
+      propertyType,
+      houseDetails,
+      mansionDetails,
+      contactInfo,
+      themeColor,
+    };
     localStorage.setItem("zumenData", JSON.stringify(payload));
     setSavedAt(new Date().toLocaleString("ja-JP"));
   }
 
   function onGenerate() {
-    const payload = { ...data, category: selectedCategory, propertyType, houseDetails, mansionDetails, contactInfo, themeColor };
+    const payload = {
+      ...data,
+      catchCopy,
+      districts,
+      salesTags,
+      featureTags,
+      category: selectedCategory,
+      propertyType,
+      houseDetails,
+      mansionDetails,
+      contactInfo,
+      themeColor,
+    };
     localStorage.setItem("zumenData", JSON.stringify(payload));
     router.push("/zumen");
   }
@@ -522,6 +550,32 @@ export default function Page() {
             </div>
 
             <div className="mt-6 space-y-5">
+              <div>
+                <div className="mb-2 text-sm font-semibold text-zinc-700">メインカラー</div>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { key: "sunset-red", color: "#b30000" },
+                    { key: "ocean-blue", color: "#1d4ed8" },
+                    { key: "forest-green", color: "#0f766e" },
+                    { key: "royal-purple", color: "#6d28d9" },
+                    { key: "charcoal-gold", color: "#9a6b00" },
+                    { key: "sky-blue", color: "#7dd3fc" },
+                  ].map((item) => {
+                    const active = item.key === themeColor;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setThemeColor(item.key as ThemeColorKey)}
+                        className={`h-8 w-8 rounded-full border-2 transition ${active ? "scale-110 border-zinc-900" : "border-zinc-300"}`}
+                        style={{ backgroundColor: item.color }}
+                        aria-label={`theme-${item.key}`}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+              
               <div>
                 <div className="mb-2 text-sm font-semibold text-zinc-700">分譲地特長（6個まで選択可）</div>
                 <div className="flex flex-wrap gap-2">
