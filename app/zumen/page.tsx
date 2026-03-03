@@ -91,6 +91,10 @@ type ZumenData = {
   access: string;
   walk: string;
   address: string;
+  catchCopy?: string;
+  districts?: string;
+  salesTags?: string[];
+  featureTags?: string[];
   category?: CategoryKey;
   propertyType?: string;
   houseDetails?: HouseDetails;
@@ -255,7 +259,15 @@ export default function ZumenPage() {
   }, [data, isHouse, isMansion]);
 
   const remarks = isMansion ? data?.mansionDetails?.note : isHouse ? data?.houseDetails?.note : "※図面と相違する場合は現況を優先します。";
-
+ const layoutLabel = (isMansion ? data?.mansionDetails?.layout : isHouse ? data?.houseDetails?.layout : data?.propertyType) || "4LDK + WIC";
+  const featureRows = data?.featureTags?.length ? data.featureTags.map((item) => item.replace(/^#\s*/, "")) : ["浴室乾燥", "食洗機", "床暖房", "TVモニタ", "宅配BOX", "追焚", "複層ガラス", "低炭素", "防犯カメラ", "オートロック"];
+  const salesRows = data?.salesTags?.length ? data.salesTags.map((item) => item.replace(/^#\s*/, "")) : ["2沿線以上利用可", "駐車2台可", "環境重視の住宅地", "閑静な住宅街", "平坦地", "角地"];
+  const lifeInfoRows = useMemo(() => {
+    if (summaryRows.length > 1) {
+      return summaryRows.slice(1, 7).map((row) => `□${row.label}：${row.value}`);
+    }
+    return [`□交通：${data?.access ?? "-"} 徒歩${data?.walk ?? "-"}分`, `□所在地：${data?.address ?? "-"}`];
+  }, [data?.access, data?.address, data?.walk, summaryRows]);
   const defaultContact = {
     companyName: "株式会社パワーウェイ",
     companyPhone: "090-6695-1306",
@@ -369,18 +381,17 @@ export default function ZumenPage() {
                         <div className="mt-2 text-center text-[36px] text-zinc-300">❦</div>
                         <div className="mt-2 text-center text-[32px] leading-relaxed">{data.name}</div>
                         <div className="mt-2 text-center text-2xl font-bold text-[#4a2207]">{Number(data.price || 0).toLocaleString()}万円</div>
-                        <div className="mt-2 text-center text-sm">徒歩圏内に学校や公園！ 毎日が便利で快適な住環境</div>
+                         <div className="mt-2 text-center text-sm">{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境"}</div>
                       </div>
 
                       <div className="border-r border-black p-3">
-                        <div className="border-b border-black pb-1 text-lg font-bold text-[#4a2207]">ACCESS</div>
+                         <div className="border-b border-black pb-1 text-lg font-bold" style={{ color: theme.brand }}>ACCESS</div>
                         <div className="mt-1 text-sm">{data.access} 駅徒歩{data.walk}分</div>
-                        <div className="mt-2 border-b border-black pb-1 text-sm font-bold text-[#4a2207]">LIFE INFORMATION</div>
+                         <div className="mt-2 border-b border-black pb-1 text-sm font-bold" style={{ color: theme.brand }}>LIFE INFORMATION</div>
                         <div className="mt-1 text-xs leading-5">
-                          <div>□〇〇保育園・・・・徒歩7分(約510m)</div>
-                          <div>□〇〇小学校・・・・徒歩7分(約520m)</div>
-                          <div>□〇〇中学校・・・・徒歩8分(約570m)</div>
-                          <div>□〇〇公園・・・・徒歩8分(約580m)</div>
+                                         {lifeInfoRows.slice(0, 4).map((row) => (
+                            <div key={row}>{row}</div>
+                          ))}
                         </div>
                         <div className="mt-2"><ImgBox src={data.imgSub3} label="現地案内図" h={115} /></div>
                       </div>
@@ -392,16 +403,16 @@ export default function ZumenPage() {
                     </div>
 
                     <div className="grid grid-cols-6 border-b border-black text-center text-sm font-semibold text-white">
-                      {['2沿線以上利用可', '駐車２台可', '環境重視の住宅地', '閑静な住宅街', '平坦地', '角地'].map((tag, idx) => (
-                        <div key={tag} className="border-r border-black py-2 last:border-r-0" style={{ backgroundColor: idx % 2 === 0 ? '#5f330f' : '#7a5a45' }}>{tag}</div>
+                       {salesRows.slice(0, 6).map((tag) => (
+                        <div key={tag} className="border-r border-black py-2 last:border-r-0" style={{ backgroundColor: theme.brand }}>{tag}</div>
                       ))}
                     </div>
 
                     <div className="grid grid-cols-[300px_440px_383px] border-b border-black">
                       <div className="border-r border-black p-2">
-                        <div className="flex items-end justify-between text-[#4a2207]">
-                          <div className="text-sm font-bold">1区画</div>
-                          <div className="text-4xl font-bold">4LDK + WIC</div>
+                        <div className="flex items-end justify-between" style={{ color: theme.brand }}>
+                          <div className="text-sm font-bold">{data.districts || "1区画"}</div>
+                          <div className="text-4xl font-bold">{layoutLabel}</div>
                         </div>
                         <div className="mt-1 text-lg text-[#9a1e1e]">販売価格 {Number(data.price || 0).toLocaleString()}万円</div>
                         <div className="mt-2"><ImgBox src={data.imgPlan} label="間取り図" h={290} fit="contain" /></div>
@@ -421,9 +432,9 @@ export default function ZumenPage() {
                           <ImgBox src={data.imgSub1} label="サブ画像1" h={180} />
                           <ImgBox src={data.imgSub2} label="サブ画像2" h={180} />
                         </div>
-                        <div className="mt-3 text-lg font-bold text-[#4a2207]">建物備・仕様</div>
+                          <div className="mt-3 text-lg font-bold" style={{ color: theme.brand }}>建物備・仕様</div>
                         <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
-                          {['浴室乾燥', '温水洗浄', '床暖房', 'TVモニタ', '宅配BOX', '食洗機', 'ペアガラス', '浴室TV', '防犯カメラ', 'オートロック'].map((item) => (
+                         {featureRows.slice(0, 10).map((item) => (
                             <div key={item} className="flex h-12 items-center justify-center border border-zinc-400 px-1">{item}</div>
                           ))}
                         </div>
@@ -450,24 +461,20 @@ export default function ZumenPage() {
                 ) : selectedTemplate === "pop" ? (
                   <>
                     <div className="grid grid-cols-[380px_420px_323px] border-b border-black">
-                      <div className="border-r border-black bg-[#012d4a] p-3 text-white">
-                        <div className="text-center text-lg font-bold">中古マンション 全10区画</div>
+                       <div className="border-r border-black p-3 text-white" style={{ backgroundColor: theme.brand }}>
+                        <div className="text-center text-lg font-bold">{data.propertyType || "中古マンション"} {data.districts || "全10区画"}</div>
                         <div className="mt-3 text-center text-5xl font-serif">{data.name}</div>
-                        <div className="mt-3 text-center text-base">徒歩圏内に学校や公園！</div>
-                        <div className="text-center text-base">毎日が便利で快適な住環境の分譲地</div>
+                        <div className="mt-3 text-center text-base">{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}</div>
                       </div>
 
                       <div className="border-r border-black p-3">
-                        <div className="text-right text-2xl font-bold">{data.access} 「表参道」 駅徒歩<span className="text-[#9a031e]">{data.walk}</span>分</div>
-                        <div className="mt-2 bg-[#0b3b5a] px-2 py-1 text-sm font-bold tracking-widest text-white">LIFE INFORMATION</div>
+                        <div className="text-right text-2xl font-bold">{data.access} 駅徒歩<span style={{ color: theme.brand }}>{data.walk}</span>分</div>
+                        <div className="mt-2 px-2 py-1 text-sm font-bold tracking-widest text-white" style={{ backgroundColor: theme.brand }}>LIFE INFORMATION</div>
                         <div className="grid grid-cols-[1fr_170px] gap-2">
                           <div className="text-sm leading-6">
-                            <div>□〇〇保育園・・・・徒歩7分(約510m)</div>
-                            <div>□〇〇小学校・・・・徒歩7分(約520m)</div>
-                            <div>□〇〇公園・・・・徒歩8分(約570m)</div>
-                            <div>□〇〇病院・・・・徒歩7分(約540m)</div>
-                            <div>□〇〇中学校・・・・徒歩7分(約550m)</div>
-                            <div>□〇〇幼稚園・・・・徒歩8分(約580m)</div>
+                           {lifeInfoRows.slice(0, 6).map((row) => (
+                              <div key={row}>{row}</div>
+                            ))}
                           </div>
                           <ImgBox src={data.imgSub3} label="拡大図" h={152} />
                         </div>
@@ -475,12 +482,12 @@ export default function ZumenPage() {
 
                       <div className="p-2">
                         <ImgBox src={data.imgMain} label="現地MAP" h={265} />
-                        <div className="bg-[#012d4a] py-1 text-center text-sm font-bold text-white">NAVI {data.address} 付近</div>
+                      <div className="py-1 text-center text-sm font-bold text-white" style={{ backgroundColor: theme.brand }}>NAVI {data.address} 付近</div>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-[380px_420px_323px] border-b border-black">
-                      <div className="border-r border-black bg-[#012d4a] p-3">
+                     <div className="border-r border-black p-3" style={{ backgroundColor: theme.brand }}>
                         <ImgBox src={data.imgMain} label="メイン画像" h={335} />
                         <div className="mt-2 grid grid-cols-2 gap-2">
                           <ImgBox src={data.imgSub1} label="サブ1" h={130} />
@@ -496,7 +503,7 @@ export default function ZumenPage() {
                             ))}
                           </div>
                           <div>
-                            <div className="text-2xl font-bold text-[#1f2937]">4LDK＋WIC</div>
+                             <div className="text-2xl font-bold text-[#1f2937]">{layoutLabel}</div>
                             <div className="text-sm">□専有面積/75㎡(22.68坪)</div>
                             <div className="text-sm">□バルコニー面積/10㎡(3.02坪)</div>
                             <div className="mt-2">
@@ -513,12 +520,13 @@ export default function ZumenPage() {
 
                       <div className="p-2">
                         <div className="grid grid-cols-5 gap-2 text-center text-[10px]">
-                          {['浴室乾燥', '食洗機', '床暖房', 'TVモニタ', '宅配BOX', '追焚', '複層ガラス', '低炭素', 'BATH ROOM', 'オートロック'].map((item) => (
+                           {featureRows.slice(0, 10).map((item) => (
                             <div key={item} className="flex h-14 items-center justify-center border border-zinc-400">{item}</div>
                           ))}
                         </div>
                         <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm font-bold text-white">
-                          {['2沿線以上利用可', '駐車2台可', '環境重視の住宅地', '閑静な住宅街', '平坦地', '角地'].map((item) => (
+                           {salesRows.slice(0, 6).map((item) => (
+                            <div key={item} className="border border-[#d2a52b] p-2" style={{ backgroundColor: theme.brand }}>{item}</div>
                             <div key={item} className="border border-[#d2a52b] bg-[#012d4a] p-2">{item}</div>
                           ))}
                         </div>
