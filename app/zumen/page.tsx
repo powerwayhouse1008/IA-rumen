@@ -270,10 +270,18 @@ export default function ZumenPage() {
 
     if (isHouse && data?.houseDetails) {
       return [
-        { label: "ガス", value: data.houseDetails.gas || "-" },
-        { label: "飲用水", value: data.houseDetails.water || "-" },
-        { label: "汚水", value: data.houseDetails.sewage || "-" },
-        { label: "雑排水", value: data.houseDetails.drain || "-" },
+        {
+          label: "ガス",
+          value: data.houseDetails.gas || "-",
+          label2: "飲用水",
+          value2: data.houseDetails.water || "-",
+        },
+        {
+          label: "汚水",
+          value: data.houseDetails.sewage || "-",
+          label2: "雑排水",
+          value2: data.houseDetails.drain || "-",
+        },
         { label: "現況", value: data.houseDetails.status || "-", label2: "引渡し", value2: data.houseDetails.handover || "-" },
       ];
     }
