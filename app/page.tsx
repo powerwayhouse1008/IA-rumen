@@ -19,12 +19,14 @@ type ZumenData = {
   imgSub2?: string;
   imgSub3?: string;
   imgQr?: string;
+  imgMap?: string;
   themeColor?: ThemeColorKey;
   contactInfo?: {
     companyName: string;
     companyPhone: string;
     companyAddress: string;
     companyFax: string;
+    companyEmail: string;
     licenseNo: string;
     transactionType: string;
     staffName: string;
@@ -160,6 +162,15 @@ async function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return await new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(String(reader.result));
+    reader.onerror = rej;
+    reader.readAsDataURL(blob);
+  });
+}
+
 export default function Page() {
   const router = useRouter();
 
@@ -179,6 +190,7 @@ export default function Page() {
     companyPhone: "090-6695-1306",
     companyAddress: "〒101-0025 東京都千代田区神田須田町2-2 3-1芝崎ビル4F",
     companyFax: "03-5207-2768",
+    companyEmail: "lianghf2000@gmail.com",
     licenseNo: "東京都知事（2）第101930号",
     transactionType: "一般",
     staffName: "野村",
@@ -278,7 +290,7 @@ export default function Page() {
   }
 
   async function onPick(
-    key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr">,
+    key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr" | "imgMap">,
     file?: File
   ) {
     if (!file) return;
@@ -286,13 +298,38 @@ export default function Page() {
     update(key, url);
   }
 
-  function removeImage(key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr">) {
+  function removeImage(key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr" | "imgMap">) {
     update(key, undefined);
   }
 
-  function onSaveDraft() {
-     const payload = {
+  async function createAddressMap(address: string): Promise<string | undefined> {
+    if (!address.trim()) return undefined;
+
+    try {
+      const geocodeRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`
+      );
+      if (!geocodeRes.ok) return undefined;
+      const geocodeData = (await geocodeRes.json()) as Array<{ lat: string; lon: string }>;
+      const first = geocodeData[0];
+      if (!first) return undefined;
+
+      const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${first.lat},${first.lon}&zoom=16&size=900x540&markers=${first.lat},${first.lon},red-pushpin`;
+      const mapRes = await fetch(mapUrl);
+      if (!mapRes.ok) return undefined;
+      const mapBlob = await mapRes.blob();
+      return await blobToDataUrl(mapBlob);
+    } catch {
+      return undefined;
+    }
+  }
+
+  async function buildPayload() {
+    const generatedMap = await createAddressMap(data.address);
+
+    const payload = {
       ...data,
+      imgMap: generatedMap ?? data.imgMap,
       catchCopy,
       districts,
       salesTags,
@@ -304,24 +341,22 @@ export default function Page() {
       contactInfo,
       themeColor,
     };
+    
+    if (generatedMap) {
+      setData((prev) => ({ ...prev, imgMap: generatedMap }));
+    }
+
+    return payload;
+  }
+
+  async function onSaveDraft() {
+    const payload = await buildPayload();
     localStorage.setItem("zumenData", JSON.stringify(payload));
     setSavedAt(new Date().toLocaleString("ja-JP"));
   }
 
-  function onGenerate() {
-    const payload = {
-      ...data,
-      catchCopy,
-      districts,
-      salesTags,
-      featureTags,
-      category: selectedCategory,
-      propertyType,
-      houseDetails,
-      mansionDetails,
-      contactInfo,
-      themeColor,
-    };
+  async function onGenerate() {
+    const payload = await buildPayload();
     localStorage.setItem("zumenData", JSON.stringify(payload));
     router.push("/zumen");
   }
@@ -335,8 +370,9 @@ export default function Page() {
     setPropertyType(preset.propertyType);
   }
 
-  const uploadItems: Array<{ key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr">; label: string }> = [
+  const uploadItems: Array<{ key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr" | "imgMap">; label: string }> = [
     { key: "imgMain", label: "全体区画図 or 住宅写真" },
+    { key: "imgMap", label: "現地MAP（住所から自動生成）" },
     { key: "imgPlan", label: "物件メイン画像" },
     { key: "imgSub1", label: "物件サブ画像（1）" },
     { key: "imgSub2", label: "物件サブ画像（2）" },
@@ -451,7 +487,19 @@ export default function Page() {
                 </div>
 
                 <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-                  <div className="mb-2 text-sm font-semibold">画像アップロード</div>
+                  <div className="mb-2 flex items-center justify-between gap-2 text-sm font-semibold">
+                    <span>画像アップロード</span>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const generatedMap = await createAddressMap(data.address);
+                        if (generatedMap) update("imgMap", generatedMap);
+                      }}
+                      className="rounded-md bg-sky-600 px-3 py-1 text-xs text-white"
+                    >
+                      住所から現地MAP生成
+                    </button>
+                  </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {uploadItems.map(({ key, label }) => (
                       <div key={key} className="rounded-md border border-zinc-200 bg-white p-2">
@@ -549,6 +597,7 @@ export default function Page() {
                 <div><FieldLabel>担当者</FieldLabel><Input value={contactInfo.staffName} onChange={(e) => updateContact("staffName", e.target.value)} /></div>
                 <div><FieldLabel>電話番号</FieldLabel><Input value={contactInfo.companyPhone} onChange={(e) => updateContact("companyPhone", e.target.value)} /></div>
                 <div><FieldLabel>FAX</FieldLabel><Input value={contactInfo.companyFax} onChange={(e) => updateContact("companyFax", e.target.value)} /></div>
+                <div><FieldLabel>Gmail</FieldLabel><Input value={contactInfo.companyEmail} onChange={(e) => updateContact("companyEmail", e.target.value)} /></div>
                 <div className="md:col-span-2"><FieldLabel>住所</FieldLabel><Input value={contactInfo.companyAddress} onChange={(e) => updateContact("companyAddress", e.target.value)} /></div>
                 <div><FieldLabel>免許番号</FieldLabel><Input value={contactInfo.licenseNo} onChange={(e) => updateContact("licenseNo", e.target.value)} /></div>
                 <div><FieldLabel>取引形態</FieldLabel><Input value={contactInfo.transactionType} onChange={(e) => updateContact("transactionType", e.target.value)} /></div>
