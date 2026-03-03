@@ -516,7 +516,7 @@ export default function ZumenPage() {
                      <div className="grid grid-cols-[470px_330px_323px] border-b border-black">
                        <div className="border-r border-black p-2 text-white" style={{ backgroundColor: theme.brand }}>
                         <div className="text-center font-bold leading-tight" style={adaptiveTextStyle(`${data.propertyType || "中古マンション"} ${data.districts || "全10区画"}`, 15, 20)}>{data.propertyType || "中古マンション"} {data.districts || "全10区画"}</div>
-                        <div className="mt-1.5 text-center font-serif leading-[1.03]" style={{ ...adaptiveTextStyle(data.name, 24, 40), maxHeight: PROPERTY_NAME_MAX_HEIGHT, overflow: "hidden" }}>{data.name}</div>
+                        <div className="mt-1.5 text-center font-serif leading-[1.03]" style={{ ...adaptiveTextStyle(data.name, 24, 40), maxHeight: "2.5cm", overflow: "hidden" }}>{data.name}</div>
                         <div className="mt-1 text-center leading-tight" style={{ ...adaptiveTextStyle(data.catchCopy, 10, 14), maxHeight: "34px", overflow: "hidden" }}>{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}</div>
                       </div>
 
