@@ -595,7 +595,7 @@ export default function ZumenPage() {
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                       </div>
-                       <<div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
+                     <div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
                       <div className="self-start justify-self-end text-right text-[12px] leading-4 [overflow-wrap:anywhere]">
                           <div>Email: {contact.companyEmail}</div>
                         <div>FAX:{contact.companyFax}</div>
@@ -626,13 +626,13 @@ export default function ZumenPage() {
 
                    <div className="grid grid-cols-[300px_1fr_280px]">
                   <div className="border-r border-black p-2">
-                    <ImgBox src={data.imgMain} label="外観画像（左上）" h={230} />
+                    <ImgBox src={data.imgMain} label="外観画像（左上）" h={210} />
                     <div className="mt-2 grid grid-cols-2 gap-2">
-                      <ImgBox src={data.imgSub1} label="共用（左中）" h={130} />
-                      <ImgBox src={data.imgSub2} label="室内（左中）" h={130} />
+                      <ImgBox src={data.imgSub1} label="共用（左中）" h={118} />
+                      <ImgBox src={data.imgSub2} label="室内（左中）" h={118} />
                     </div>
                     <div className="mt-2">
-                      <ImgBox src={data.imgSub3} label="ラウンジ等（左下）" h={135} />
+                      <ImgBox src={data.imgSub3} label="ラウンジ等（左下）" h={120} />
                     </div>
                     <div className="mt-3 text-[10px] leading-5">
                       <div>・共用施設リスト（任意）</div>
@@ -641,10 +641,10 @@ export default function ZumenPage() {
                   </div>
 
                   <div className="border-r border-black p-2">
-                    <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={400} fit="contain" />
+                    <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={360} fit="contain" />
                     <div className="mt-2 grid grid-cols-2 gap-2">
-                      <ImgBox src={data.imgSub2} label="室内（中央下左）" h={185} />
-                      <ImgBox src={data.imgSub3} label="共用（中央下右）" h={185} />
+                       <ImgBox src={data.imgSub2} label="室内（中央下左）" h={168} />
+                      <ImgBox src={data.imgSub3} label="共用（中央下右）" h={168} />
                     </div>
                   </div>
 
@@ -666,7 +666,7 @@ export default function ZumenPage() {
 
                     <div className="mt-2">
                        <SectionTitle bgColor={theme.section}>備考</SectionTitle>
-                      <div className="min-h-[120px] whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px]">
+                      <div className="min-h-[96px] whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px]">
                         {remarks || "※図面と相違する場合は現況を優先します。"}
                       </div>
                     </div>
