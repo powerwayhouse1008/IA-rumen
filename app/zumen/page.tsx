@@ -515,10 +515,14 @@ export default function ZumenPage() {
                 ) : selectedTemplate === "pop" ? (
                   <>
                      <div className="grid grid-cols-[470px_330px_323px] border-b border-black">
-                       <div className="border-r border-black p-2 text-white" style={{ backgroundColor: theme.brand }}>
+                      <div className="relative border-r border-black p-2 pb-14 text-white" style={{ backgroundColor: theme.brand }}>
                         <div className="text-center font-bold leading-tight" style={adaptiveTextStyle(`${data.propertyType || "中古マンション"} ${data.districts || "全10区画"}`, 15, 20)}>{data.propertyType || "中古マンション"} {data.districts || "全10区画"}</div>
                         <div className="mt-1.5 text-center font-serif leading-[1.03]" style={{ ...adaptiveTextStyle(data.name, 24, 40), maxHeight: "2.5cm", overflow: "hidden" }}>{data.name}</div>
                         <div className="mt-1 text-center leading-tight" style={{ ...adaptiveTextStyle(data.catchCopy, 10, 14), maxHeight: "34px", overflow: "hidden" }}>{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}</div>
+                       <div className="absolute bottom-2 right-2 text-right leading-none">
+                          <div className="font-serif font-bold text-[#ffe9a8]" style={{ ...adaptiveTextStyle(Number(data.price || 0).toLocaleString(), 24, 34), letterSpacing: "0.01em" }}>{Number(data.price || 0).toLocaleString()}</div>
+                          <div className="font-bold text-[#fff7db]" style={adaptiveTextStyle("万円", 12, 18)}>万円</div>
+                        </div>
                       </div>
 
                       <div className="border-r border-black p-2">
@@ -592,7 +596,7 @@ export default function ZumenPage() {
                       </div>
                     </div>
 
-                    <div className="h-[40px] border-b border-black px-3 py-1 text-[10px] leading-4 overflow-hidden">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
+                   <div className="min-h-[40px] border-b border-black px-3 py-1 text-[10px] leading-4 whitespace-pre-line">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
                     <div className="grid h-[2cm] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1.5">
                       <div>
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
