@@ -360,7 +360,7 @@ export default function ZumenPage() {
         <div ref={previewRef} className="overflow-x-auto overflow-y-visible">
             <div className="mx-auto" style={{ width: `${1123 * sheetScale}px` }}>
               <div ref={sheetRef} className={`border border-black bg-white text-black ${selectedTemplate === "pop" ? "font-semibold" : ""} ${selectedTemplate === "chic" ? "bg-[#fcfbf8]" : ""}`} style={{ width: "1123px", minHeight: "794px", transform: `scale(${sheetScale})`, transformOrigin: "top left" }}>
-                       {selectedTemplate === "classic" ? (
+                {selectedTemplate === "classic" ? (
                   <>
                     <div className="grid grid-cols-[470px_380px_273px] border-b border-black">
                       <div className="border-r border-black p-3">
@@ -421,7 +421,7 @@ export default function ZumenPage() {
                           <ImgBox src={data.imgSub1} label="サブ画像1" h={180} />
                           <ImgBox src={data.imgSub2} label="サブ画像2" h={180} />
                         </div>
-                        <div className="mt-3 text-lg font-bold text-[#4a2207]">建物設備・仕様</div>
+                        <div className="mt-3 text-lg font-bold text-[#4a2207]">建物備・仕様</div>
                         <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
                           {['浴室乾燥', '温水洗浄', '床暖房', 'TVモニタ', '宅配BOX', '食洗機', 'ペアガラス', '浴室TV', '防犯カメラ', 'オートロック'].map((item) => (
                             <div key={item} className="flex h-12 items-center justify-center border border-zinc-400 px-1">{item}</div>
@@ -447,9 +447,102 @@ export default function ZumenPage() {
                       </div>
                     </div>
                   </>
+                ) : selectedTemplate === "pop" ? (
+                  <>
+                    <div className="grid grid-cols-[380px_420px_323px] border-b border-black">
+                      <div className="border-r border-black bg-[#012d4a] p-3 text-white">
+                        <div className="text-center text-lg font-bold">中古マンション 全10区画</div>
+                        <div className="mt-3 text-center text-5xl font-serif">{data.name}</div>
+                        <div className="mt-3 text-center text-base">徒歩圏内に学校や公園！</div>
+                        <div className="text-center text-base">毎日が便利で快適な住環境の分譲地</div>
+                      </div>
+
+                      <div className="border-r border-black p-3">
+                        <div className="text-right text-2xl font-bold">{data.access} 「表参道」 駅徒歩<span className="text-[#9a031e]">{data.walk}</span>分</div>
+                        <div className="mt-2 bg-[#0b3b5a] px-2 py-1 text-sm font-bold tracking-widest text-white">LIFE INFORMATION</div>
+                        <div className="grid grid-cols-[1fr_170px] gap-2">
+                          <div className="text-sm leading-6">
+                            <div>□〇〇保育園・・・・徒歩7分(約510m)</div>
+                            <div>□〇〇小学校・・・・徒歩7分(約520m)</div>
+                            <div>□〇〇公園・・・・徒歩8分(約570m)</div>
+                            <div>□〇〇病院・・・・徒歩7分(約540m)</div>
+                            <div>□〇〇中学校・・・・徒歩7分(約550m)</div>
+                            <div>□〇〇幼稚園・・・・徒歩8分(約580m)</div>
+                          </div>
+                          <ImgBox src={data.imgSub3} label="拡大図" h={152} />
+                        </div>
+                      </div>
+
+                      <div className="p-2">
+                        <ImgBox src={data.imgMain} label="現地MAP" h={265} />
+                        <div className="bg-[#012d4a] py-1 text-center text-sm font-bold text-white">NAVI {data.address} 付近</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-[380px_420px_323px] border-b border-black">
+                      <div className="border-r border-black bg-[#012d4a] p-3">
+                        <ImgBox src={data.imgMain} label="メイン画像" h={335} />
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          <ImgBox src={data.imgSub1} label="サブ1" h={130} />
+                          <ImgBox src={data.imgSub2} label="サブ2" h={130} />
+                        </div>
+                      </div>
+
+                      <div className="border-r border-black p-3">
+                        <div className="grid grid-cols-[78px_1fr_130px] items-start gap-2">
+                          <div className="space-y-2 text-center text-sm">
+                            {['収納豊富', '南向き', 'ゆとりの間取', '全室2面採光', 'LDK18帖以上', 'LDK20帖以上'].map((item) => (
+                              <div key={item} className="border border-zinc-400 px-1 py-2">{item}</div>
+                            ))}
+                          </div>
+                          <div>
+                            <div className="text-2xl font-bold text-[#1f2937]">4LDK＋WIC</div>
+                            <div className="text-sm">□専有面積/75㎡(22.68坪)</div>
+                            <div className="text-sm">□バルコニー面積/10㎡(3.02坪)</div>
+                            <div className="mt-2">
+                              <ImgBox src={data.imgPlan} label="間取り" h={300} fit="contain" />
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm">販売価格</div>
+                            <div className="text-6xl font-serif leading-none text-[#9a031e]">{Number(data.price || 0).toLocaleString()}</div>
+                            <div className="text-2xl">万円</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-2">
+                        <div className="grid grid-cols-5 gap-2 text-center text-[10px]">
+                          {['浴室乾燥', '食洗機', '床暖房', 'TVモニタ', '宅配BOX', '追焚', '複層ガラス', '低炭素', 'BATH ROOM', 'オートロック'].map((item) => (
+                            <div key={item} className="flex h-14 items-center justify-center border border-zinc-400">{item}</div>
+                          ))}
+                        </div>
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm font-bold text-white">
+                          {['2沿線以上利用可', '駐車2台可', '環境重視の住宅地', '閑静な住宅街', '平坦地', '角地'].map((item) => (
+                            <div key={item} className="border border-[#d2a52b] bg-[#012d4a] p-2">{item}</div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="min-h-[58px] border-b border-black px-3 py-2 text-[10px] leading-4">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
+
+                    <div className="grid grid-cols-[1fr_360px_170px] items-end px-3 py-2">
+                      <div>
+                        <div className="text-5xl font-serif text-[#243b64]">{contact.companyName}</div>
+                        <div className="text-[10px]">{contact.companyAddress}</div>
+                      </div>
+                      <div className="text-center text-6xl font-serif text-[#a21717]">TEL {contact.companyPhone}</div>
+                      <div className="text-sm leading-6">
+                        <div>Email: lianghf2000@gmail.com</div>
+                        <div>FAX:{contact.companyFax}</div>
+                        <div className="inline-block border border-black px-6 py-1 text-center">取引態様<br />売主</div>
+                      </div>
+                    </div>
+                  </>
                 ) : (
                   <>
-                <div className={`grid grid-cols-[140px_1fr_300px] border-b border-black ${selectedTemplate === "chic" ? "bg-[#f7f3ee]" : ""}`}>
+                   <div className={`grid grid-cols-[140px_1fr_300px] border-b border-black ${selectedTemplate === "chic" ? "bg-[#f7f3ee]" : ""}`}>
                   <div className="flex flex-col items-center justify-center border-r border-black p-2">
                     <div className="text-3xl font-extrabold leading-none">{Number(data.price || 0).toLocaleString()}</div>
                     <div className="mt-1 text-xs font-bold">万円</div>
@@ -556,6 +649,8 @@ export default function ZumenPage() {
                     </div>
                   </div>
                 </div>
+                </>
+                )}
               </div>
             </div>
           </div>
