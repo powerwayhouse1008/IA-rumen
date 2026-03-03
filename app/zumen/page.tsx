@@ -655,13 +655,13 @@ export default function ZumenPage() {
                     {managementRows.length > 0 && (
                       <div className="mt-2">
                         <SectionTitle bgColor={theme.section}>{isMansion ? "管理費等" : "制限・施設"}</SectionTitle>
-                        <InfoTable rows={managementRows} labelBgColor={theme.label} />
+                        <InfoTable rows={managementRows} labelBgColor={theme.label} autoValueWidth />
                       </div>
                     )}
 
                     <div className="mt-2">
                       <SectionTitle bgColor={theme.section}>設備・引渡</SectionTitle>
-                      <InfoTable rows={facilityRows} labelBgColor={theme.label} />
+                      <InfoTable rows={facilityRows} labelBgColor={theme.label} autoValueWidth />
                     </div>
 
                     <div className="mt-2">
