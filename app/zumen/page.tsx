@@ -311,7 +311,7 @@ export default function ZumenPage() {
       <div className="mx-auto w-full max-w-[1500px]">
         <div className="mb-3 flex items-center justify-between">
           <Link href="/" className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">← 戻る</Link>
-                     {selectedTemplate && <div className="flex items-center gap-3">
+                   {selectedTemplate && <div className="flex items-center gap-3">
             <div className="text-sm font-semibold">デザインカラー選択</div>
             <div className="flex items-center gap-2 rounded-full border border-zinc-300 bg-white px-2 py-1">
               {THEME_PICKER_COLORS.map((item) => {
@@ -328,11 +328,10 @@ export default function ZumenPage() {
                 );
               })}
             </div>
-             <button type="button" onClick={saveAsImage} disabled={isExporting} className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">画像として保存</button>
+            <button type="button" onClick={saveAsImage} disabled={isExporting} className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">画像として保存</button>
             <button type="button" onClick={saveAsPdf} disabled={isExporting} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">PDFとして保存</button>
           </div>}
-           ) : null}
-          </div>
+           
         </div>
 
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4">
