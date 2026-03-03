@@ -214,7 +214,7 @@ export default function ZumenPage() {
         { label: "間取り", value: data.mansionDetails.layout || "-" },
         { label: "構造・階数", value: data.mansionDetails.structure || "-" },
         { label: "所在階", value: data.mansionDetails.floor || "-" },
-        { label: "築年月", value: data.mansionDetails.builtAt || "-" },
+       { label: "築年月", value: data.mansionDetails.builtAt || "-", label2: "総戸数", value2: data.mansionDetails.totalUnits ? `${data.mansionDetails.totalUnits}戸` : "-" },
       ];
     }
 
@@ -258,8 +258,7 @@ export default function ZumenPage() {
       return [
         { label: "ガス", value: data.mansionDetails.gas || "-" },
         { label: "EV", value: data.mansionDetails.elevator || "-" },
-        { label: "現況", value: data.mansionDetails.currentStatus || "-" },
-        { label: "引渡", value: data.mansionDetails.handover || "-" },
+        { label: "現況", value: data.mansionDetails.currentStatus || "-", label2: "引渡し", value2: data.mansionDetails.handover || "-" },
       ];
     }
 
@@ -269,15 +268,13 @@ export default function ZumenPage() {
         { label: "飲用水", value: data.houseDetails.water || "-" },
         { label: "汚水", value: data.houseDetails.sewage || "-" },
         { label: "雑排水", value: data.houseDetails.drain || "-" },
-        { label: "現況", value: data.houseDetails.status || "-" },
-        { label: "引渡", value: data.houseDetails.handover || "-" },
+        { label: "現況", value: data.houseDetails.status || "-", label2: "引渡し", value2: data.houseDetails.handover || "-" },
       ];
     }
 
     return [
       { label: "ガス", value: "-" },
-      { label: "現況", value: "-" },
-      { label: "引渡", value: "-" },
+       { label: "現況", value: "-", label2: "引渡し", value2: "-" },
     ];
   }, [data, isHouse, isMansion]);
 
