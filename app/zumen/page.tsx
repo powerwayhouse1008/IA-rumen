@@ -136,6 +136,7 @@ function ImgBox({ src, label, fit = "cover", h }: { src?: string; label: string;
 // 29.0cm × 20.5cm at 96dpi
 const SHEET_WIDTH = 1096;
 const SHEET_HEIGHT = 775;
+const PROPERTY_NAME_MAX_HEIGHT = 84;
 
 function adaptiveTextStyle(text: string | undefined, minSize: number, maxSize: number): CSSProperties {
   const normalized = (text ?? "").replace(/\s+/g, "");
