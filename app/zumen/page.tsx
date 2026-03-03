@@ -483,7 +483,7 @@ export default function ZumenPage() {
                       {remarks || "※図面と相違する場合は現況を優先します。"}
                     </div>
 
-                    <div className="grid h-[76px] grid-cols-[1.2fr_330px_190px] items-center px-3 py-1.5">
+                     <div className="grid h-[2cm] grid-cols-[1.2fr_330px_190px] items-center px-3 py-1.5">
                       <div>
                          <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
@@ -577,7 +577,7 @@ export default function ZumenPage() {
                     </div>
 
                     <div className="h-[40px] border-b border-black px-3 py-1 text-[10px] leading-4 overflow-hidden">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
-                    <div className="grid h-[76px] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1.5">
+                    <div className="grid h-[2cm] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1.5">
                       <div>
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
