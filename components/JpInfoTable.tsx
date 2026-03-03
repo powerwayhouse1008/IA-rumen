@@ -13,13 +13,24 @@ export function SectionTitle({ children, bgColor = "#f3c9b8" }: { children: Reac
   );
 }
 
-export function InfoTable({ rows, labelBgColor = "#fde7dd" }: { rows: Row[]; labelBgColor?: string }) {
+export function InfoTable({
+  rows,
+  labelBgColor = "#fde7dd",
+  autoValueWidth = false,
+}: {
+  rows: Row[];
+  labelBgColor?: string;
+  autoValueWidth?: boolean;
+}) {
+  const singleColumnGrid = autoValueWidth ? "grid-cols-[92px_auto] w-fit" : "grid-cols-[92px_1fr]";
+  const doubleColumnGrid = autoValueWidth ? "grid-cols-[92px_auto_92px_auto] w-fit" : "grid-cols-[92px_1fr_92px_1fr]";
+
   return (
-    <div className="border border-black border-t-0 text-[11px]">
+   <div className={`border border-black border-t-0 text-[11px] ${autoValueWidth ? "w-fit" : ""}`}>
       {rows.map((r, i) => {
         if (r.label2) {
           return (
-            <div key={i} className="grid grid-cols-[92px_1fr_92px_1fr] border-b border-black">
+            <div key={i} className={`grid border-b border-black ${doubleColumnGrid}`}>
               <div className="px-2 py-1 font-bold border-r border-black" style={{ backgroundColor: labelBgColor }}>
                 {r.label}
               </div>
@@ -33,7 +44,7 @@ export function InfoTable({ rows, labelBgColor = "#fde7dd" }: { rows: Row[]; lab
         }
 
         return (
-          <div key={i} className="grid grid-cols-[92px_1fr] border-b border-black">
+          <div key={i} className={`grid border-b border-black ${singleColumnGrid}`}>
             <div className="px-2 py-1 font-bold border-r border-black" style={{ backgroundColor: labelBgColor }}>
               {r.label}
             </div>
