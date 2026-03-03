@@ -22,11 +22,15 @@ export function InfoTable({
   labelBgColor?: string;
   autoValueWidth?: boolean;
 }) {
-  const singleColumnGrid = autoValueWidth ? "grid-cols-[92px_auto] w-fit" : "grid-cols-[92px_1fr]";
-  const doubleColumnGrid = autoValueWidth ? "grid-cols-[92px_auto_92px_auto] w-fit" : "grid-cols-[92px_1fr_92px_1fr]";
+ const singleColumnGrid = autoValueWidth ? "grid-cols-[92px_minmax(140px,auto)] w-fit" : "grid-cols-[92px_1fr]";
+  const doubleColumnGrid = autoValueWidth
+    ? "grid-cols-[92px_minmax(96px,auto)_92px_minmax(96px,auto)] w-fit"
+    : "grid-cols-[92px_1fr_92px_1fr]";
+  const valueCellClass = autoValueWidth ? "px-2 py-1 whitespace-nowrap border-r border-black" : "px-2 py-1 whitespace-pre-wrap border-r border-black";
+  const lastValueCellClass = autoValueWidth ? "px-2 py-1 whitespace-nowrap" : "px-2 py-1 whitespace-pre-wrap";";
 
   return (
-   <div className={`border border-black border-t-0 text-[11px] ${autoValueWidth ? "w-fit" : ""}`}>
+    <div className={`border border-black border-t-0 text-[11px] ${autoValueWidth ? "w-fit" : ""}`}>
       {rows.map((r, i) => {
         if (r.label2) {
           return (
@@ -34,11 +38,11 @@ export function InfoTable({
               <div className="px-2 py-1 font-bold border-r border-black" style={{ backgroundColor: labelBgColor }}>
                 {r.label}
               </div>
-              <div className="px-2 py-1 whitespace-pre-wrap border-r border-black">{r.value}</div>
+              <div className={valueCellClass}>{r.value}</div>
               <div className="px-2 py-1 font-bold border-r border-black" style={{ backgroundColor: labelBgColor }}>
                 {r.label2}
               </div>
-              <div className="px-2 py-1 whitespace-pre-wrap">{r.value2 ?? "-"}</div>
+             <div className={lastValueCellClass}>{r.value2 ?? "-"}</div>
             </div>
           );
         }
@@ -48,7 +52,7 @@ export function InfoTable({
             <div className="px-2 py-1 font-bold border-r border-black" style={{ backgroundColor: labelBgColor }}>
               {r.label}
             </div>
-            <div className="px-2 py-1 whitespace-pre-wrap">{r.value}</div>
+            <div className={lastValueCellClass}>{r.value}</div>
           </div>
           );
       })}
