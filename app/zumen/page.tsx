@@ -411,7 +411,7 @@ export default function ZumenPage() {
                         <div className="text-center text-[38px] text-zinc-300"></div>
                         <div className="text-center text-[40px] leading-[1] text-zinc-300"></div>
                         <div className="mt-2 text-center text-[36px] text-zinc-300"></div>
-                        <div className="mt-2 text-center font-bold leading-tight" style={adaptiveTextStyle(data.name, 24, 38)}>{data.name}</div>
+                             <div className="mt-2 text-center font-bold leading-tight" style={{ ...adaptiveTextStyle(data.name, 24, 38), maxHeight: PROPERTY_NAME_MAX_HEIGHT, overflow: "hidden" }}>{data.name}</div>
                         <div className="mt-2 text-center text-2xl font-bold text-[#4a2207]">{Number(data.price || 0).toLocaleString()}万円</div>
                         <div className="mt-2 text-center" style={adaptiveTextStyle(data.catchCopy, 11, 15)}>{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境"}</div>
                       </div>
@@ -444,7 +444,7 @@ export default function ZumenPage() {
 
                     <div className="grid grid-cols-[300px_440px_383px] border-b border-black">
                       <div className="border-r border-black p-2">
-                        <div className="flex items-end justify-between" style={{ color: theme.brand }}>
+                       <div className="flex items-start justify-between" style={{ color: theme.brand }}>
                            <div className="font-bold" style={adaptiveTextStyle(data.districts, 10, 14)}>{data.districts || "1区画"}</div>
                           <div className="font-bold" style={adaptiveTextStyle(layoutLabel, 28, 40)}>{layoutLabel}</div>
                         </div>
@@ -503,7 +503,7 @@ export default function ZumenPage() {
                      <div className="grid grid-cols-[470px_330px_323px] border-b border-black">
                        <div className="border-r border-black p-2 text-white" style={{ backgroundColor: theme.brand }}>
                         <div className="text-center font-bold leading-tight" style={adaptiveTextStyle(`${data.propertyType || "中古マンション"} ${data.districts || "全10区画"}`, 15, 20)}>{data.propertyType || "中古マンション"} {data.districts || "全10区画"}</div>
-                        <div className="mt-1.5 text-center font-serif leading-[1.03]" style={{ ...adaptiveTextStyle(data.name, 24, 40), maxHeight: "162px", overflow: "hidden" }}>{data.name}</div>
+                        <div className="mt-1.5 text-center font-serif leading-[1.03]" style={{ ...adaptiveTextStyle(data.name, 24, 40), maxHeight: PROPERTY_NAME_MAX_HEIGHT, overflow: "hidden" }}>{data.name}</div>
                         <div className="mt-1 text-center leading-tight" style={{ ...adaptiveTextStyle(data.catchCopy, 10, 14), maxHeight: "34px", overflow: "hidden" }}>{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}</div>
                       </div>
 
@@ -600,7 +600,7 @@ export default function ZumenPage() {
 
                   <div className="p-2">
                     <div className="text-[12px] font-bold">物件名</div>
-                    <div className="mt-1 text-lg font-extrabold tracking-[0.2em]">{data.name}</div>
+                    <div className="mt-1 text-lg font-extrabold tracking-[0.2em]" style={{ maxHeight: PROPERTY_NAME_MAX_HEIGHT, overflow: "hidden" }}>{data.name}</div>
                   </div>
 
                   <div className="border-l border-black p-2">
