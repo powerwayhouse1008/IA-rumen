@@ -517,7 +517,7 @@ export default function ZumenPage() {
                 ) : selectedTemplate === "pop" ? (
                   <>
                      <div className="grid grid-cols-[470px_330px_323px] border-b border-black">
-                        <div className="border-r border-black p-2 text-white" style={{ backgroundColor: theme.brand }}>
+                        <div className="relative border-r border-black p-2 text-white" style={{ backgroundColor: theme.brand }}>
                         <div className="text-center font-bold leading-tight" style={adaptiveTextStyle(`${data.propertyType || "中古マンション"} ${data.districts || "全10区画"}`, 15, 20)}>{data.propertyType || "中古マンション"} {data.districts || "全10区画"}</div>
                         <div className="mt-1.5 text-center font-serif leading-[1.03]" style={{ ...adaptiveTextStyle(data.name, 24, 40), maxHeight: "2.5cm", overflow: "hidden" }}>{data.name}</div>
                         <div className="mt-1 text-center leading-tight" style={{ ...adaptiveTextStyle(data.catchCopy, 10, 14), maxHeight: "34px", overflow: "hidden" }}>{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}</div>
@@ -543,8 +543,6 @@ export default function ZumenPage() {
                       <div className="p-2">
                          <ImgBox src={data.imgMap ?? data.imgMain} label="現地MAP" h={185} />
                         <div className="px-1 py-0.5 text-center font-bold text-white" style={{ ...adaptiveTextStyle(`NAVI ${data.address} 付近`, 8, 11), backgroundColor: theme.brand, minHeight: "18px" }}>NAVI {data.address} 付近</div>
-                        <div className="mt-2">
-                          <ImgBox src={data.imgSub3} label="拡大図" h={130} />
                         </div>
                       </div>
                     </div>
@@ -579,8 +577,9 @@ export default function ZumenPage() {
                       </div>
 
                       <div className="p-2">
+                         <ImgBox src={data.imgSub3} label="拡大図" h={130} />
                          {featureRows.length > 0 && (
-                          <div className="grid grid-cols-5 gap-2 text-center text-[10px]">
+                         <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
                             {featureRows.slice(0, 10).map((item) => (
                               <div key={item} className="flex h-14 items-center justify-center border border-zinc-400">{item}</div>
                             ))}
