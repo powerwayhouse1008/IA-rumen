@@ -239,6 +239,7 @@ export default function ZumenPage() {
   }, []);
 
   const propertyType = data?.propertyType?.trim() ?? "";
+  const category = data?.category;
   const isMansion = propertyType.includes("マンション") || category === "new-mansion" || category === "used-mansion";
   const isHouse = propertyType.includes("住宅") || (!isMansion && (category === "new-house" || category === "used-house"));
   const isLand = propertyType === "土地" || category === "land";
@@ -385,6 +386,12 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     try {
       const canvas = await captureSheet();
       if (!canvas) return;
+      
+      const mimeType = imageFormat === "jpeg" ? "image/jpeg" : "image/png";
+      const extension = imageFormat === "jpeg" ? "jpg" : "png";
+      const quality = imageFormat === "jpeg" ? 0.95 : undefined;
+      const fileName = `zumen-${selectedTemplate ?? "preview"}.${extension}`;
+
       const link = document.createElement("a");
       link.download = fileName;
       link.href = canvas.toDataURL(mimeType, quality);
