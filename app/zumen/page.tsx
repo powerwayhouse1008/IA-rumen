@@ -517,7 +517,7 @@ export default function ZumenPage() {
                 ) : selectedTemplate === "pop" ? (
                   <>
                      <div className="grid grid-cols-[470px_330px_323px] border-b border-black">
-                      <div className="relative border-r border-black p-2 pb-14 text-white" style={{ backgroundColor: theme.brand }}>
+                        <div className="border-r border-black p-2 text-white" style={{ backgroundColor: theme.brand }}>
                         <div className="text-center font-bold leading-tight" style={adaptiveTextStyle(`${data.propertyType || "中古マンション"} ${data.districts || "全10区画"}`, 15, 20)}>{data.propertyType || "中古マンション"} {data.districts || "全10区画"}</div>
                         <div className="mt-1.5 text-center font-serif leading-[1.03]" style={{ ...adaptiveTextStyle(data.name, 24, 40), maxHeight: "2.5cm", overflow: "hidden" }}>{data.name}</div>
                         <div className="mt-1 text-center leading-tight" style={{ ...adaptiveTextStyle(data.catchCopy, 10, 14), maxHeight: "34px", overflow: "hidden" }}>{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}</div>
@@ -533,19 +533,19 @@ export default function ZumenPage() {
                       <div className="border-r border-black p-2">
                         <div className="text-right font-bold" style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 16, 28)}>{data.access} 駅徒歩<span style={{ color: theme.brand }}>{data.walk}</span>分</div>
                         <div className="mt-1.5 px-2 py-0.5 text-xs font-bold tracking-widest text-white" style={{ backgroundColor: theme.brand }}>LIFE INFORMATION</div>
-                        <div className="grid grid-cols-[1fr_170px] gap-2">
-                           <div className="text-[12px] leading-5 [overflow-wrap:anywhere]">
-                           {lifeInfoRows.slice(0, 6).map((row) => (
-                              <div key={row}>{row}</div>
-                            ))}
-                          </div>
-                         <ImgBox src={data.imgSub3} label="拡大図" h={128} />
+                         <div className="mt-2 text-[12px] leading-5 [overflow-wrap:anywhere]">
+                          {lifeInfoRows.slice(0, 6).map((row) => (
+                            <div key={row}>{row}</div>
+                          ))}
                         </div>
                       </div>
 
                       <div className="p-2">
                          <ImgBox src={data.imgMap ?? data.imgMain} label="現地MAP" h={185} />
                         <div className="px-1 py-0.5 text-center font-bold text-white" style={{ ...adaptiveTextStyle(`NAVI ${data.address} 付近`, 8, 11), backgroundColor: theme.brand, minHeight: "18px" }}>NAVI {data.address} 付近</div>
+                        <div className="mt-2">
+                          <ImgBox src={data.imgSub3} label="拡大図" h={130} />
+                        </div>
                       </div>
                     </div>
 
@@ -574,11 +574,6 @@ export default function ZumenPage() {
                             <div className="mt-2">
                               <ImgBox src={data.imgPlan} label="間取り" h={205} fit="contain" />
                             </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm font-semibold">販売価格</div>
-                            <div className="font-serif leading-none text-[#9a031e]" style={{ ...adaptiveTextStyle(Number(data.price || 0).toLocaleString(), 34, 52), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>{Number(data.price || 0).toLocaleString()}</div>
-                            <div className="text-2xl">万円</div>
                           </div>
                         </div>
                       </div>
