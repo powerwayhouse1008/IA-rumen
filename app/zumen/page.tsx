@@ -521,9 +521,12 @@ export default function ZumenPage() {
                         <div className="text-center font-bold leading-tight" style={adaptiveTextStyle(`${data.propertyType || "中古マンション"} ${data.districts || "全10区画"}`, 15, 20)}>{data.propertyType || "中古マンション"} {data.districts || "全10区画"}</div>
                         <div className="mt-1.5 text-center font-serif leading-[1.03]" style={{ ...adaptiveTextStyle(data.name, 24, 40), maxHeight: "2.5cm", overflow: "hidden" }}>{data.name}</div>
                         <div className="mt-1 text-center leading-tight" style={{ ...adaptiveTextStyle(data.catchCopy, 10, 14), maxHeight: "34px", overflow: "hidden" }}>{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}</div>
-                       <div className="absolute bottom-2 right-2 text-right leading-none">
-                          <div className="font-serif font-bold text-[#ffe9a8]" style={{ ...adaptiveTextStyle(Number(data.price || 0).toLocaleString(), 24, 34), letterSpacing: "0.01em" }}>{Number(data.price || 0).toLocaleString()}</div>
-                          <div className="font-bold text-[#fff7db]" style={adaptiveTextStyle("万円", 12, 18)}>万円</div>
+                       <div className="absolute bottom-2 right-2 text-right">
+                          <div className="font-bold text-[#fff7db]" style={adaptiveTextStyle("販売価格", 11, 15)}>販売価格</div>
+                          <div className="mt-0.5 flex items-baseline justify-end gap-1.5 leading-none">
+                            <div className="font-serif font-bold text-[#ffe9a8]" style={{ ...adaptiveTextStyle(Number(data.price || 0).toLocaleString(), 24, 34), letterSpacing: "0.01em" }}>{Number(data.price || 0).toLocaleString()}</div>
+                            <div className="font-bold text-[#fff7db]" style={adaptiveTextStyle("万円", 12, 18)}>万円</div>
+                          </div>
                         </div>
                       </div>
 
@@ -556,7 +559,7 @@ export default function ZumenPage() {
                       </div>
 
                       <div className="border-r border-black p-2">
-                        <div className={`grid items-start gap-2 ${sideFeatureRows.length > 0 ? "grid-cols-[78px_1fr_130px]" : "grid-cols-[1fr_130px]"}`}>
+                       <div className={`grid items-start gap-2 ${sideFeatureRows.length > 0 ? "grid-cols-[78px_1fr]" : "grid-cols-1"}`}>
                           {sideFeatureRows.length > 0 && (
                             <div className="space-y-1.5 text-center text-[12px]">
                               {sideFeatureRows.map((item) => (
