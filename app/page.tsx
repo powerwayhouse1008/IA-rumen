@@ -252,8 +252,9 @@ export default function Page() {
 ※空き状況は管理会社へ要確認`,
   });
 
-  const isMansionCategory = selectedCategory === "new-mansion" || selectedCategory === "used-mansion";
-  const isHouseCategory = selectedCategory === "new-house" || selectedCategory === "used-house";
+  const normalizedPropertyType = propertyType.trim();
+  const isMansionCategory = normalizedPropertyType.includes("マンション") || selectedCategory === "new-mansion" || selectedCategory === "used-mansion";
+  const isHouseCategory = normalizedPropertyType.includes("住宅") || selectedCategory === "new-house" || selectedCategory === "used-house";
 
   const canGo = useMemo(() => data.price.trim() && data.name.trim() && data.address.trim(), [data]);
 
@@ -359,6 +360,11 @@ export default function Page() {
     const payload = await buildPayload();
     localStorage.setItem("zumenData", JSON.stringify(payload));
     router.push("/zumen");
+  }
+　async function onGeneratePdf() {
+    const payload = await buildPayload();
+    localStorage.setItem("zumenData", JSON.stringify(payload));
+    router.push("/zumen?export=pdf");
   }
 
   function onSelectCategory(category: CategoryKey) {
@@ -704,6 +710,7 @@ export default function Page() {
               <div className="flex gap-2">
                 <button type="button" onClick={onSaveDraft} className="rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white">一時保存</button>
                 <button type="button" onClick={onGenerate} disabled={!canGo} className="rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">図面を生成してプレビュー</button>
+                <button type="button" onClick={onGeneratePdf} disabled={!canGo} className="rounded-md bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">PDFを出力</button>
               </div>
             </div>
           </div>
