@@ -117,7 +117,7 @@ const PROPERTY_TYPE_OPTIONS = ["中古マンション", "新築分譲マンシ�
 
 const SALES_TAGS = ["# 2沿線以上利用可", "# 駐車2台可", "# 環境重視の住宅地", "# 閑静な住宅街", "# 平坦地", "# 角地"];
 const FEATURE_TAGS = ["# シャワートイレ", "# DEN", "# LDKカウンターテーブル", "# ダイニング収納", "# 納戸", "# シューズクローク"];
-
+const DEFAULT_QR_NOTE = "☚内見、物件確認";
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
     <label className="mb-1 block text-sm font-semibold text-zinc-700">
@@ -195,7 +195,7 @@ export default function Page() {
     transactionType: "一般",
     staffName: "野村",
     fee: "分かれて",
-    inspectionNote: "☚内見、物件確認",
+   inspectionNote: DEFAULT_QR_NOTE,
   });
   const [themeColor, setThemeColor] = useState<ThemeColorKey>("sunset-red");
   const [highlightSection, setHighlightSection] = useState<"basic" | "house" | "mansion" | "contact" | null>(null);
@@ -370,14 +370,14 @@ export default function Page() {
     setPropertyType(preset.propertyType);
   }
 
-  const uploadItems: Array<{ key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr" | "imgMap">; label: string }> = [
+ const uploadItems: Array<{ key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgMap">; label: string }> = [
     { key: "imgMain", label: "全体区画図 or 住宅写真" },
     { key: "imgMap", label: "現地MAP（住所から自動生成）" },
     { key: "imgPlan", label: "物件メイン画像" },
     { key: "imgSub1", label: "物件サブ画像（1）" },
     { key: "imgSub2", label: "物件サブ画像（2）" },
     { key: "imgSub3", label: "物件サブ画像（3）" },
-    { key: "imgQr", label: "物件QRコード" },
+   
   ];
 
   return (
@@ -524,6 +524,29 @@ export default function Page() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                  
+                  <div className="mt-3 rounded-md border border-zinc-200 bg-white p-3">
+                    <div className="mb-2 text-xs font-semibold text-zinc-700">物件QRコード（右フッター表示）</div>
+                    <Input type="file" accept="image/*" onChange={(e) => onPick("imgQr", e.target.files?.[0])} />
+                    <div className="mt-2 h-24 overflow-hidden rounded border border-zinc-200 bg-zinc-50">
+                      {data.imgQr ? (
+                        <div className="relative h-full">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={data.imgQr} alt="物件QRコード" className="h-full w-full object-contain" />
+                          <button
+                            type="button"
+                            onClick={() => removeImage("imgQr")}
+                            className="absolute right-1 top-1 rounded bg-black/60 px-2 py-0.5 text-xs text-white"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-xs text-zinc-400">No image</div>
+                      )}
+                    </div>
+                    <div className="mt-2 text-xs text-zinc-500">右側には「{DEFAULT_QR_NOTE}」の文言が表示されます。</div>
                   </div>
                 </div>
               </div>
