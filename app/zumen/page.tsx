@@ -364,8 +364,7 @@ export default function ZumenPage() {
     transactionType: "一般",
     staffName: "野村",
     fee: "分かれて",
-    const DEFAULT_QR_NOTE = "☚内見、物件確認";
-
+    
   };
   const contact = { ...defaultContact, ...data?.contactInfo };
 const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
