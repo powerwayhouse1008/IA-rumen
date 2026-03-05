@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { InfoTable, SectionTitle } from "../../components/JpInfoTable";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
@@ -9,7 +10,7 @@ import { jsPDF } from "jspdf";
 type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion";
 type ThemeColorKey = "sunset-red" | "ocean-blue" | "forest-green" | "royal-purple" | "charcoal-gold" | "sky-blue";
 type TemplateKey = "classic" | "pop" | "chic";
-
+type ImageFormat = "png" | "jpeg";
 const TEMPLATE_OPTIONS: Array<{ key: TemplateKey; title: string; subtitle: string; swatches: string[] }> = [
   { key: "classic", title: "CLASSIC", subtitle: "クラシックで高級感あるデザイン", swatches: ["#6f3b14", "#8f1212", "#7c5c00", "#1d4ed8", "#365314", "#44403c"] },
   { key: "pop", title: "POP", subtitle: "親しみあるデザイン", swatches: ["#003049", "#9d0208", "#ca6702", "#3a5a40", "#582f0e", "#4a4a4a"] },
@@ -209,6 +210,8 @@ function AutoFitText({
 }
 
 export default function ZumenPage() {
+  const searchParams = useSearchParams();
+  const shouldExportPdf = searchParams.get("export") === "pdf";
   const [data] = useState<ZumenData | null>(() => {
     if (typeof window === "undefined") return null;
     const saved = localStorage.getItem("zumenData");
@@ -221,6 +224,7 @@ export default function ZumenPage() {
   const [selectedTheme, setSelectedTheme] = useState<ThemeColorKey>(data?.themeColor ?? "sunset-red");
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [imageFormat, setImageFormat] = useState<ImageFormat>("png");
   useEffect(() => {
     const BASE_WIDTH = SHEET_WIDTH;
     const updateScale = () => {
@@ -234,10 +238,10 @@ export default function ZumenPage() {
     return () => window.removeEventListener("resize", updateScale);
   }, []);
 
-  const category = data?.category;
-  const isHouse = category === "new-house" || category === "used-house";
-  const isMansion = category === "new-mansion" || category === "used-mansion";
-  const isLand = category === "land";
+  const propertyType = data?.propertyType?.trim() ?? "";
+  const isMansion = propertyType.includes("マンション") || category === "new-mansion" || category === "used-mansion";
+  const isHouse = propertyType.includes("住宅") || (!isMansion && (category === "new-house" || category === "used-house"));
+  const isLand = propertyType === "土地" || category === "land";
 
   const summaryRows = useMemo(() => {
     if (!data) return [];
@@ -382,19 +386,41 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       const canvas = await captureSheet();
       if (!canvas) return;
       const link = document.createElement("a");
-      link.download = `zumen-${selectedTemplate ?? "preview"}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.download = fileName;
+      link.href = canvas.toDataURL(mimeType, quality);
       link.click();
     } finally {
       setIsExporting(false);
     }
   }
 
-  async function saveAsPdf() {
+  const saveAsPdf = useCallback(async () => {
     setIsExporting(true);
     try {
       const canvas = await captureSheet();
       if (!canvas) return;
+      
+      const mimeType = imageFormat === "jpeg" ? "image/jpeg" : "image/png";
+      const extension = imageFormat === "jpeg" ? "jpg" : "png";
+      const quality = imageFormat === "jpeg" ? 0.95 : undefined;
+      const fileName = `zumen-${selectedTemplate ?? "preview"}.${extension}`;
+
+      if (canvas.toBlob) {
+        const blob = await new Promise<Blob | null>((resolve) => {
+          canvas.toBlob((nextBlob) => resolve(nextBlob), mimeType, quality);
+        });
+
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.download = fileName;
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+          return;
+        }
+      }
+
       const imageData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [canvas.width, canvas.height] });
       pdf.addImage(imageData, "PNG", 0, 0, canvas.width, canvas.height);
@@ -402,8 +428,21 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     } finally {
       setIsExporting(false);
     }
-  }
+  }, [selectedTemplate]);
 
+  useEffect(() => {
+    if (!shouldExportPdf || !data || isExporting) return;
+    if (!selectedTemplate) {
+      setSelectedTemplate("classic");
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void saveAsPdf();
+    }, 200);
+
+    return () => window.clearTimeout(timer);
+  }, [data, isExporting, saveAsPdf, selectedTemplate, shouldExportPdf]);
   if (!data) return null;
 
   return (
@@ -437,6 +476,18 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                   />
                 );
               })}
+            </div>
+                     <div className="flex items-center gap-2">
+              <label htmlFor="image-format" className="text-xs font-medium text-zinc-600">画像形式</label>
+              <select
+                id="image-format"
+                value={imageFormat}
+                onChange={(event) => setImageFormat(event.target.value as ImageFormat)}
+                className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm"
+              >
+                <option value="png">PNG</option>
+                <option value="jpeg">JPG</option>
+              </select>
             </div>
             <button type="button" onClick={saveAsImage} disabled={isExporting} className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">画像として保存</button>
             <button type="button" onClick={saveAsPdf} disabled={isExporting} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">PDFとして保存</button>
