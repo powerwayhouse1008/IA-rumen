@@ -7,7 +7,7 @@ type Row = {
 
 export function SectionTitle({ children, bgColor = "#f3c9b8" }: { children: React.ReactNode; bgColor?: string }) {
   return (
-    <div className="px-2 py-1 text-[11px] font-bold border border-black" style={{ backgroundColor: bgColor }}>
+    <div className="px-2 py-[3px] text-[11px] font-bold border border-black" style={{ backgroundColor: bgColor }}>
       {children}
     </div>
   );
@@ -29,22 +29,19 @@ export function InfoTable({
   const doubleColumnGrid = autoValueWidth
      ? `grid-cols-[${labelWidth}_minmax(0,1fr)_${labelWidth}_minmax(0,1fr)]`
     : `grid-cols-[${labelWidth}_1fr_${labelWidth}_1fr]`;
-  const valueCellClass = autoValueWidth
-    ? "px-2 py-1 whitespace-nowrap border-r border-black"
-    : "px-2 py-1 whitespace-pre-wrap border-r border-black";
-  const lastValueCellClass = autoValueWidth ? "px-2 py-1 whitespace-nowrap" : "px-2 py-1 whitespace-pre-wrap";
-
+  const valueCellClass = "px-2 py-[3px] whitespace-nowrap border-r border-black overflow-hidden text-ellipsis";
+  const lastValueCellClass = "px-2 py-[3px] whitespace-nowrap overflow-hidden text-ellipsis";
   return (
     <div className="border border-black border-t-0 text-[11px]">
       {rows.map((r, i) => {
         if (r.label2) {
           return (
               <div key={i} className={`grid border-b border-black last:border-b-0 ${doubleColumnGrid}`}>
-              <div className="px-2 py-1 font-bold border-r border-black" style={{ backgroundColor: labelBgColor }}>
+              <div className="px-2 py-[3px] font-bold border-r border-black whitespace-nowrap" style={{ backgroundColor: labelBgColor }}>
                 {r.label}
               </div>
               <div className={valueCellClass}>{r.value}</div>
-              <div className="px-2 py-1 font-bold border-r border-black" style={{ backgroundColor: labelBgColor }}>
+              <div className="px-2 py-[3px] font-bold border-r border-black whitespace-nowrap" style={{ backgroundColor: labelBgColor }}>
                 {r.label2}
               </div>
              <div className={lastValueCellClass}>{r.value2 ?? "-"}</div>
@@ -54,7 +51,7 @@ export function InfoTable({
 
         return (
           <div key={i} className={`grid border-b border-black last:border-b-0 ${singleColumnGrid}`}>
-            <div className="px-2 py-1 font-bold border-r border-black" style={{ backgroundColor: labelBgColor }}>
+            <div className="px-2 py-[3px] font-bold border-r border-black whitespace-nowrap" style={{ backgroundColor: labelBgColor }}>
               {r.label}
             </div>
             <div className={lastValueCellClass}>{r.value}</div>
