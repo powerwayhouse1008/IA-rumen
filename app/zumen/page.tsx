@@ -644,7 +644,7 @@ export default function ZumenPage() {
                       </div>
                     </div>
 
-                   <div className="min-h-[40px] border-b border-black px-3 py-1 text-[10px] leading-4 whitespace-pre-line">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
+                    <div className="h-[2cm] border-b border-black px-3 py-1 text-[10px] leading-4 whitespace-pre-line">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
                     <div className="grid h-[2cm] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1.5">
                       <div>
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
