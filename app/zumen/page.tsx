@@ -439,11 +439,10 @@ export default function ZumenPage() {
                             <div key={row}>{row}</div>
                           ))}
                         </div>
-                        <div className="mt-2"><ImgBox src={data.imgSub3} label="現地案内図" h={115} /></div>
                       </div>
 
                       <div className="p-2">
-                        <ImgBox src={data.imgMain} label="MAP" h={210} />
+                         <ImgBox src={data.imgMain} label="MAP" h={170} />
                         <div className="border-t border-black p-1 text-center" style={adaptiveTextStyle(`NAVI ${data.address}`, 9, 12)}>NAVI {data.address}</div>
                       </div>
                     </div>
@@ -479,6 +478,9 @@ export default function ZumenPage() {
                         <div className="grid grid-cols-2 gap-2">
                           <ImgBox src={data.imgSub1} label="サブ画像1" h={180} />
                           <ImgBox src={data.imgSub2} label="サブ画像2" h={180} />
+                           </div>
+                        <div className="mt-2">
+                          <ImgBox src={data.imgSub3} label="現地案内図" h={170} />
                         </div>
                          {featureRows.length > 0 && (
                           <>
