@@ -137,6 +137,7 @@ function ImgBox({ src, label, fit = "cover", h }: { src?: string; label: string;
 const SHEET_WIDTH = 1096;
 const SHEET_HEIGHT = 775;
 const PROPERTY_NAME_MAX_HEIGHT = 84;
+const DEFAULT_QR_NOTE = "☚内見、物件確認";
 
 function adaptiveTextStyle(text: string | undefined, minSize: number, maxSize: number): CSSProperties {
   const normalized = (text ?? "").replace(/\s+/g, "");
@@ -363,9 +364,11 @@ export default function ZumenPage() {
     transactionType: "一般",
     staffName: "野村",
     fee: "分かれて",
-    inspectionNote: "☚内見、物件確認",
+    const DEFAULT_QR_NOTE = "☚内見、物件確認";
+
   };
   const contact = { ...defaultContact, ...data?.contactInfo };
+const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
 
    const theme = THEME_COLORS[selectedTheme];
 
@@ -754,7 +757,7 @@ export default function ZumenPage() {
                     <div className="border-l border-black text-[10px]">
                       <div className="grid grid-cols-[1fr_1fr] items-start border-b border-black px-2 py-1">
                         <div>
-                          <div className="font-semibold">{contact.inspectionNote}</div>
+                             <div className="font-semibold">{inspectionNote}</div>
                       
                         </div>
                         <div className="text-right">
