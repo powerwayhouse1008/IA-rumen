@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { InfoTable, SectionTitle } from "../../components/JpInfoTable";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
@@ -155,6 +155,56 @@ function adaptiveTextStyle(text: string | undefined, minSize: number, maxSize: n
   const ratio = (length - minLength) / (maxLength - minLength);
   const size = maxSize - (maxSize - minSize) * ratio;
   return { fontSize: `${size}px`, lineHeight: 1.2, overflowWrap: "anywhere" };
+}
+function AutoFitText({
+  text,
+  minSize,
+  maxSize,
+  className,
+  style,
+}: {
+  text: string;
+  minSize: number;
+  maxSize: number;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  const textRef = useRef<HTMLDivElement | null>(null);
+  const [fontSize, setFontSize] = useState(maxSize);
+
+  useLayoutEffect(() => {
+    const node = textRef.current;
+    if (!node) return;
+
+    const fitText = () => {
+      let nextSize = maxSize;
+      node.style.fontSize = `${nextSize}px`;
+
+      while (nextSize > minSize && node.scrollWidth > node.clientWidth) {
+        nextSize -= 1;
+        node.style.fontSize = `${nextSize}px`;
+      }
+
+      setFontSize(nextSize);
+    };
+
+    fitText();
+
+    const resizeObserver = new ResizeObserver(fitText);
+    resizeObserver.observe(node);
+    return () => resizeObserver.disconnect();
+  }, [text, minSize, maxSize]);
+
+  return (
+    <div
+      ref={textRef}
+      className={className}
+      style={{ ...style, fontSize: `${fontSize}px`, whiteSpace: "nowrap", lineHeight: 1.03 }}
+      title={text}
+    >
+      {text}
+    </div>
+  );
 }
 
 export default function ZumenPage() {
@@ -405,12 +455,12 @@ export default function ZumenPage() {
                         <ImgBox src={data.imgPlan} label="間取り" fit="contain" h={72} />
                         <ImgBox src={data.imgSub1} label="サブ" h={72} />
                       </div>
-                    </div>
                   </div>
                   <div className="mt-3 text-xl font-semibold">{template.title}</div>
                   <div className="mt-1 flex gap-1">{template.swatches.map((color) => <div key={color} className="h-4 w-4 rounded" style={{ backgroundColor: color }} />)}</div>
                   <div className="mt-2 text-sm text-zinc-700">{template.subtitle}</div>
                   <button type="button" onClick={() => setSelectedTemplate(template.key)} className="mt-3 w-full rounded-md bg-emerald-600 py-2 font-semibold text-white">選択(日本語)</button>
+                </div>
                 </div>
               ))}
             </div>
@@ -519,7 +569,7 @@ export default function ZumenPage() {
                      <div className="grid grid-cols-[470px_330px_323px] border-b border-black">
                         <div className="relative border-r border-black p-2 text-white" style={{ backgroundColor: theme.brand }}>
                         <div className="text-center font-bold leading-tight" style={adaptiveTextStyle(`${data.propertyType || "中古マンション"} ${data.districts || "全10区画"}`, 15, 20)}>{data.propertyType || "中古マンション"} {data.districts || "全10区画"}</div>
-                        <div className="mt-1.5 text-center font-serif leading-[1.03]" style={{ ...adaptiveTextStyle(data.name, 24, 40), maxHeight: "2.5cm", overflow: "hidden" }}>{data.name}</div>
+                       <AutoFitText text={data.name} minSize={20} maxSize={40} className="mt-1.5 text-center font-serif" style={{ maxHeight: "2.5cm", overflow: "hidden" }} />
                         <div className="mt-1 text-center leading-tight" style={{ ...adaptiveTextStyle(data.catchCopy, 10, 14), maxHeight: "34px", overflow: "hidden" }}>{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}</div>
                        <div className="absolute bottom-2 right-2 text-right">
                           <div className="font-bold text-[#fff7db]" style={adaptiveTextStyle("販売価格", 11, 15)}>販売価格</div>
@@ -543,7 +593,6 @@ export default function ZumenPage() {
                       <div className="p-2">
                          <ImgBox src={data.imgMap ?? data.imgMain} label="現地MAP" h={185} />
                         <div className="px-1 py-0.5 text-center font-bold text-white" style={{ ...adaptiveTextStyle(`NAVI ${data.address} 付近`, 8, 11), backgroundColor: theme.brand, minHeight: "18px" }}>NAVI {data.address} 付近</div>
-                        </div>
                       </div>
                     </div>
 
@@ -630,7 +679,7 @@ export default function ZumenPage() {
                   </div>
                 </div>
 
-                   <div className="grid grid-cols-[300px_1fr_280px]">
+                   <div className="grid grid-cols-[260px_1fr_320px]">
                   <div className="border-r border-black p-2">
                     <ImgBox src={data.imgMain} label="外観画像（左上）" h={210} />
                     <div className="mt-2 grid grid-cols-2 gap-2">
