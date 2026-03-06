@@ -23,12 +23,10 @@ export function InfoTable({
   autoValueWidth?: boolean;
 }) {
   const labelWidth = "111px"; // 92px + ~0.5cm
-  const singleColumnGrid = autoValueWidth
-    ? `grid-cols-[${labelWidth}_minmax(0,1fr)]`
-    : `grid-cols-[${labelWidth}_1fr]`;
-  const doubleColumnGrid = autoValueWidth
-     ? `grid-cols-[${labelWidth}_minmax(0,1fr)_${labelWidth}_minmax(0,1fr)]`
-    : `grid-cols-[${labelWidth}_1fr_${labelWidth}_1fr]`;
+  const singleColumnTemplate = autoValueWidth ? `${labelWidth} minmax(0, 1fr)` : `${labelWidth} 1fr`;
+  const doubleColumnTemplate = autoValueWidth
+    ? `${labelWidth} minmax(0, 1fr) ${labelWidth} minmax(0, 1fr)`
+    : `${labelWidth} 1fr ${labelWidth} 1fr`;;
   const valueCellClass = "px-2 py-[3px] whitespace-nowrap border-r border-black overflow-hidden text-ellipsis";
   const lastValueCellClass = "px-2 py-[3px] whitespace-nowrap overflow-hidden text-ellipsis";
   return (
@@ -36,7 +34,7 @@ export function InfoTable({
       {rows.map((r, i) => {
         if (r.label2) {
           return (
-              <div key={i} className={`grid border-b border-black last:border-b-0 ${doubleColumnGrid}`}>
+              <div key={i} className="grid border-b border-black last:border-b-0" style={{ gridTemplateColumns: doubleColumnTemplate }}>
               <div className="px-2 py-[3px] font-bold border-r border-black whitespace-nowrap" style={{ backgroundColor: labelBgColor }}>
                 {r.label}
               </div>
@@ -50,7 +48,7 @@ export function InfoTable({
         }
 
         return (
-          <div key={i} className={`grid border-b border-black last:border-b-0 ${singleColumnGrid}`}>
+         <div key={i} className="grid border-b border-black last:border-b-0" style={{ gridTemplateColumns: singleColumnTemplate }}>
             <div className="px-2 py-[3px] font-bold border-r border-black whitespace-nowrap" style={{ backgroundColor: labelBgColor }}>
               {r.label}
             </div>
