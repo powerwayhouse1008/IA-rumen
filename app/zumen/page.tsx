@@ -141,6 +141,7 @@ const SHEET_WIDTH = 1096;
 const SHEET_HEIGHT = 775;
 const PROPERTY_NAME_MAX_HEIGHT = 84;
 const DEFAULT_QR_NOTE = "☚内見、物件確認";
+const DEFAULT_LIFE_INFORMATION_ROWS = ["□スーパー 徒歩6分", "□小学校 徒歩7分", "□総合病院 徒歩12分", "□公園 徒歩3分"];
 const FOOTER_HEIGHT_CLASS = "h-[1.5cm]";
 const FOOTER_QR_SIZE_CLASS = "h-[1.5cm] w-[1.5cm]";
 
@@ -424,15 +425,15 @@ function ZumenPageContent() {
       .map((row) => (row.startsWith("□") ? row : `□${row}`));
      }, [data?.lifeInformation]);
 
-    const lifeInfoRows =
+     const lifeInfoRows =
     inputLifeInfoRows.length > 0
       ? inputLifeInfoRows
-      : ["□スーパー 徒歩6分", "□小学校 徒歩7分", "□総合病院 徒歩12分", "□公園 徒歩3分"];
+      : DEFAULT_LIFE_INFORMATION_ROWS;
 
   const popLifeInfoRows =
     inputLifeInfoRows.length > 0
       ? inputLifeInfoRows
-      : ["□スーパー 徒歩6分", "□小学校 徒歩7分", "□総合病院 徒歩12分", "□公園 徒歩3分"];
+       : DEFAULT_LIFE_INFORMATION_ROWS;
   const defaultContact = {
     companyName: "株式会社パワーウェイ",
     companyPhone: "090-6695-1306",
