@@ -486,27 +486,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     try {
       const canvas = await captureSheet();
       if (!canvas) return;
-      
-      const mimeType = imageFormat === "jpeg" ? "image/jpeg" : "image/png";
-      const extension = imageFormat === "jpeg" ? "jpg" : "png";
-      const quality = imageFormat === "jpeg" ? 0.95 : undefined;
-      const fileName = `zumen-${selectedTemplate ?? "preview"}.${extension}`;
 
-      if (canvas.toBlob) {
-        const blob = await new Promise<Blob | null>((resolve) => {
-          canvas.toBlob((nextBlob) => resolve(nextBlob), mimeType, quality);
-        });
-
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.download = fileName;
-          link.href = url;
-          link.click();
-          URL.revokeObjectURL(url);
-          return;
-        }
-      }
 
       const imageData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [canvas.width, canvas.height] });
