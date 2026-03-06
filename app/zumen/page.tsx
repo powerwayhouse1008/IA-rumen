@@ -92,6 +92,7 @@ type ZumenData = {
   access: string;
   walk: string;
   address: string;
+  lifeInformation?: string;
   catchCopy?: string;
   districts?: string;
   salesTags?: string[];
@@ -362,11 +363,22 @@ function ZumenPageContent() {
   const sideFeatureRows = featureRows.slice(0, 6);
   const salesRows = data?.salesTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
   const lifeInfoRows = useMemo(() => {
-    if (summaryRows.length > 1) {
-      return summaryRows.slice(1, 7).map((row) => `□${row.label}：${row.value}`);
+    const customRows = (data?.lifeInformation ?? "")
+      .split(/\r?\n/)
+      .map((row) => row.trim())
+      .filter(Boolean)
+      .slice(0, 4)
+      .map((row) => (row.startsWith("□") ? row : `□${row}`));
+
+    if (customRows.length > 0) {
+      return customRows;
     }
-    return [`□交通：${data?.access ?? "-"} 徒歩${data?.walk ?? "-"}分`, `□所在地：${data?.address ?? "-"}`];
-  }, [data?.access, data?.address, data?.walk, summaryRows]);
+
+    if (summaryRows.length > 1) {
+       return summaryRows.slice(1, 5).map((row) => `□${row.label}：${row.value}`);
+    }
+      return [`□交通：${data?.access ?? "-"} 徒歩${data?.walk ?? "-"}分`, `□所在地：${data?.address ?? "-"}`].slice(0, 4);
+  }, [data?.access, data?.address, data?.lifeInformation, data?.walk, summaryRows]);
   const defaultContact = {
     companyName: "株式会社パワーウェイ",
     companyPhone: "090-6695-1306",
