@@ -616,11 +616,15 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       </div>
                          <div className="flex flex-col items-center justify-center text-center font-serif text-[#a21717]" style={{ letterSpacing: "0.01em" }}>
                           <div style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28), whiteSpace: "nowrap" }}>TEL {contact.companyPhone}</div>
-                          {data.imgQr ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={data.imgQr} alt="QR" className="mt-0.5 h-10 w-10 object-cover" />
-                          ) : null}
-                        </div>
+                          <div className="mt-0.5 flex items-center gap-2">
+                            {data.imgQr ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={data.imgQr} alt="QR" className="h-14 w-14 object-cover" />
+                            ) : (
+                              <div className="flex h-14 w-14 items-center justify-center border border-zinc-300 text-[10px] text-zinc-500">QR</div>
+                            )}
+                            <div className="text-[11px] leading-tight text-[#243b64]">{inspectionNote}</div>
+                          </div>
                       <div className="self-start justify-self-end text-right text-[12px] leading-4 [overflow-wrap:anywhere]">
                         <div className="text-[12px] leading-5 [overflow-wrap:anywhere]">
                            <div>Email: {contact.companyEmail}</div>
@@ -718,10 +722,15 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       </div>
                      <div className="flex flex-col items-center justify-center text-center font-serif text-[#a21717]" style={{ letterSpacing: "0.01em" }}>
                       <div style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28), whiteSpace: "nowrap" }}>TEL {contact.companyPhone}</div>
-                      {data.imgQr ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={data.imgQr} alt="QR" className="mt-0.5 h-10 w-10 object-cover" />
-                      ) : null}
+                      div className="mt-0.5 flex items-center gap-2">
+                        {data.imgQr ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={data.imgQr} alt="QR" className="h-14 w-14 object-cover" />
+                        ) : (
+                          <div className="flex h-14 w-14 items-center justify-center border border-zinc-300 text-[10px] text-zinc-500">QR</div>
+                        )}
+                        <div className="text-[11px] leading-tight text-[#243b64]">{inspectionNote}</div>
+                      </div>
                      </div>
                       <div className="self-start justify-self-end text-right text-[12px] leading-4 [overflow-wrap:anywhere]">
                           <div>Email: {contact.companyEmail}</div>
