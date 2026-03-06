@@ -22,7 +22,7 @@ export function InfoTable({
   labelBgColor?: string;
   autoValueWidth?: boolean;
 }) {
-  const labelWidth = "100px"; // keep sections full-width while making colored label cells slightly narrower
+  const labelWidth = "95px"; // keep sections full-width while making colored label cells slightly narrower
   const singleColumnTemplate = autoValueWidth ? `${labelWidth} minmax(0, 1fr)` : `${labelWidth} 1fr`;
   const doubleColumnTemplate = autoValueWidth
     ? `${labelWidth} minmax(0, 1fr) ${labelWidth} minmax(0, 1fr)`
