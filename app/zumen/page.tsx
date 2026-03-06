@@ -537,7 +537,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                         <div className="text-center text-[40px] leading-[1] text-zinc-300"></div>
                         <div className="mt-2 text-center text-[36px] text-zinc-300"></div>
                              <div className="mt-2 text-center font-bold leading-tight" style={{ ...adaptiveTextStyle(data.name, 24, 38), maxHeight: PROPERTY_NAME_MAX_HEIGHT, overflow: "hidden" }}>{data.name}</div>
-                        <div className="mt-2 text-center text-2xl font-bold text-[#4a2207]">{Number(data.price || 0).toLocaleString()}万円</div>
+                        <div className="mt-2 text-center text-2xl font-bold text-[#4a2207]">販売価格 {Number(data.price || 0).toLocaleString()}万円</div>
                         <div className="mt-2 text-center" style={adaptiveTextStyle(data.catchCopy, 11, 15)}>{data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境"}</div>
                       </div>
 
@@ -570,9 +570,8 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       <div className="border-r border-black p-2">
                        <div className="flex items-start justify-between" style={{ color: theme.brand }}>
                            <div className="font-bold" style={adaptiveTextStyle(data.districts, 10, 14)}>{data.districts || "1区画"}</div>
-                          <div className="font-bold" style={adaptiveTextStyle(layoutLabel, 28, 40)}>{layoutLabel}</div>
+                           <div className="font-bold" style={adaptiveTextStyle(layoutLabel, 22, 32)}>{layoutLabel}</div>
                         </div>
-                        <div className="mt-1 text-[#9a1e1e]" style={adaptiveTextStyle(`販売価格 ${Number(data.price || 0).toLocaleString()}万円`, 18, 28)}>販売価格 {Number(data.price || 0).toLocaleString()}万円</div>
                         <div className="mt-2"><ImgBox src={data.imgPlan} label="間取り図" h={290} fit="contain" /></div>
                         <div className="mt-2 space-y-1 text-xs">
                           {summaryRows.slice(0, 6).map((row) => (
