@@ -362,23 +362,30 @@ function ZumenPageContent() {
   const featureRows = data?.featureTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
   const sideFeatureRows = featureRows.slice(0, 6);
   const salesRows = data?.salesTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
-  const lifeInfoRows = useMemo(() => {
-    const customRows = (data?.lifeInformation ?? "")
+  const inputLifeInfoRows = useMemo(() => {
+    return (data?.lifeInformation ?? "")
       .split(/\r?\n/)
       .map((row) => row.trim())
       .filter(Boolean)
       .slice(0, 4)
       .map((row) => (row.startsWith("□") ? row : `□${row}`));
+     }, [data?.lifeInformation]);
 
-    if (customRows.length > 0) {
-      return customRows;
+    const lifeInfoRows = useMemo(() => {
+    if (inputLifeInfoRows.length > 0) {
+      return inputLifeInfoRows;
     }
 
     if (summaryRows.length > 1) {
        return summaryRows.slice(1, 5).map((row) => `□${row.label}：${row.value}`);
     }
       return [`□交通：${data?.access ?? "-"} 徒歩${data?.walk ?? "-"}分`, `□所在地：${data?.address ?? "-"}`].slice(0, 4);
-  }, [data?.access, data?.address, data?.lifeInformation, data?.walk, summaryRows]);
+ }, [data?.access, data?.address, data?.walk, inputLifeInfoRows, summaryRows]);
+
+  const popLifeInfoRows =
+    inputLifeInfoRows.length > 0
+      ? inputLifeInfoRows
+      : ["□スーパー 徒歩6分", "□小学校 徒歩7分", "□総合病院 徒歩12分", "□公園 徒歩3分"];
   const defaultContact = {
     companyName: "株式会社パワーウェイ",
     companyPhone: "090-6695-1306",
@@ -677,7 +684,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                         <div className="text-right font-bold" style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 16, 28)}>{data.access} 駅徒歩<span style={{ color: theme.brand }}>{data.walk}</span>分</div>
                         <div className="mt-1.5 px-2 py-0.5 text-xs font-bold tracking-widest text-white" style={{ backgroundColor: theme.brand }}>LIFE INFORMATION</div>
                          <div className="mt-2 text-[12px] leading-5 [overflow-wrap:anywhere]">
-                          {lifeInfoRows.slice(0, 6).map((row) => (
+                           {popLifeInfoRows.slice(0, 6).map((row) => (
                             <div key={row}>{row}</div>
                           ))}
                         </div>
