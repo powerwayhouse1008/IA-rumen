@@ -797,8 +797,9 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       <ImgBox src={data.imgSub3} label="ラウンジ等（左下）" h={120} />
                     </div>
                     <div className="mt-3 text-[10px] leading-5">
-                      <div>・共用施設リスト（任意）</div>
-                      <div>・ゲストルーム / ラウンジ / キッズルーム</div>
+                      <{lifeInfoRows.slice(0, 4).map((row) => (
+                        <div key={row}>{row.replace(/^□/, "・")}</div>
+                      ))}
                     </div>
                   </div>
 
