@@ -770,15 +770,16 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                         )}
                       </div>
                     </div>
-
-                    <div className="h-[56px] w-[29cm] border-b border-black px-3 py-1 text-[10px] leading-4 overflow-hidden">
-                      <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+    //chiều rộng của ô thông tin của pop //
+                       <div className="h-[68px] w-[29cm] border-b border-black px-3 py-1.5 text-[11px] leading-5 overflow-hidden">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
                         {popRemarkItems.map((item, index) => (
-                          <span key={`${item}-${index}`} className="whitespace-nowrap">{item}</span>
+                          <span key={`${item}-${index}`}>{item}</span>
                         ))}
                       </div>
                     </div>
-                     <div className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1`}>
+                
+                     <div className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.45fr_320px_150px] items-center px-3 py-1`}>
                       <div>
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
