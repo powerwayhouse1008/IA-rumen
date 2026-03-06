@@ -424,16 +424,10 @@ function ZumenPageContent() {
       .map((row) => (row.startsWith("□") ? row : `□${row}`));
      }, [data?.lifeInformation]);
 
-    const lifeInfoRows = useMemo(() => {
-    if (inputLifeInfoRows.length > 0) {
-      return inputLifeInfoRows;
-    }
-
-    if (summaryRows.length > 1) {
-       return summaryRows.slice(1, 5).map((row) => `□${row.label}：${row.value}`);
-    }
-      return [`□交通：${data?.access ?? "-"} 徒歩${data?.walk ?? "-"}分`, `□所在地：${data?.address ?? "-"}`].slice(0, 4);
- }, [data?.access, data?.address, data?.walk, inputLifeInfoRows, summaryRows]);
+    const lifeInfoRows =
+    inputLifeInfoRows.length > 0
+      ? inputLifeInfoRows
+      : ["□スーパー 徒歩6分", "□小学校 徒歩7分", "□総合病院 徒歩12分", "□公園 徒歩3分"];
 
   const popLifeInfoRows =
     inputLifeInfoRows.length > 0
