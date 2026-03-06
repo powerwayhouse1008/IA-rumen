@@ -816,7 +816,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
 
                     <div className="mt-2">
                        <SectionTitle bgColor={theme.section}>備考</SectionTitle>
-                      <div className="min-h-[96px] whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px]">
+                      <div className="min-h-[2.34cm] whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px]">
                         {remarks || "※図面と相違する場合は現況を優先します。"}
                       </div>
                     </div>
