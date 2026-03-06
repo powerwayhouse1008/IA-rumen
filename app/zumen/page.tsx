@@ -119,6 +119,7 @@ type ZumenData = {
     staffName: string;
     fee: string;
     inspectionNote: string;
+    infoPageUrl?: string;
   };
 };
 
@@ -565,7 +566,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       </div>
                     )}
 
-                    <div className="grid grid-cols-[300px_440px_383px] border-b border-black">
+                    <div className="grid grid-cols-[300px_421px_402px] border-b border-black">
                       <div className="border-r border-black p-2">
                        <div className="flex items-start justify-between" style={{ color: theme.brand }}>
                            <div className="font-bold" style={adaptiveTextStyle(data.districts, 10, 14)}>{data.districts || "1区画"}</div>
@@ -609,17 +610,23 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       {remarks || "※図面と相違する場合は現況を優先します。"}
                     </div>
 
-                     <div className="grid h-[2cm] grid-cols-[1.2fr_330px_190px] items-center px-3 py-1.5">
+                     <div className="grid h-[1.5cm] grid-cols-[1.2fr_330px_190px] items-center px-3 py-1">
                       <div>
                          <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                       </div>
-                        <div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
+                         <div className="flex flex-col items-center justify-center text-center font-serif text-[#a21717]" style={{ letterSpacing: "0.01em" }}>
+                          <div style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28), whiteSpace: "nowrap" }}>TEL {contact.companyPhone}</div>
+                          {data.imgQr ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={data.imgQr} alt="QR" className="mt-0.5 h-10 w-10 object-cover" />
+                          ) : null}
+                        </div>
                       <div className="self-start justify-self-end text-right text-[12px] leading-4 [overflow-wrap:anywhere]">
                         <div className="text-[12px] leading-5 [overflow-wrap:anywhere]">
                            <div>Email: {contact.companyEmail}</div>
                           <div>FAX:{contact.companyFax}</div>
-                           <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引形態<br/>{contact.transactionType || "-"}</div>
+                          <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引形態<br/>{contact.transactionType || "-"}<br/>担当者 {contact.staffName || "-"}</div>
                         </div>
                         </div>
                     </div>
@@ -704,17 +711,23 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       </div>
                     </div>
 
-                    <div className="h-[2cm] border-b border-black px-3 py-1 text-[10px] leading-4 whitespace-pre-line">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
-                    <div className="grid h-[2cm] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1.5">
+                     <div className="h-[56px] border-b border-black px-3 py-1 text-[10px] leading-4 whitespace-pre-line">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
+                    <div className="grid h-[1.5cm] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1">
                       <div>
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                       </div>
-                     <div className="text-center font-serif text-[#a21717]" style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28), whiteSpace: "nowrap", letterSpacing: "0.01em" }}>TEL {contact.companyPhone}</div>
+                     <div className="flex flex-col items-center justify-center text-center font-serif text-[#a21717]" style={{ letterSpacing: "0.01em" }}>
+                      <div style={{ ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28), whiteSpace: "nowrap" }}>TEL {contact.companyPhone}</div>
+                      {data.imgQr ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={data.imgQr} alt="QR" className="mt-0.5 h-10 w-10 object-cover" />
+                      ) : null}
+                     </div>
                       <div className="self-start justify-self-end text-right text-[12px] leading-4 [overflow-wrap:anywhere]">
                           <div>Email: {contact.companyEmail}</div>
                         <div>FAX:{contact.companyFax}</div>
-                       <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引形態<br />{contact.transactionType || "-"}</div>
+                      <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引形態<br />{contact.transactionType || "-"}<br />担当者 {contact.staffName || "-"}</div>
                       </div>
                     </div>
                   </>
