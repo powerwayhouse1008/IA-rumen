@@ -275,6 +275,9 @@ function ZumenPageContent() {
     }
 
     if (isMansion && data.mansionDetails) {
+      const builtAtRow = { label: "築年月", value: data.mansionDetails.builtAt || "-" };
+      const totalUnitsRow = { label: "総戸数", value: data.mansionDetails.totalUnits ? `${data.mansionDetails.totalUnits}戸` : "-" };
+
       return [
         { label: "所在地", value: data.address },
         { label: "権利", value: data.mansionDetails.right || "-" },
@@ -283,7 +286,7 @@ function ZumenPageContent() {
         { label: "間取り", value: data.mansionDetails.layout || "-" },
         { label: "構造・階数", value: data.mansionDetails.structure || "-" },
         { label: "所在階", value: data.mansionDetails.floor || "-" },
-       { label: "築年月", value: data.mansionDetails.builtAt || "-", label2: "総戸数", value2: data.mansionDetails.totalUnits ? `${data.mansionDetails.totalUnits}戸` : "-" },
+       ...(selectedTemplate === "chic" ? [builtAtRow, totalUnitsRow] : [{ ...builtAtRow, label2: "総戸数", value2: totalUnitsRow.value }]),
       ];
     }
 
@@ -297,7 +300,7 @@ function ZumenPageContent() {
     }
 
     return [{ label: "所在地", value: data.address }];
-  }, [data, isHouse, isLand, isMansion]);
+  }, [data, isHouse, isLand, isMansion, selectedTemplate]);
 
   const managementRows = useMemo(() => {
     if (isMansion && data?.mansionDetails) {
