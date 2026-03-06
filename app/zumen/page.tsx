@@ -837,7 +837,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
 
                 <div className="grid grid-cols-[210px_1fr] border-t border-black">
                   <div className="px-3 py-2 text-white" style={{ backgroundColor: theme.brand }}>
-                    <div className="text-2xl font-extrabold leading-tight tracking-widest">POWERWAY HOUSE</div>
+                    <div className={`${selectedTemplate === "chic" ? "text-[22px]" : "text-2xl"} font-extrabold leading-tight tracking-widest`}>POWERWAY HOUSE</div>
                     <div className="mt-0.5 text-[11px]">不動産　販売・賃貸・管理</div>
                   </div>
                      <div className="grid grid-cols-[1fr_88px_320px]">
