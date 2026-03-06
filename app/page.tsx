@@ -32,6 +32,7 @@ type ZumenData = {
     staffName: string;
     fee: string;
     inspectionNote: string;
+     infoPageUrl: string;
   };
 };
 type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion";
@@ -196,6 +197,7 @@ export default function Page() {
     staffName: "野村",
     fee: "分かれて",
    inspectionNote: DEFAULT_QR_NOTE,
+    infoPageUrl: "",
   });
   const [themeColor, setThemeColor] = useState<ThemeColorKey>("sunset-red");
   const [highlightSection, setHighlightSection] = useState<"basic" | "house" | "mansion" | "contact" | null>(null);
@@ -324,13 +326,24 @@ export default function Page() {
       return undefined;
     }
   }
+async function createQrFromUrl(url: string): Promise<string | undefined> {
+    if (!url.trim()) return undefined;
+
+    const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+    const qrRes = await fetch(qrApi);
+    if (!qrRes.ok) return undefined;
+    const qrBlob = await qrRes.blob();
+    return await blobToDataUrl(qrBlob);
+  }
 
   async function buildPayload() {
     const generatedMap = await createAddressMap(data.address);
+ const generatedQr = await createQrFromUrl(contactInfo.infoPageUrl);
 
     const payload = {
       ...data,
       imgMap: generatedMap ?? data.imgMap,
+      imgQr: generatedQr ?? data.imgQr,
       catchCopy,
       districts,
       salesTags,
@@ -346,7 +359,9 @@ export default function Page() {
     if (generatedMap) {
       setData((prev) => ({ ...prev, imgMap: generatedMap }));
     }
-
+ if (generatedQr) {
+      setData((prev) => ({ ...prev, imgQr: generatedQr }));
+    }
     return payload;
   }
 
@@ -632,6 +647,7 @@ export default function Page() {
                 <div><FieldLabel>取引形態</FieldLabel><Input value={contactInfo.transactionType} onChange={(e) => updateContact("transactionType", e.target.value)} /></div>
                 <div><FieldLabel>手数料</FieldLabel><Input value={contactInfo.fee} onChange={(e) => updateContact("fee", e.target.value)} /></div>
                 <div className="md:col-span-2"><FieldLabel>内見・物件確認文言</FieldLabel><Input value={contactInfo.inspectionNote} onChange={(e) => updateContact("inspectionNote", e.target.value)} /></div>
+               <div className="md:col-span-2"><FieldLabel>物件情報URL（QR自動生成用）</FieldLabel><Input value={contactInfo.infoPageUrl} onChange={(e) => updateContact("infoPageUrl", e.target.value)} placeholder="https://..." /></div>
               </div>
             </div>
 
