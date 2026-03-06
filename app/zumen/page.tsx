@@ -358,6 +358,59 @@ function ZumenPageContent() {
   }, [data, isHouse, isMansion]);
 
   const remarks = isMansion ? data?.mansionDetails?.note : isHouse ? data?.houseDetails?.note : "※図面と相違する場合は現況を優先します。";
+  const popRemarks = useMemo(() => {
+    if (!data) return "※図面と相違する場合は現況を優先します。";
+
+    const basicRows = [
+      `●物件名：${data.name || "-"}`,
+      `●所在地：${data.address || "-"}`,
+      `●交通：${data.access || "-"} 徒歩${data.walk || "-"}分`,
+      `●価格：${data.price ? `${Number(data.price).toLocaleString()}万円` : "-"}`,
+      `●物件種別：${data.propertyType || "-"}`,
+    ];
+
+    if (isHouse && data.houseDetails) {
+      const house = data.houseDetails;
+      const houseRows = [
+        `●権利：${house.right || "-"}`,
+        `●敷地面積：${house.landArea ? `${house.landArea}㎡` : "-"}`,
+        `●土地権利：${house.lot || "-"}`,
+        `●私道負担：${house.privateRoad || "-"}`,
+        `●建物面積：${house.exclusiveArea ? `${house.exclusiveArea}㎡` : "-"}`,
+        `●間取り：${house.layout || "-"}`,
+        `●構造：${house.structure || "-"}`,
+        `●築年月：${house.builtAt || "-"}`,
+        `●都市計画：${house.cityPlan || "-"}`,
+        `●用途地域：${house.zoning || "-"}`,
+        `●建ぺい率：${house.buildingCoverage ? `${house.buildingCoverage}%` : "-"}`,
+        `●容積率：${house.floorAreaRatio ? `${house.floorAreaRatio}%` : "-"}`,
+        `●駐車場：${house.parking || "-"}`,
+        `●設備：ガス ${house.gas || "-"} / 水道 ${house.water || "-"} / 汚水 ${house.sewage || "-"} / 雑排水 ${house.drain || "-"}`,
+        `●現況 / 引渡し：${house.status || "-"} / ${house.handover || "-"}`,
+      ];
+
+      return [...basicRows, ...houseRows, ...(house.note ? [house.note] : [])].join("\n");
+    }
+
+    if (isMansion && data.mansionDetails) {
+      const mansion = data.mansionDetails;
+      const mansionRows = [
+        `●権利：${mansion.right || "-"}`,
+        `●専有面積：${mansion.exclusiveArea ? `${mansion.exclusiveArea}㎡` : "-"}`,
+        `●バルコニー面積：${mansion.balconyArea ? `${mansion.balconyArea}㎡` : "-"}`,
+        `●間取り：${mansion.layout || "-"}`,
+        `●構造：${mansion.structure || "-"}`,
+        `●所在階：${mansion.floor || "-"}`,
+        `●築年月：${mansion.builtAt || "-"}`,
+        `●管理費 / 修繕積立金：${mansion.managementFee || "-"}円 / ${mansion.reserveFund || "-"}円`,
+        `●現況 / 引渡し：${mansion.currentStatus || "-"} / ${mansion.handover || "-"}`,
+      ];
+
+      return [...basicRows, ...mansionRows, ...(mansion.note ? [mansion.note] : [])].join("\n");
+    }
+
+    return [...basicRows, remarks || ""].filter(Boolean).join("\n");
+  }, [data, isHouse, isMansion, remarks]);
  const layoutLabel = (isMansion ? data?.mansionDetails?.layout : isHouse ? data?.houseDetails?.layout : data?.propertyType) || "4LDK + WIC";
   const featureRows = data?.featureTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
   const sideFeatureRows = featureRows.slice(0, 6);
@@ -744,7 +797,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       </div>
                     </div>
 
-                     <div className="h-[56px] border-b border-black px-3 py-1 text-[10px] leading-4 whitespace-pre-line">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
+                    <div className="h-[56px] border-b border-black px-3 py-1 text-[10px] leading-4 whitespace-pre-line">{popRemarks}</div>
                      <div className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1`}>
                       <div>
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
