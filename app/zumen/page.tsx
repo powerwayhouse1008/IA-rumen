@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CSSProperties, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { InfoTable, SectionTitle } from "../../components/JpInfoTable";
 import html2canvas from "html2canvas";
@@ -209,7 +209,7 @@ function AutoFitText({
   );
 }
 
-export default function ZumenPage() {
+function ZumenPageContent() {
   const searchParams = useSearchParams();
   const shouldExportPdf = searchParams.get("export") === "pdf";
   const [data] = useState<ZumenData | null>(() => {
@@ -836,5 +836,12 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
         </div>
       </div>
     </main>
+  );
+}
+export default function ZumenPage() {
+  return (
+    <Suspense fallback={null}>
+      <ZumenPageContent />
+    </Suspense>
   );
 }
