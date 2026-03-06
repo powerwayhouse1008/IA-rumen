@@ -254,11 +254,16 @@ function ZumenPageContent() {
         { label: "所在地", value: data.address },
         { label: "権利", value: data.houseDetails.right || "-" },
         { label: "敷地面積", value: data.houseDetails.landArea ? `${data.houseDetails.landArea}㎡` : "-" },
-        { label: "地目", value: data.houseDetails.lot || "-" },
+       {
+          label: "地目",
+          value: data.houseDetails.lot || "-",
+          label2: "間取り",
+          value2: data.houseDetails.layout || "-",
+        },
         { label: "私道", value: data.houseDetails.privateRoad || "-" },
         { label: "接道舗装", value: data.houseDetails.roadSurface || "-" },
         { label: "専有面積", value: data.houseDetails.exclusiveArea ? `${data.houseDetails.exclusiveArea}㎡` : "-" },
-        { label: "間取り", value: data.houseDetails.layout || "-" },
+        
         { label: "構造・階数", value: data.houseDetails.structure || "-" },
         { label: "所在階", value: data.houseDetails.floor || "-" },
         { label: "築年月", value: data.houseDetails.builtAt || "-" },
