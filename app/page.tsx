@@ -47,7 +47,7 @@ type CategoryPreset = {
   data: ZumenData;
 };
 
-const CATEGORY_PRESETS = {
+const CATEGORY_PRESETS: Record<CategoryKey, CategoryPreset> = {
   "new-house": {
     label: "新築住宅仮入力",
     propertyType: "新築分譲住宅",
@@ -113,7 +113,7 @@ const CATEGORY_PRESETS = {
       address: "東京都江東区豊洲4-1-20",
     },
   },
-} satisfies Record<CategoryKey, CategoryPreset>;
+};
 
 const PROPERTY_TYPE_OPTIONS = ["中古マンション", "新築分譲マンション", "新築分譲住宅", "中古住宅", "土地"];
 
