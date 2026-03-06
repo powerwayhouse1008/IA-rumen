@@ -22,12 +22,12 @@ export function InfoTable({
   labelBgColor?: string;
   autoValueWidth?: boolean;
 }) {
-  const labelWidth = "111px"; // 92px + ~0.5cm
+  const labelWidth = "100px"; // keep sections full-width while making colored label cells slightly narrower
   const singleColumnTemplate = autoValueWidth ? `${labelWidth} minmax(0, 1fr)` : `${labelWidth} 1fr`;
   const doubleColumnTemplate = autoValueWidth
     ? `${labelWidth} minmax(0, 1fr) ${labelWidth} minmax(0, 1fr)`
     : `${labelWidth} 1fr ${labelWidth} 1fr`;;
-   const valueCellClass = "min-w-0 px-2 py-[3px] whitespace-nowrap border-r border-black overflow-hidden text-ellipsis";
+  const valueCellClass = "min-w-0 px-2 py-[3px] whitespace-nowrap border-r border-black overflow-hidden text-ellipsis";
   const lastValueCellClass = "min-w-0 px-2 py-[3px] whitespace-nowrap overflow-hidden text-ellipsis";
   return (
      <div className="w-full border border-black border-t-0 text-[11px]">
