@@ -358,8 +358,8 @@ function ZumenPageContent() {
   }, [data, isHouse, isMansion]);
 
   const remarks = isMansion ? data?.mansionDetails?.note : isHouse ? data?.houseDetails?.note : "※図面と相違する場合は現況を優先します。";
-  const popRemarks = useMemo(() => {
-    if (!data) return "※図面と相違する場合は現況を優先します。";
+ const popRemarkItems = useMemo(() => {
+    if (!data) return ["※図面と相違する場合は現況を優先します。"];
 
     const basicRows = [
       `●物件名：${data.name || "-"}`,
@@ -389,7 +389,7 @@ function ZumenPageContent() {
         `●現況 / 引渡し：${house.status || "-"} / ${house.handover || "-"}`,
       ];
 
-      return [...basicRows, ...houseRows, ...(house.note ? [house.note] : [])].join("\n");
+       return [...basicRows, ...houseRows, ...(house.note ? [house.note] : [])];
     }
 
     if (isMansion && data.mansionDetails) {
@@ -406,10 +406,10 @@ function ZumenPageContent() {
         `●現況 / 引渡し：${mansion.currentStatus || "-"} / ${mansion.handover || "-"}`,
       ];
 
-      return [...basicRows, ...mansionRows, ...(mansion.note ? [mansion.note] : [])].join("\n");
+      return [...basicRows, ...mansionRows, ...(mansion.note ? [mansion.note] : [])];
     }
 
-    return [...basicRows, remarks || ""].filter(Boolean).join("\n");
+    return [...basicRows, remarks || ""].filter(Boolean);
   }, [data, isHouse, isMansion, remarks]);
  const layoutLabel = (isMansion ? data?.mansionDetails?.layout : isHouse ? data?.houseDetails?.layout : data?.propertyType) || "4LDK + WIC";
   const featureRows = data?.featureTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
@@ -777,7 +777,13 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       </div>
                     </div>
 
-                    <div className="h-[56px] border-b border-black px-3 py-1 text-[10px] leading-4 whitespace-pre-line">{popRemarks}</div>
+                    <div className="h-[56px] w-[29cm] border-b border-black px-3 py-1 text-[10px] leading-4 overflow-hidden">
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                        {popRemarkItems.map((item, index) => (
+                          <span key={`${item}-${index}`} className="whitespace-nowrap">{item}</span>
+                        ))}
+                      </div>
+                    </div>
                      <div className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1`}>
                       <div>
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
