@@ -140,7 +140,8 @@ const SHEET_WIDTH = 1096;
 const SHEET_HEIGHT = 775;
 const PROPERTY_NAME_MAX_HEIGHT = 84;
 const DEFAULT_QR_NOTE = "☚内見、物件確認";
-const FOOTER_QR_SIZE_CLASS = "h-[2cm] w-[2cm]";
+const FOOTER_HEIGHT_CLASS = "h-[1.5cm]";
+const FOOTER_QR_SIZE_CLASS = "h-[1.5cm] w-[1.5cm]";
 
 function adaptiveTextStyle(text: string | undefined, minSize: number, maxSize: number): CSSProperties {
   const normalized = (text ?? "").replace(/\s+/g, "");
@@ -615,7 +616,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       {remarks || "※図面と相違する場合は現況を優先します。"}
                     </div>
 
-                     <div className="grid h-[2cm] grid-cols-[1.2fr_330px_190px] items-center px-3 py-1">
+                     < <div className={`grid ${FOOTER_HEIGHT_CLASS} grid-cols-[1.2fr_330px_190px] items-center px-3 py-1`}>
                       <div>
                          <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
@@ -725,7 +726,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                     </div>
 
                      <div className="h-[56px] border-b border-black px-3 py-1 text-[10px] leading-4 whitespace-pre-line">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
-                     <div className="grid h-[2cm] w-[29cm] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1">
+                     <div className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1`}>
                       <div>
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
