@@ -230,6 +230,7 @@ function ZumenPageContent() {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [imageFormat, setImageFormat] = useState<ImageFormat>("png");
+  const [exportError, setExportError] = useState<string | null>(null);
   useEffect(() => {
     const BASE_WIDTH = SHEET_WIDTH;
     const updateScale = () => {
@@ -455,9 +456,20 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     if (!sheetRef.current) return null;
     return await html2canvas(sheetRef.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
   }
+async function triggerDownload(blob: Blob, fileName: string) {
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.download = fileName;
+    link.href = objectUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  }
 
   async function saveAsImage() {
     setIsExporting(true);
+     setExportError(null);
     try {
       const canvas = await captureSheet();
       if (!canvas) return;
@@ -467,10 +479,18 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       const quality = imageFormat === "jpeg" ? 0.95 : undefined;
       const fileName = `zumen-${selectedTemplate ?? "preview"}.${extension}`;
 
-      const link = document.createElement("a");
-      link.download = fileName;
-      link.href = canvas.toDataURL(mimeType, quality);
-      link.click();
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((nextBlob) => resolve(nextBlob), mimeType, quality);
+      });
+
+      if (!blob) {
+        throw new Error("画像の生成に失敗しました。");
+      }
+
+      await triggerDownload(blob, fileName);
+    } catch (error) {
+      console.error(error);
+      setExportError("画像の保存に失敗しました。画像URLまたはブラウザのダウンロード設定をご確認ください。");
     } finally {
       setIsExporting(false);
     }
@@ -478,6 +498,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
 
   const saveAsPdf = useCallback(async () => {
     setIsExporting(true);
+    setExportError(null);
     try {
       const canvas = await captureSheet();
       if (!canvas) return;
@@ -486,7 +507,11 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       const imageData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [canvas.width, canvas.height] });
       pdf.addImage(imageData, "PNG", 0, 0, canvas.width, canvas.height);
-      pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`);
+      const blob = pdf.output("blob");
+      await triggerDownload(blob, `zumen-${selectedTemplate ?? "preview"}.pdf`);
+    } catch (error) {
+      console.error(error);
+      setExportError("PDFの保存に失敗しました。画像URLまたはブラウザのダウンロード設定をご確認ください。");
     } finally {
       setIsExporting(false);
     }
@@ -556,7 +581,9 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
           </div>}
            
         </div>
-
+{exportError && (
+          <div className="mb-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{exportError}</div>
+        )}
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4">
             {!selectedTemplate ? (
             <div className="grid gap-4 md:grid-cols-3">
@@ -771,7 +798,6 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                         )}
                       </div>
                     </div>
-    // chiều rộng của ô thông tin của pop 
                        <div className="h-[70px] w-[29cm] border-b border-black px-3 py-1.5 text-[11px] leading-5 overflow-hidden">
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
                         {popRemarkItems.map((item, index) => (
@@ -779,7 +805,6 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                         ))}
                       </div>
                     </div>
-      // chieu cao cua pop phan ten cty
                      <div className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.45fr_300px_150px] items-center px-3 py-1`}>
                       <div>
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
