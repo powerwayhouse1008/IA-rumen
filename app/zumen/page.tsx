@@ -572,7 +572,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                            <div className="font-bold" style={adaptiveTextStyle(data.districts, 10, 14)}>{data.districts || "1区画"}</div>
                            <div className="font-bold" style={adaptiveTextStyle(layoutLabel, 22, 32)}>{layoutLabel}</div>
                         </div>
-                        <div className="mt-2"><ImgBox src={data.imgPlan} label="間取り図" h={290} fit="contain" /></div>
+                       <div className="mt-2"><ImgBox src={data.imgMain} label="メイン写真" h={240} /></div>
                         <div className="mt-2 space-y-1 text-xs">
                           {summaryRows.slice(0, 6).map((row) => (
                             <div key={row.label} className="border border-black px-2 py-1 text-[11px] leading-tight [overflow-wrap:anywhere]">{row.label}: {row.value}</div>
@@ -581,7 +581,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       </div>
 
                       <div className="border-r border-black p-2">
-                        <ImgBox src={data.imgMain} label="メイン写真" h={390} />
+                       <ImgBox src={data.imgPlan} label="間取り図" h={320} fit="contain" />
                       </div>
 
                       <div className="p-2">
