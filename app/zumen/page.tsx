@@ -757,8 +757,8 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                   <>
                     <div className={`grid grid-cols-[140px_1fr_300px] border-b border-black ${selectedTemplate === "chic" ? "bg-[#f7f3ee]" : ""}`}>
                     <div className="relative flex items-center justify-center border-r border-black p-2">
-                    <div className="text-3xl font-extrabold leading-none">{Number(data.price || 0).toLocaleString()}</div>
-                    <div className="absolute bottom-2 right-2 text-xs font-bold">万円</div>
+                   <div className="-translate-y-0.5 text-3xl font-extrabold leading-none">{Number(data.price || 0).toLocaleString()}</div>
+                    <div className="absolute bottom-1.5 right-2 text-xs font-bold">万円</div>
                   </div>
 
                   <div className="p-2">
@@ -777,7 +777,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                    <div className="grid grid-cols-[260px_1fr_320px]">
                   <div className="border-r border-black p-2">
                     <ImgBox src={data.imgMain} label="外観画像（左上）" h={210} />
-                    <div className="mt-2 grid grid-cols-2 gap-2">
+                   <div className="mt-2 grid grid-cols-[calc(50%+0.1cm)_calc(50%-0.1cm)] gap-2">
                       <ImgBox src={data.imgSub1} label="共用（左中）" h={118} />
                       <ImgBox src={data.imgSub2} label="室内（左中）" h={118} />
                     </div>
