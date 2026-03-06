@@ -9,6 +9,7 @@ type ZumenData = {
   access: string;
   walk: string;
   address: string;
+  lifeInformation?: string;
   catchCopy?: string;
   districts?: string;
   salesTags?: string[];
@@ -491,6 +492,15 @@ async function createQrFromUrl(url: string): Promise<string | undefined> {
                 <div>
                   <FieldLabel required>キャッチコピー</FieldLabel>
                   <Input value={catchCopy} onChange={(e) => setCatchCopy(e.target.value)} />
+                </div>
+                <div>
+                  <FieldLabel>LIFE INFORMATION（1行ずつ入力・最大4行）</FieldLabel>
+                  <Textarea
+                    rows={4}
+                    value={data.lifeInformation ?? ""}
+                    onChange={(e) => update("lifeInformation", e.target.value)}
+                    placeholder={"□スーパー 徒歩6分\n□小学校 徒歩7分\n□総合病院 徒歩12分\n□公園 徒歩3分"}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
