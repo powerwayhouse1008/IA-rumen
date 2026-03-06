@@ -719,7 +719,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                     </div>
 
                      <div className="h-[56px] border-b border-black px-3 py-1 text-[10px] leading-4 whitespace-pre-line">{remarks || "※図面と相違する場合は現況を優先します。"}</div>
-                     <div className="grid h-[3cm] w-[29cm] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1">
+                     <div className="grid h-[4cm] w-[29cm] grid-cols-[1.25fr_330px_190px] items-center px-3 py-1">
                       <div>
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
