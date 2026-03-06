@@ -754,10 +754,10 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                   </>
                 ) : (
                   <>
-                   <div className={`grid grid-cols-[140px_1fr_300px] border-b border-black ${selectedTemplate === "chic" ? "bg-[#f7f3ee]" : ""}`}>
-                  <div className="flex flex-col items-center justify-center border-r border-black p-2">
+                    <div className={`grid grid-cols-[140px_1fr_300px] border-b border-black ${selectedTemplate === "chic" ? "bg-[#f7f3ee]" : ""}`}>
+                    <div className="relative flex items-center justify-center border-r border-black p-2">
                     <div className="text-3xl font-extrabold leading-none">{Number(data.price || 0).toLocaleString()}</div>
-                    <div className="mt-1 text-xs font-bold">万円</div>
+                    <div className="absolute bottom-2 right-2 text-xs font-bold">万円</div>
                   </div>
 
                   <div className="p-2">
