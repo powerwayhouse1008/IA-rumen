@@ -27,14 +27,14 @@ export function InfoTable({
   const doubleColumnTemplate = autoValueWidth
     ? `${labelWidth} minmax(0, 1fr) ${labelWidth} minmax(0, 1fr)`
     : `${labelWidth} 1fr ${labelWidth} 1fr`;;
-  const valueCellClass = "px-2 py-[3px] whitespace-nowrap border-r border-black overflow-hidden text-ellipsis";
-  const lastValueCellClass = "px-2 py-[3px] whitespace-nowrap overflow-hidden text-ellipsis";
+   const valueCellClass = "min-w-0 px-2 py-[3px] whitespace-nowrap border-r border-black overflow-hidden text-ellipsis";
+  const lastValueCellClass = "min-w-0 px-2 py-[3px] whitespace-nowrap overflow-hidden text-ellipsis";
   return (
-    <div className="border border-black border-t-0 text-[11px]">
+     <div className="w-full border border-black border-t-0 text-[11px]">
       {rows.map((r, i) => {
         if (r.label2) {
           return (
-              <div key={i} className="grid border-b border-black last:border-b-0" style={{ gridTemplateColumns: doubleColumnTemplate }}>
+             <div key={i} className="grid w-full border-b border-black last:border-b-0" style={{ gridTemplateColumns: doubleColumnTemplate }}>
               <div className="px-2 py-[3px] font-bold border-r border-black whitespace-nowrap" style={{ backgroundColor: labelBgColor }}>
                 {r.label}
               </div>
@@ -48,7 +48,7 @@ export function InfoTable({
         }
 
         return (
-         <div key={i} className="grid border-b border-black last:border-b-0" style={{ gridTemplateColumns: singleColumnTemplate }}>
+         <div key={i} className="grid w-full border-b border-black last:border-b-0" style={{ gridTemplateColumns: singleColumnTemplate }}>
             <div className="px-2 py-[3px] font-bold border-r border-black whitespace-nowrap" style={{ backgroundColor: labelBgColor }}>
               {r.label}
             </div>
