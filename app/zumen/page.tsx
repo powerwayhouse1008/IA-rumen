@@ -140,6 +140,7 @@ const SHEET_WIDTH = 1096;
 const SHEET_HEIGHT = 775;
 const PROPERTY_NAME_MAX_HEIGHT = 84;
 const DEFAULT_QR_NOTE = "☚内見、物件確認";
+const FOOTER_QR_SIZE_CLASS = "h-[2cm] w-[2cm]";
 
 function adaptiveTextStyle(text: string | undefined, minSize: number, maxSize: number): CSSProperties {
   const normalized = (text ?? "").replace(/\s+/g, "");
@@ -619,9 +620,9 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                           <div className="mt-0.5 flex items-center gap-2">
                             {data.imgQr ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={data.imgQr} alt="QR" className="h-14 w-14 object-cover" />
+                             <img src={data.imgQr} alt="QR" className={`${FOOTER_QR_SIZE_CLASS} object-cover`} />
                             ) : (
-                              <div className="flex h-14 w-14 items-center justify-center border border-zinc-300 text-[10px] text-zinc-500">QR</div>
+                             <div className={`flex ${FOOTER_QR_SIZE_CLASS} items-center justify-center border border-zinc-300 text-[10px] text-zinc-500`}>QR</div>
                             )}
                             <div className="text-[11px] leading-tight text-[#243b64]">{inspectionNote}</div>
                           </div>
@@ -729,9 +730,9 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       <div className="mt-0.5 flex items-center gap-2">
                         {data.imgQr ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={data.imgQr} alt="QR" className="h-14 w-14 object-cover" />
+                         <img src={data.imgQr} alt="QR" className={`${FOOTER_QR_SIZE_CLASS} object-cover`} />
                         ) : (
-                          <div className="flex h-14 w-14 items-center justify-center border border-zinc-300 text-[10px] text-zinc-500">QR</div>
+                          <div className={`flex ${FOOTER_QR_SIZE_CLASS} items-center justify-center border border-zinc-300 text-[10px] text-zinc-500`}>QR</div>
                         )}
                         <div className="text-[11px] leading-tight text-[#243b64]">{inspectionNote}</div>
                       </div>
