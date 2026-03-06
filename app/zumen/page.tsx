@@ -630,7 +630,10 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                         <div className="text-[12px] leading-5 [overflow-wrap:anywhere]">
                            <div>Email: {contact.companyEmail}</div>
                           <div>FAX:{contact.companyFax}</div>
-                          <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引形態<br/>{contact.transactionType || "-"}<br/>担当者 {contact.staffName || "-"}</div>
+                           <div className="mt-1 text-center leading-tight">
+                            <div className="whitespace-nowrap">取引形態 {contact.transactionType || "-"}</div>
+                            <div>担当者 {contact.staffName || "-"}</div>
+                          </div>
                         </div>
                         </div>
                     </div>
@@ -736,7 +739,10 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       <div className="self-start justify-self-end text-right text-[12px] leading-4 [overflow-wrap:anywhere]">
                           <div>Email: {contact.companyEmail}</div>
                         <div>FAX:{contact.companyFax}</div>
-                      <div className="mt-1 inline-block border border-black px-5 py-0.5 text-center leading-tight">取引形態<br />{contact.transactionType || "-"}<br />担当者 {contact.staffName || "-"}</div>
+                      <div className="mt-1 text-center leading-tight">
+                            <div className="whitespace-nowrap">取引形態 {contact.transactionType || "-"}</div>
+                            <div>担当者 {contact.staffName || "-"}</div>
+                          </div>
                       </div>
                     </div>
                   </>
