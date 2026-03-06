@@ -840,7 +840,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                     <div className="text-2xl font-extrabold leading-tight tracking-widest">POWERWAY HOUSE</div>
                     <div className="mt-0.5 text-[11px]">不動産　販売・賃貸・管理</div>
                   </div>
-                     <div className="grid grid-cols-[1fr_88px_3320px]">
+                     <div className="grid grid-cols-[1fr_88px_320px]">
                     <div className="px-2 py-1 text-[10px] leading-4">
                       <div className="grid grid-cols-[1fr_auto] gap-2">
                         <div className="font-semibold">{contact.licenseNo}</div>
