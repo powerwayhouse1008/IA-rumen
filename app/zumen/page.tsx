@@ -475,16 +475,68 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
 
    const theme = THEME_COLORS[selectedTheme];
 
-  async function captureSheet() {
+   const waitForSheetImages = useCallback(async (root: HTMLElement) => {
+    const images = Array.from(root.querySelectorAll("img")).filter((img) => Boolean(img.currentSrc || img.src));
+
+    await Promise.all(
+      images.map(async (img) => {
+        const ensureLoaded = new Promise<void>((resolve) => {
+          if (img.complete && img.naturalWidth > 0) {
+            resolve();
+            return;
+          }
+
+          const cleanUp = () => {
+            img.removeEventListener("load", onLoad);
+            img.removeEventListener("error", onError);
+          };
+
+          const onLoad = () => {
+            cleanUp();
+            resolve();
+          };
+
+          const onError = () => {
+            cleanUp();
+            resolve();
+          };
+
+          img.addEventListener("load", onLoad, { once: true });
+          img.addEventListener("error", onError, { once: true });
+
+          window.setTimeout(() => {
+            cleanUp();
+            resolve();
+          }, 20000);
+        });
+
+        await ensureLoaded;
+
+        if (typeof img.decode === "function") {
+          try {
+            await img.decode();
+          } catch {
+            // Keep exporting even if a specific image cannot be decoded.
+          }
+        }
+      })
+    );
+  }, []);
+
+  const captureSheet = useCallback(async () => {
     if (!sheetRef.current) return null;
-   return await html2canvas(sheetRef.current, {
+   
+    await waitForSheetImages(sheetRef.current);
+
+    return await html2canvas(sheetRef.current, {
       scale: 1.5,
       backgroundColor: "#ffffff",
       useCORS: true,
-      imageTimeout: 15000,
+      imageTimeout: 0,
+      logging: false,
     });
-  }
-
+   }, [waitForSheetImages]);
+  
   async function triggerDownload(blob: Blob, fileName: string) {
     const fileType = blob.type || "application/octet-stream";
 
@@ -615,7 +667,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     } finally {
       setIsExporting(false);
     }
-  }, [selectedTemplate]);
+  }, [captureSheet, selectedTemplate]);
 
   useEffect(() => {
     if (!shouldExportPdf || !data || isExporting) return;
