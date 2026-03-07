@@ -758,6 +758,13 @@ function ZumenPageContent() {
           body.style.background = "#ffffff";
 
           const clonedSheetEl = clonedSheet as HTMLElement;
+           let ancestor = clonedSheetEl.parentElement;
+          while (ancestor && ancestor !== body) {
+            ancestor.style.transform = "none";
+            ancestor.style.transformOrigin = "top left";
+            ancestor = ancestor.parentElement;
+          }
+
           clonedSheetEl.style.transform = "none";
           clonedSheetEl.style.width = `${SHEET_WIDTH}px`;
           clonedSheetEl.style.height = `${SHEET_HEIGHT}px`;
