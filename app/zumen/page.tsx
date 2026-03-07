@@ -695,7 +695,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
         unit: "px",
         format: [canvas.width, canvas.height],
       });
-　　　let pdfImageData: string;
+　　 　let pdfImageData: string;
       let pdfImageType: "PNG" | "JPEG" = "PNG";
       try {
         pdfImageData = canvas.toDataURL("image/png");
@@ -703,8 +703,14 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
         pdfImageData = canvas.toDataURL("image/jpeg", 0.95);
         pdfImageType = "JPEG";
       }
-　　　　pdf.addImage(pdfImageData, pdfImageType, 0, 0, canvas.width, canvas.height, undefined, "FAST");
-
+　　　　
+      try {
+        pdf.addImage(pdfImageData, pdfImageType, 0, 0, canvas.width, canvas.height, undefined, "FAST");
+      } catch {
+        pdfImageData = canvas.toDataURL("image/jpeg", 0.95);
+        pdfImageType = "JPEG";
+        pdf.addImage(pdfImageData, pdfImageType, 0, 0, canvas.width, canvas.height, undefined, "FAST");
+      }
       const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
       
       try {
