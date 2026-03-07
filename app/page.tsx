@@ -385,24 +385,14 @@ export default function Page() {
       return undefined;
     }
   }
-async function createQrFromUrl(url: string): Promise<string | undefined> {
-    if (!url.trim()) return undefined;
-
-    const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
-    const qrRes = await fetch(qrApi);
-    if (!qrRes.ok) return undefined;
-    const qrBlob = await qrRes.blob();
-    return await blobToDataUrl(qrBlob);
-  }
 
   async function buildPayload() {
     const generatedMap = await createAddressMap(data.address);
- const generatedQr = await createQrFromUrl(contactInfo.infoPageUrl);
 
     const payload = {
       ...data,
       imgMap: generatedMap ?? data.imgMap,
-      imgQr: generatedQr ?? data.imgQr,
+      imgQr: data.imgQr,
       catchCopy,
       districts,
       salesTags,
@@ -421,8 +411,7 @@ async function createQrFromUrl(url: string): Promise<string | undefined> {
     if (generatedMap) {
       setData((prev) => ({ ...prev, imgMap: generatedMap }));
     }
- if (generatedQr) {
-      setData((prev) => ({ ...prev, imgQr: generatedQr }));
+ 
     }
     return payload;
   }
