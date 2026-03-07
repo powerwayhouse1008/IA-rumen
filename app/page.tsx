@@ -559,7 +559,7 @@ async function createQrFromUrl(url: string): Promise<string | undefined> {
                   <Input value={catchCopy} onChange={(e) => setCatchCopy(e.target.value)} />
                 </div>
                 <div>
-                  <<FieldLabel>LIFE INFORMATION（1行ずつ入力・最大6行）</FieldLabel>
+                  <FieldLabel>LIFE INFORMATION（1行ずつ入力・最大6行）</FieldLabel>
                   <Textarea
                     rows={6}
                     value={data.lifeInformation ?? ""}
