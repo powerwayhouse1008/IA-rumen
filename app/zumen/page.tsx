@@ -940,11 +940,11 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       </div>
                     </div>
 
-                     <div className="h-[52px] border-b border-black px-3 py-1.5 text-[10px] leading-4 overflow-hidden">
+                     <div className="h-[50px] border-b border-black px-3 py-1.5 text-[10px] leading-4 overflow-hidden">
                       {remarks || "※図面と相違する場合は現況を優先します。"}
                     </div>
 
-                     <div className={`grid ${FOOTER_HEIGHT_CLASS} grid-cols-[1.2fr_330px_190px] items-center px-3 py-1`}>
+                     <div className={`grid ${FOOTER_HEIGHT_CLASS} grid-cols-[1.2fr_330px_200px] items-center px-3 py-1`}>
                      <div>
                         <div className="text-[12px] font-semibold text-[#243b64] [overflow-wrap:anywhere]">{contact.licenseNo || "-"}</div>
                          <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 22, 42)}>{contact.companyName}</div>
