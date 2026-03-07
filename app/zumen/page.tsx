@@ -141,7 +141,14 @@ const SHEET_WIDTH = 1096;
 const SHEET_HEIGHT = 775;
 const PROPERTY_NAME_MAX_HEIGHT = 84;
 const DEFAULT_QR_NOTE = "☚内見、物件確認";
-const DEFAULT_LIFE_INFORMATION_ROWS = ["□スーパー 徒歩6分", "□小学校 徒歩7分", "□総合病院 徒歩12分", "□公園 徒歩3分"];
+const DEFAULT_LIFE_INFORMATION_ROWS = [
+  "□スーパー 徒歩6分",
+  "□小学校 徒歩7分",
+  "□総合病院 徒歩12分",
+  "□公園 徒歩3分",
+  "□コンビニ 徒歩4分",
+  "□ドラッグストア 徒歩8分",
+];
 const FOOTER_HEIGHT_CLASS = "h-[1.5cm]";
 const FOOTER_QR_SIZE_CLASS = "h-[1.5cm] w-[1.5cm]";
 
@@ -425,7 +432,7 @@ function ZumenPageContent() {
       .split(/\r?\n/)
       .map((row) => row.trim())
       .filter(Boolean)
-      .slice(0, 4)
+      .slice(0, 6)
       .map((row) => (row.startsWith("□") ? row : `□${row}`));
      }, [data?.lifeInformation]);
 
@@ -689,7 +696,7 @@ async function triggerDownload(blob: Blob, fileName: string) {
                          <div className="mt-1 font-semibold" style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 12, 17)}>{data.access} 駅徒歩{data.walk}分</div>
                          <div className="mt-2 border-b border-black pb-1 text-sm font-bold" style={{ color: theme.brand }}>LIFE INFORMATION</div>
                         <div className="mt-1 text-xs leading-5">
-                                         {lifeInfoRows.slice(0, 4).map((row) => (
+                                         {lifeInfoRows.slice(0, 6).map((row) => (
                             <div key={row}>{row}</div>
                           ))}
                         </div>
@@ -927,7 +934,7 @@ async function triggerDownload(blob: Blob, fileName: string) {
                       <ImgBox src={data.imgSub3} label="ラウンジ等（左下）" h={120} />
                     </div>
                     <div className="mt-3 text-[10px] leading-5">
-                      {lifeInfoRows.slice(0, 4).map((row) => (
+                      {lifeInfoRows.slice(0, 6).map((row) => (
                         <div key={row}>{row.replace(/^□/, "・")}</div>
                       ))}
                     </div>
