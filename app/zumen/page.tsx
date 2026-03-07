@@ -800,7 +800,13 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                           <div className="mt-0.5 flex items-center gap-2">
                             {data.imgQr ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                             <img src={data.imgQr} alt="QR" className={`${FOOTER_QR_SIZE_CLASS} object-cover`} />
+                             <img
+                               src={toExportableImageSrc(data.imgQr)}
+                               alt="QR"
+                               className={`${FOOTER_QR_SIZE_CLASS} object-cover`}
+                               crossOrigin="anonymous"
+                               referrerPolicy="no-referrer"
+                             />
                             ) : (
                              <div className={`flex ${FOOTER_QR_SIZE_CLASS} items-center justify-center border border-zinc-300 text-[10px] text-zinc-500`}>QR</div>
                             )}
@@ -925,7 +931,13 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       <div className="mt-0.5 flex items-center gap-2">
                         {data.imgQr ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                         <img src={data.imgQr} alt="QR" className={`${FOOTER_QR_SIZE_CLASS} object-cover`} />
+                        <img
+                           src={toExportableImageSrc(data.imgQr)}
+                           alt="QR"
+                           className={`${FOOTER_QR_SIZE_CLASS} object-cover`}
+                           crossOrigin="anonymous"
+                           referrerPolicy="no-referrer"
+                         />
                         ) : (
                           <div className={`flex ${FOOTER_QR_SIZE_CLASS} items-center justify-center border border-zinc-300 text-[10px] text-zinc-500`}>QR</div>
                         )}
@@ -1042,7 +1054,13 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                     <div className="flex items-center justify-center border-l border-black px-1 py-1">
                       {data.imgQr ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={data.imgQr} alt="QR" className="h-20 w-20 object-cover" />
+                      <img
+                          src={toExportableImageSrc(data.imgQr)}
+                          alt="QR"
+                          className="h-20 w-20 object-cover"
+                          crossOrigin="anonymous"
+                          referrerPolicy="no-referrer"
+                        />
                       ) : (
                         <div className="text-[10px] text-zinc-500">QR</div>
                       )}
