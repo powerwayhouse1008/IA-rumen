@@ -880,7 +880,13 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       <div className="border-r border-black p-2">
                        <div className="flex items-start justify-between" style={{ color: theme.brand }}>
                            <div className="font-bold" style={adaptiveTextStyle(data.districts, 10, 14)}>{data.districts || "1区画"}</div>
-                           <div className="font-bold" style={adaptiveTextStyle(layoutLabel, 22, 32)}>{layoutLabel}</div>
+                           <div
+                             className="max-w-[170px] overflow-hidden text-ellipsis whitespace-nowrap font-bold"
+                             title={layoutLabel}
+                             style={adaptiveTextStyle(layoutLabel, 16, 24)}
+                           >
+                             {layoutLabel}
+                           </div>
                         </div>
                        <div className="mt-2"><ImgBox src={data.imgMain} label="メイン写真" h={180} /></div>
                         <div className="mt-2 space-y-1 text-xs">
