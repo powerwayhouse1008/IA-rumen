@@ -629,15 +629,15 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     } catch {
       try {
         window.location.assign(objectUrl);
-       return "saved";
+        return "saved";
       } catch {
-       return "failed";
+        return "failed";
       }
      
-  } finally {
+    } finally {
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
     }
- }, []);
+    }, []);
 
   const canvasToBlob = useCallback(async (canvas: HTMLCanvasElement, mimeType: string, quality?: number) => {
     const blobFromToBlob = await new Promise<Blob | null>((resolve) => {
@@ -653,7 +653,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     return await response.blob();
   }, []);
 
-  function getExportErrorMessage(e
+  
   function getExportErrorMessage(error: unknown, type: "image" | "pdf") {
     const errorName = error instanceof Error ? error.name : "";
     const crossOriginHint = errorName === "SecurityError" ? " 一部の画像URLが外部ドメイン(CORS制限)の可能性があります。" : "";
@@ -664,7 +664,8 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
 
     return `PDFの保存に失敗しました。${crossOriginHint}画像URLまたはブラウザのダウンロード設定をご確認ください。`;
   }
- };
+ 
+
   async function saveAsImage() {
     setIsExporting(true);
      setExportError(null);
