@@ -883,7 +883,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                            <div
                              className="max-w-[170px] overflow-hidden text-ellipsis whitespace-nowrap font-bold"
                              title={layoutLabel}
-                             style={adaptiveTextStyle(layoutLabel, 12, 20)}
+                             style={adaptiveTextStyle(layoutLabel, 9, 15)}
                            >
                              {layoutLabel}
                            </div>
