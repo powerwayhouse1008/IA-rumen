@@ -719,37 +719,33 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       }
       
       const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
-      try {
-        
-        await pdf.save(fileName, { returnPromise: true });
-        return;
-      } catch {
-        
-        
-        try {
-          const pdfBlob = pdf.output("blob");
-          const downloaded = await triggerDownload(pdfBlob, fileName);
-          if (downloaded === "cancelled") {
-            return;
-          }
-          if (downloaded === "saved") {
-            return;
-          }
-        } catch {
-          const dataUrl = pdf.output("dataurlstring");
-          const opened = window.open(dataUrl, "_blank", "noopener,noreferrer");
-          if (!opened) {
-            const fallbackLink = document.createElement("a");
-            fallbackLink.href = dataUrl;
-            fallbackLink.download = fileName;
-            fallbackLink.rel = "noopener noreferrer";
-            fallbackLink.target = "_blank";
-            document.body.appendChild(fallbackLink);
-            fallbackLink.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
-            document.body.removeChild(fallbackLink);
-          }
-        }
+       const pdfBlob = pdf.output("blob");
+      if (!pdfBlob || pdfBlob.size === 0) {
+        throw new Error("PDFの生成に失敗しました。");
       }
+
+      const downloaded = await triggerDownload(pdfBlob, fileName);
+      if (downloaded === "cancelled") {
+        return;
+      }
+      if (downloaded === "saved") {
+        return;
+     
+      }
+       const dataUrl = pdf.output("dataurlstring");
+      const opened = window.open(dataUrl, "_blank", "noopener,noreferrer");
+      if (opened) {
+        return;
+      }
+
+      const fallbackLink = document.createElement("a");
+      fallbackLink.href = dataUrl;
+      fallbackLink.download = fileName;
+      fallbackLink.rel = "noopener noreferrer";
+      fallbackLink.target = "_blank";
+      document.body.appendChild(fallbackLink);
+      fallbackLink.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+      document.body.removeChild(fallbackLink);
     } catch (error) {
       console.error(error);
       setExportError(getExportErrorMessage(error, "pdf"));
