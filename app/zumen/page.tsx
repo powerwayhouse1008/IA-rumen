@@ -929,7 +929,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       </div>
                     </div>
 
-                     <div className="h-[54px] border-b border-black px-3 py-1.5 text-[10px] leading-4 overflow-hidden">
+                     <div className="h-[52px] border-b border-black px-3 py-1.5 text-[10px] leading-4 overflow-hidden">
                       {remarks || "※図面と相違する場合は現況を優先します。"}
                     </div>
 
