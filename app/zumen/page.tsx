@@ -518,8 +518,11 @@ async function triggerDownload(blob: Blob, fileName: string) {
       } catch {
         const fallbackImageData = canvas.toDataURL("image/jpeg", 0.95);
         pdf.addImage(fallbackImageData, "JPEG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
-      } 
-      await pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`, { returnPromise: true });
+      }
+
+      const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
+      const pdfBlob = pdf.output("blob");
+      await triggerDownload(pdfBlob, fileName);
     } catch (error) {
       console.error(error);
       setExportError("PDFの保存に失敗しました。画像URLまたはブラウザのダウンロード設定をご確認ください。");
