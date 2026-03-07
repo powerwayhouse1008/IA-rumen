@@ -930,8 +930,7 @@ async function triggerDownload(blob: Blob, fileName: string) {
                           <div>：</div>
                           <div>{contact.fee || "-"}</div>
                         </div>
-                      </div>
-                          </div>
+                       </div>
                       </div>
                     </div>
                   </>
