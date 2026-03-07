@@ -598,8 +598,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       if (!opened) {
         window.location.href = objectUrl;
       }
-  }
-} finally {
+  } finally {
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
     }
   }
