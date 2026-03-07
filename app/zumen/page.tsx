@@ -507,11 +507,19 @@ async function triggerDownload(blob: Blob, fileName: string) {
       if (!canvas) return;
 
 
-      const imageData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [canvas.width, canvas.height] });
-      pdf.addImage(imageData, "PNG", 0, 0, canvas.width, canvas.height);
-      const blob = pdf.output("blob");
-      await triggerDownload(blob, `zumen-${selectedTemplate ?? "preview"}.pdf`);
+      const pdf = new jsPDF({
+        orientation: canvas.width >= canvas.height ? "landscape" : "portrait",
+        unit: "px",
+        format: [canvas.width, canvas.height],
+      });
+
+      try {
+        pdf.addImage(canvas, "PNG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
+      } catch {
+        const fallbackImageData = canvas.toDataURL("image/jpeg", 0.95);
+        pdf.addImage(fallbackImageData, "JPEG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
+      } 
+      await pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`, { returnPromise: true });
     } catch (error) {
       console.error(error);
       setExportError("PDFの保存に失敗しました。画像URLまたはブラウザのダウンロード設定をご確認ください。");
@@ -900,7 +908,9 @@ async function triggerDownload(blob: Blob, fileName: string) {
 
                     <div className="mt-2">
                        <SectionTitle bgColor={theme.section}>備考</SectionTitle>
-                      <div className="min-h-[2.34cm] whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px]">
+                      <div
+                        className={`whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px] ${selectedTemplate === "chic" && isMansion ? "min-h-[2.54cm]" : "min-h-[2.34cm]"}`}
+                      >
                         {remarks || "※図面と相違する場合は現況を優先します。"}
                       </div>
                     </div>
