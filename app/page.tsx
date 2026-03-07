@@ -301,6 +301,7 @@ export default function Page() {
   const [expireDate, setExpireDate] = useState(initialDraft?.expireDate ?? DEFAULT_EXPIRE_DATE);
   const [districts, setDistricts] = useState(initialDraft?.districts ?? initialCategoryPreset.districts);
   const [savedAt, setSavedAt] = useState<string>(initialDraft?.draftSavedAt ?? "");
+  const [saveMessage, setSaveMessage] = useState("");
   const [salesTags, setSalesTags] = useState<string[]>(initialDraft?.salesTags ?? []);
   const [featureTags, setFeatureTags] = useState<string[]>(initialDraft?.featureTags ?? []);
   const [contactInfo, setContactInfo] = useState(initialDraft?.contactInfo ?? DEFAULT_CONTACT_INFO);
@@ -417,9 +418,13 @@ export default function Page() {
 
   async function onSaveDraft() {
     const payload = await buildPayload();
-   const draftSavedAt = new Date().toLocaleString("ja-JP");
+    const draftSavedAt = new Date().toLocaleString("ja-JP");
     localStorage.setItem("zumenData", JSON.stringify({ ...payload, draftSavedAt }));
     setSavedAt(draftSavedAt);
+    setSaveMessage("保存に成功しました。");
+    setTimeout(() => {
+      setSaveMessage("");
+    }, 2500);
   }
 
   async function onGenerate() {
@@ -785,7 +790,10 @@ export default function Page() {
             </div>
 
             <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-              <div className="text-xs text-zinc-500">{savedAt ? `最終保存: ${savedAt}` : "未保存"}</div>
+                <div>
+                <div className="text-xs text-zinc-500">{savedAt ? `最終保存: ${savedAt}` : "未保存"}</div>
+                {saveMessage ? <div className="mt-1 text-xs font-semibold text-emerald-700" role="status" aria-live="polite">{saveMessage}</div> : null}
+              </div>
               <div className="flex gap-2">
                 <button type="button" onClick={onSaveDraft} className="rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white">一時保存</button>
                 <button type="button" onClick={onGenerate} disabled={!canGo} className="rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">図面を生成してプレビュー</button>
