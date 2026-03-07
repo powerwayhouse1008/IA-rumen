@@ -570,7 +570,9 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     });
    }, [waitForSheetImages]);
   
-  async function triggerDownload(blob: Blob, fileName: string) {
+  type DownloadResult = "saved" | "cancelled" | "failed";
+
+  const triggerDownload = useCallback(async (blob: Blob, fileName: string): Promise<DownloadResult> => {
     const fileType = blob.type || "application/octet-stream";
 
     if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
@@ -606,11 +608,11 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
           const writable = await fileHandle.createWritable();
           await writable.write(blob);
           await writable.close();
-          return true;
+          return "saved";
         }
       } catch (error) {
         if ((error as DOMException).name === "AbortError") {
-         return false;
+          return "cancelled";
         }
       }
     }
@@ -625,19 +627,19 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       document.body.appendChild(link);
      link.click();
       document.body.removeChild(link);
-      return true;
+      return "saved";
     } catch {
       try {
         window.location.assign(objectUrl);
-        return true;
+       return "saved";
       } catch {
-        return false;
+       return "failed";
       }
      
   } finally {
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
     }
-  }
+ }, []);
 
   function getExportErrorMessage(error: unknown, type: "image" | "pdf") {
     const errorName = error instanceof Error ? error.name : "";
@@ -671,8 +673,8 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       }
 
      const downloaded = await triggerDownload(blob, fileName);
-      if (!downloaded) {
-        throw new Error("画像の保存がキャンセルまたはブロックされました。");
+      if (downloaded === "failed") {
+        throw new Error("画像の保存がブロックされました。");
       }
     } catch (error) {
       console.error(error);
@@ -711,18 +713,23 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
         pdfImageType = "JPEG";
         pdf.addImage(pdfImageData, pdfImageType, 0, 0, canvas.width, canvas.height, undefined, "FAST");
       }
-      const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
       
       try {
         
-        const pdfBlob = pdf.output("blob");
-        const downloaded = await triggerDownload(pdfBlob, fileName);
-        if (!downloaded) {
-          throw new Error("PDFの保存がキャンセルまたはブロックされました。");
+        await pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`, { returnPromise: true });
+      } catch {
+        const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
         }
-        } catch {
+        
         try {
-          await pdf.save(fileName, { returnPromise: true });
+         const pdfBlob = pdf.output("blob");
+          const downloaded = await triggerDownload(pdfBlob, fileName);
+          if (downloaded === "cancelled") {
+            return;
+          }
+          if (downloaded === "saved") {
+            return;
+          }
         } catch {
           const dataUrl = pdf.output("dataurlstring");
           const opened = window.open(dataUrl, "_blank", "noopener,noreferrer");
@@ -744,7 +751,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     } finally {
       setIsExporting(false);
     }
-  }, [captureSheet, selectedTemplate]);
+ }, [captureSheet, selectedTemplate, triggerDownload]);
 
   useEffect(() => {
     if (!shouldExportPdf || !data || isExporting) return;
