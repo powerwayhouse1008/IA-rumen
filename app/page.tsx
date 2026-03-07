@@ -218,6 +218,9 @@ const INITIAL_HOUSE_DETAILS = {
 function loadDraftPayload(): DraftPayload | null {
   if (typeof window === "undefined") return null;
 
+  const runtimePayload = (window as Window & { __zumenPayload?: DraftPayload }).__zumenPayload;
+  if (runtimePayload) return runtimePayload;
+
   const saved = localStorage.getItem("zumenData");
   if (!saved) return null;
 
@@ -265,12 +268,47 @@ function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
 }
 
 async function fileToDataUrl(file: File): Promise<string> {
+   if (file.type.startsWith("image/") && file.type !== "image/gif" && file.type !== "image/svg+xml") {
+    const optimized = await optimizeImageFile(file);
+    if (optimized) return optimized;
+  }
+
   return await new Promise((res, rej) => {
     const reader = new FileReader();
     reader.onload = () => res(String(reader.result));
     reader.onerror = rej;
     reader.readAsDataURL(file);
   });
+}
+
+async function optimizeImageFile(file: File): Promise<string | null> {
+  const imageBitmap = await createImageBitmap(file);
+  const maxDimension = 1600;
+  const scale = Math.min(1, maxDimension / Math.max(imageBitmap.width, imageBitmap.height));
+  const targetWidth = Math.max(1, Math.round(imageBitmap.width * scale));
+  const targetHeight = Math.max(1, Math.round(imageBitmap.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    imageBitmap.close();
+    return null;
+  }
+
+  context.drawImage(imageBitmap, 0, 0, targetWidth, targetHeight);
+  imageBitmap.close();
+
+  const outputType = file.type === "image/webp" ? "image/webp" : "image/jpeg";
+  return canvas.toDataURL(outputType, 0.82);
+}
+
+function savePayloadToStorage(payload: DraftPayload) {
+  if (typeof window === "undefined") return;
+
+  localStorage.setItem("zumenData", JSON.stringify(payload));
+  (window as Window & { __zumenPayload?: DraftPayload }).__zumenPayload = payload;
 }
 
 async function blobToDataUrl(blob: Blob): Promise<string> {
@@ -417,9 +455,10 @@ export default function Page() {
   }
 
   async function onSaveDraft() {
-    const payload = await buildPayload();
+    const payload = (await buildPayload()) as DraftPayload;
     const draftSavedAt = new Date().toLocaleString("ja-JP");
-    localStorage.setItem("zumenData", JSON.stringify({ ...payload, draftSavedAt }));
+    const draftPayload = { ...payload, draftSavedAt };
+    savePayloadToStorage(draftPayload);
     setSavedAt(draftSavedAt);
     setSaveMessage("保存に成功しました。");
     setTimeout(() => {
@@ -428,13 +467,13 @@ export default function Page() {
   }
 
   async function onGenerate() {
-    const payload = await buildPayload();
-    localStorage.setItem("zumenData", JSON.stringify(payload));
+    const payload = (await buildPayload()) as DraftPayload;
+    savePayloadToStorage(payload);
     router.push("/zumen");
   }
 　  async function onGeneratePdf() {
-    const payload = await buildPayload();
-    localStorage.setItem("zumenData", JSON.stringify(payload));
+    const payload = (await buildPayload()) as DraftPayload;
+    savePayloadToStorage(payload);
     router.push("/zumen?export=pdf");
   }
 
