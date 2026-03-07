@@ -730,7 +730,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
           if (downloaded === "saved") {
             return;
           }
-        } catch {
+        catch {
           const dataUrl = pdf.output("dataurlstring");
           const opened = window.open(dataUrl, "_blank", "noopener,noreferrer");
           if (!opened) {
