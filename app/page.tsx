@@ -135,7 +135,14 @@ const PROPERTY_TYPE_OPTIONS = ["中古マンション", "新築分譲マンシ�
 const SALES_TAGS = ["# 2沿線以上利用可", "# 駐車2台可", "# 環境重視の住宅地", "# 閑静な住宅街", "# 平坦地", "# 角地"];
 const FEATURE_TAGS = ["# シャワートイレ", "# DEN", "# LDKカウンターテーブル", "# ダイニング収納", "# 納戸", "# シューズクローク"];
 const DEFAULT_QR_NOTE = "☚内見、物件確認";
-const DEFAULT_LIFE_INFORMATION_ROWS = ["□スーパー 徒歩6分", "□小学校 徒歩7分", "□総合病院 徒歩12分", "□公園 徒歩3分"];
+const DEFAULT_LIFE_INFORMATION_ROWS = [
+  "□スーパー 徒歩6分",
+  "□小学校 徒歩7分",
+  "□総合病院 徒歩12分",
+  "□公園 徒歩3分",
+  "□コンビニ 徒歩4分",
+  "□ドラッグストア 徒歩8分",
+];
 const DEFAULT_LIFE_INFORMATION_TEXT = DEFAULT_LIFE_INFORMATION_ROWS.join("\n");
 const DEFAULT_CATEGORY: CategoryKey = "new-house";
 const DEFAULT_MANAGER_NO = "12345678";
@@ -552,9 +559,9 @@ async function createQrFromUrl(url: string): Promise<string | undefined> {
                   <Input value={catchCopy} onChange={(e) => setCatchCopy(e.target.value)} />
                 </div>
                 <div>
-                  <FieldLabel>LIFE INFORMATION（1行ずつ入力・最大4行）</FieldLabel>
+                  <<FieldLabel>LIFE INFORMATION（1行ずつ入力・最大6行）</FieldLabel>
                   <Textarea
-                    rows={4}
+                    rows={6}
                     value={data.lifeInformation ?? ""}
                     onChange={(e) => update("lifeInformation", e.target.value)}
                    placeholder={DEFAULT_LIFE_INFORMATION_TEXT}
