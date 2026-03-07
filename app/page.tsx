@@ -50,6 +50,9 @@ type DraftPayload = ZumenData & {
   expireDate?: string;
   draftSavedAt?: string;
 };
+type SavePayloadResult = {
+  localSaved: boolean;
+};
 
 type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion";
 type ThemeColorKey = "sunset-red" | "ocean-blue" | "forest-green" | "royal-purple" | "charcoal-gold" | "sky-blue";
@@ -340,6 +343,7 @@ export default function Page() {
   const [districts, setDistricts] = useState(initialDraft?.districts ?? initialCategoryPreset.districts);
   const [savedAt, setSavedAt] = useState<string>(initialDraft?.draftSavedAt ?? "");
   const [saveMessage, setSaveMessage] = useState("");
+  const [saveMessageTone, setSaveMessageTone] = useState<"success" | "warning">("success");
   const [salesTags, setSalesTags] = useState<string[]>(initialDraft?.salesTags ?? []);
   const [featureTags, setFeatureTags] = useState<string[]>(initialDraft?.featureTags ?? []);
   const [contactInfo, setContactInfo] = useState(initialDraft?.contactInfo ?? DEFAULT_CONTACT_INFO);
@@ -460,10 +464,16 @@ export default function Page() {
     const draftPayload = { ...payload, draftSavedAt };
     savePayloadToStorage(draftPayload);
     setSavedAt(draftSavedAt);
-    setSaveMessage("保存に成功しました。");
+    if (result.localSaved) {
+      setSaveMessageTone("success");
+      setSaveMessage("保存に成功しました。");
+    } else {
+      setSaveMessageTone("warning");
+      setSaveMessage("ブラウザ容量の上限に達したため、タブを閉じると下書きが消える可能性があります。");
+    }
     setTimeout(() => {
       setSaveMessage("");
-    }, 2500);
+    }, 3200);
   }
 
   async function onGenerate() {
@@ -831,7 +841,7 @@ export default function Page() {
             <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
                 <div>
                 <div className="text-xs text-zinc-500">{savedAt ? `最終保存: ${savedAt}` : "未保存"}</div>
-                {saveMessage ? <div className="mt-1 text-xs font-semibold text-emerald-700" role="status" aria-live="polite">{saveMessage}</div> : null}
+                 {saveMessage ? <div className={`mt-1 text-xs font-semibold ${saveMessageTone === "success" ? "text-emerald-700" : "text-amber-700"}`} role="status" aria-live="polite">{saveMessage}</div> : null}
               </div>
               <div className="flex gap-2">
                 <button type="button" onClick={onSaveDraft} className="rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white">一時保存</button>
