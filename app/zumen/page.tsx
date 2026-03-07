@@ -730,19 +730,19 @@ function ZumenPageContent() {
     const target = sheetRef.current;
     await waitForSheetImages(target);
 
-    try {
-      const canvas = await html2canvas(target, {
+     const buildCaptureOptions = (useForeignObjectRendering: boolean) => ({
         scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
         allowTaint: false,
         imageTimeout: 15000,
         logging: true,
+       foreignObjectRendering: useForeignObjectRendering,
         width: SHEET_WIDTH,
         height: SHEET_HEIGHT,
         windowWidth: SHEET_WIDTH,
         windowHeight: SHEET_HEIGHT,
-        onclone: (clonedDocument) => {
+        onclone: (clonedDocument: Document) => {
           const clonedSheet = clonedDocument.getElementById("zumen-export-sheet");
           if (!clonedSheet) return;
 
@@ -779,8 +779,24 @@ function ZumenPageContent() {
         },
       });
 
-      return canvas;
+     try {
+      const canvas = await html2canvas(target, buildCaptureOptions(false));
+
+    return canvas;
     } catch (error) {
+       const message = error instanceof Error ? error.message : "";
+      const needsForeignObjectFallback =
+        /unsupported color function\s+"oklch"/i.test(message) ||
+        /unsupported color function\s+"oklab"/i.test(message);
+
+      if (needsForeignObjectFallback) {
+        console.warn(
+          "html2canvas failed due to color parser limits. Retrying with foreignObjectRendering.",
+          error
+        );
+        return html2canvas(target, buildCaptureOptions(true));
+      }
+
       console.error("captureSheet error:", error);
       throw error;
     }
