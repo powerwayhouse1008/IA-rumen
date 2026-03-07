@@ -664,7 +664,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
 
     return `PDFの保存に失敗しました。${crossOriginHint}画像URLまたはブラウザのダウンロード設定をご確認ください。`;
   }
-
+ };
   async function saveAsImage() {
     setIsExporting(true);
      setExportError(null);
