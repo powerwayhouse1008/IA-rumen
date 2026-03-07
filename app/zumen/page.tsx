@@ -697,6 +697,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
         unit: "px",
         format: [canvas.width, canvas.height],
       });
+      
 　　 　let pdfImageData: string;
       let pdfImageType: "PNG" | "JPEG" = "PNG";
       try {
@@ -714,15 +715,16 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
         pdf.addImage(pdfImageData, pdfImageType, 0, 0, canvas.width, canvas.height, undefined, "FAST");
       }
       
+      const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
       try {
         
-        await pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`, { returnPromise: true });
+         await pdf.save(fileName, { returnPromise: true });
       } catch {
         const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
         }
         
         try {
-         const pdfBlob = pdf.output("blob");
+          const pdfBlob = pdf.output("blob");
           const downloaded = await triggerDownload(pdfBlob, fileName);
           if (downloaded === "cancelled") {
             return;
@@ -730,7 +732,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
           if (downloaded === "saved") {
             return;
           }
-        catch {
+        } catch {
           const dataUrl = pdf.output("dataurlstring");
           const opened = window.open(dataUrl, "_blank", "noopener,noreferrer");
           if (!opened) {
@@ -751,7 +753,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     } finally {
       setIsExporting(false);
     }
- }, [captureSheet, selectedTemplate, triggerDownload]);
+    }, [captureSheet, selectedTemplate, triggerDownload]);
 
   useEffect(() => {
     if (!shouldExportPdf || !data || isExporting) return;
