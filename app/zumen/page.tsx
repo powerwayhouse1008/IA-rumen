@@ -549,6 +549,24 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       allowTaint: false,
       proxy: "/api/image-proxy",
       logging: false,
+      onclone: (clonedDocument) => {
+        const clonedSheet = clonedDocument.getElementById("zumen-export-sheet");
+        if (!clonedSheet) return;
+
+        const clonedImages = Array.from(clonedSheet.querySelectorAll("img"));
+        clonedImages.forEach((img) => {
+          const source = img.getAttribute("src") ?? img.currentSrc ?? "";
+          if (!source) return;
+
+          const exportableSource = toExportableImageSrc(source);
+          if (exportableSource) {
+            img.setAttribute("src", exportableSource);
+          }
+
+          img.setAttribute("crossorigin", "anonymous");
+          img.setAttribute("referrerpolicy", "no-referrer");
+        });
+      },
     });
    }, [waitForSheetImages]);
   
@@ -677,13 +695,15 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
         unit: "px",
         format: [canvas.width, canvas.height],
       });
-
+　　　let pdfImageData: string;
+      let pdfImageType: "PNG" | "JPEG" = "PNG";
       try {
-        pdf.addImage(canvas, "PNG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
+        pdfImageData = canvas.toDataURL("image/png");
       } catch {
-        const fallbackImageData = canvas.toDataURL("image/jpeg", 0.95);
-        pdf.addImage(fallbackImageData, "JPEG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
+        pdfImageData = canvas.toDataURL("image/jpeg", 0.95);
+        pdfImageType = "JPEG";
       }
+　　　　pdf.addImage(pdfImageData, pdfImageType, 0, 0, canvas.width, canvas.height, undefined, "FAST");
 
       const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
       
@@ -812,7 +832,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
           ) : (
         <div ref={previewRef} className="overflow-x-auto overflow-y-visible">
              <div className="mx-auto" style={{ width: `${SHEET_WIDTH * sheetScale}px` }}>
-              <div ref={sheetRef} className={`border border-black bg-white text-black ${selectedTemplate === "pop" ? "font-semibold" : ""} ${selectedTemplate === "chic" ? "bg-[#fcfbf8]" : ""}`} style={{ width: `${SHEET_WIDTH}px`, height: `${SHEET_HEIGHT}px`, transform: `scale(${sheetScale})`, transformOrigin: "top left", overflow: "hidden" }}>
+              <div id="zumen-export-sheet" ref={sheetRef} className={`border border-black bg-white text-black ${selectedTemplate === "pop" ? "font-semibold" : ""} ${selectedTemplate === "chic" ? "bg-[#fcfbf8]" : ""}`} style={{ width: `${SHEET_WIDTH}px`, height: `${SHEET_HEIGHT}px`, transform: `scale(${sheetScale})`, transformOrigin: "top left", overflow: "hidden" }}>
                 {selectedTemplate === "classic" ? (
                   <>
                     <div className="grid grid-cols-[470px_380px_273px] border-b border-black">
