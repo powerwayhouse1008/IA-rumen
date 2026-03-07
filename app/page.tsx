@@ -307,11 +307,21 @@ async function optimizeImageFile(file: File): Promise<string | null> {
   return canvas.toDataURL(outputType, 0.82);
 }
 
-function savePayloadToStorage(payload: DraftPayload) {
-  if (typeof window === "undefined") return;
+function savePayloadToStorage(payload: DraftPayload): { localSaved: boolean } {
+  if (typeof window === "undefined") {
+    return { localSaved: false };
+  }
 
-  localStorage.setItem("zumenData", JSON.stringify(payload));
+  let localSaved = true;
+  try {
+    localStorage.setItem("zumenData", JSON.stringify(payload));
+  } catch {
+    localSaved = false;
+  }
+
+  
   (window as Window & { __zumenPayload?: DraftPayload }).__zumenPayload = payload;
+  return { localSaved };
 }
 
 async function blobToDataUrl(blob: Blob): Promise<string> {
@@ -462,7 +472,7 @@ export default function Page() {
     const payload = (await buildPayload()) as DraftPayload;
     const draftSavedAt = new Date().toLocaleString("ja-JP");
     const draftPayload = { ...payload, draftSavedAt };
-    savePayloadToStorage(draftPayload);
+   const result = savePayloadToStorage(draftPayload);
     setSavedAt(draftSavedAt);
     if (result.localSaved) {
       setSaveMessageTone("success");
