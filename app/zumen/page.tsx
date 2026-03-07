@@ -711,7 +711,8 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
      
 　　　　
       try {
-        pdf.addImage(canvas, "PNG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
+        const pngDataUrl = canvas.toDataURL("image/png");
+        pdf.addImage(pngDataUrl, "PNG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
       } catch {
          const flattenedCanvas = document.createElement("canvas");
         flattenedCanvas.width = canvas.width;
@@ -726,7 +727,8 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
         flattenedContext.fillRect(0, 0, flattenedCanvas.width, flattenedCanvas.height);
         flattenedContext.drawImage(canvas, 0, 0);
 
-        pdf.addImage(flattenedCanvas, "JPEG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
+         const jpegDataUrl = flattenedCanvas.toDataURL("image/jpeg", 0.95);
+        pdf.addImage(jpegDataUrl, "JPEG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
       }
       
       const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
