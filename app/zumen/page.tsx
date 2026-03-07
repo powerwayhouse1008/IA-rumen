@@ -460,6 +460,49 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     return await html2canvas(sheetRef.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
   }
 async function triggerDownload(blob: Blob, fileName: string) {
+   const fileType = blob.type || "application/octet-stream";
+
+    if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
+      try {
+        const pickerWindow = window as typeof window & {
+          showSaveFilePicker?: (options: {
+            suggestedName: string;
+            types: Array<{
+              description: string;
+              accept: Record<string, string[]>;
+            }>;
+          }) => Promise<{
+            createWritable: () => Promise<{
+              write: (data: Blob) => Promise<void>;
+              close: () => Promise<void>;
+            }>;
+          }>;
+        };
+        const fileHandle = await pickerWindow.showSaveFilePicker?.({
+          suggestedName: fileName,
+          types: [
+            {
+              description: "Export file",
+              accept: {
+                [fileType]: [`.${fileName.split(".").pop() ?? "bin"}`],
+              },
+            },
+          ],
+        });
+
+        if (fileHandle) {
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          return;
+        }
+      } catch (error) {
+        if ((error as DOMException).name === "AbortError") {
+          return;
+        }
+      }
+    }
+
     const objectUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.download = fileName;
@@ -467,6 +510,11 @@ async function triggerDownload(blob: Blob, fileName: string) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  
+    if (typeof window !== "undefined" && !document.hasFocus()) {
+      window.open(objectUrl, "_blank", "noopener,noreferrer");
+    }
+
     window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
   }
 
