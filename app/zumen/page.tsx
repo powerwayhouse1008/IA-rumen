@@ -1021,21 +1021,12 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                       </div>
 
                       <div className="border-r border-black p-2">
-                       <div className={`grid items-start gap-2 ${sideFeatureRows.length > 0 ? "grid-cols-[78px_1fr]" : "grid-cols-1"}`}>
-                          {sideFeatureRows.length > 0 && (
-                            <div className="space-y-1.5 text-center text-[12px]">
-                              {sideFeatureRows.map((item) => (
-                                <div key={item} className="border border-zinc-400 px-1 py-1.5 leading-tight">{item}</div>
-                              ))}
-                            </div>
-                          )}
-                          <div>
-                              <div className="font-bold text-[#1f2937]" style={adaptiveTextStyle(layoutLabel, 20, 34)}>{layoutLabel}</div>
-                            <div className="text-xs">□専有面積/75㎡(22.68坪)</div>
-                            <div className="text-xs">□バルコニー面積/10㎡(3.02坪)</div>
-                            <div className="mt-2">
-                              <ImgBox src={data.imgPlan} label="間取り" h={205} fit="contain" />
-                            </div>
+                        <div>
+                          <div className="font-bold text-[#1f2937]" style={adaptiveTextStyle(layoutLabel, 20, 34)}>{layoutLabel}</div>
+                          <div className="text-xs">□専有面積/75㎡(22.68坪)</div>
+                          <div className="text-xs">□バルコニー面積/10㎡(3.02坪)</div>
+                          <div className="mt-2">
+                            <ImgBox src={data.imgPlan} label="間取り" h={205} fit="contain" />
                           </div>
                         </div>
                       </div>
