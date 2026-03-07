@@ -909,7 +909,7 @@ async function triggerDownload(blob: Blob, fileName: string) {
                     <div className="mt-2">
                        <SectionTitle bgColor={theme.section}>備考</SectionTitle>
                       <div
-                        className={`whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px] ${selectedTemplate === "chic" && isMansion ? "min-h-[2.54cm]" : "min-h-[2.34cm]"}`}
+                        className={`whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px] ${selectedTemplate === "chic" && isMansion ? "min-h-[2.56cm]" : "min-h-[2.34cm]"}`}
                       >
                         {remarks || "※図面と相違する場合は現況を優先します。"}
                       </div>
