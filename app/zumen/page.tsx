@@ -90,8 +90,10 @@ function toExportableImageSrc(src?: string) {
   if (!src) return src;
   const normalizedSrc = src.trim();
 
+  const normalizedSrc = src.trim();
+
   if (/^(data:|blob:|\/|\.\/|\.\.\/)/.test(normalizedSrc)) {
-    return src;
+    return normalizedSrc;
   }
 
   if (/^\/\//.test(normalizedSrc)) {
@@ -102,7 +104,15 @@ function toExportableImageSrc(src?: string) {
     return `/api/image-proxy?url=${encodeURIComponent(normalizedSrc)}`;
   }
 
-  return src;
+  if (/^\/\//.test(normalizedSrc)) {
+    return `/api/image-proxy?url=${encodeURIComponent(`https:${normalizedSrc}`)}`;
+  }
+
+  if (/^[\w.-]+\.[a-z]{2,}(?:[/:?#]|$)/i.test(normalizedSrc)) {
+    return `/api/image-proxy?url=${encodeURIComponent(`https://${normalizedSrc}`)}`;
+  }
+
+  return normalizedSrc;
 }
 
 type ZumenData = {
