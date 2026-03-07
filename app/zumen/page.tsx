@@ -602,17 +602,18 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       link.download = fileName;
       link.href = objectUrl;
       link.rel = "noopener noreferrer";
-      link.target = "_blank";
       document.body.appendChild(link);
-      link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+     link.click();
       document.body.removeChild(link);
       return true;
     } catch {
-      const opened = window.open(objectUrl, "_blank", "noopener,noreferrer");
-      if (!opened) {
-        window.location.href = objectUrl;
+      try {
+        window.location.assign(objectUrl);
+        return true;
+      } catch {
+        return false;
       }
-     return Boolean(opened);
+     
   } finally {
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
     }
