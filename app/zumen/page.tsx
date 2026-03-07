@@ -88,12 +88,18 @@ type MansionDetails = {
 
 function toExportableImageSrc(src?: string) {
   if (!src) return src;
-  if (/^(data:|blob:|\/|\.\/|\.\.\/)/.test(src)) {
+  const normalizedSrc = src.trim();
+
+  if (/^(data:|blob:|\/|\.\/|\.\.\/)/.test(normalizedSrc)) {
     return src;
   }
 
-  if (/^https?:\/\//i.test(src)) {
-    return `/api/image-proxy?url=${encodeURIComponent(src)}`;
+  if (/^\/\//.test(normalizedSrc)) {
+    return `/api/image-proxy?url=${encodeURIComponent(`https:${normalizedSrc}`)}`;
+  }
+
+  if (/^https?:\/\//i.test(normalizedSrc)) {
+    return `/api/image-proxy?url=${encodeURIComponent(normalizedSrc)}`;
   }
 
   return src;
@@ -656,10 +662,11 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
       
       try {
-        await pdf.save(fileName, { returnPromise: true });
-        } catch {
+        
         const pdfBlob = pdf.output("blob");
         await triggerDownload(pdfBlob, fileName);
+        } catch {
+        await pdf.save(fileName, { returnPromise: true });
       }
     } catch (error) {
       console.error(error);
