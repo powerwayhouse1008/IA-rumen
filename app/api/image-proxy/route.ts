@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
       cache: "no-store",
       headers: {
         "user-agent": "Mozilla/5.0 (compatible; IA-rumen-export/1.0)",
+        accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+        referer: `${targetUrl.protocol}//${targetUrl.host}/`,
       },
     });
 
