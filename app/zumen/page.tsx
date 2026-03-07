@@ -1134,7 +1134,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                         <div className="font-semibold">TEL：{contact.companyPhone}　FAX：{contact.companyFax}</div>
                       </div>
                       <div className="text-[21px] font-extrabold leading-tight">{contact.companyName}</div>
-                       <div className="font-semibold">担当者：{contact.staffName}</div>
+                      
                       <div className="truncate text-[10px]">{contact.companyAddress}</div>
                     </div>
                     <div className="flex items-center justify-center border-l border-black px-1 py-1">
