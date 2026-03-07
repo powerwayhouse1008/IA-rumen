@@ -412,7 +412,6 @@ export default function Page() {
       setData((prev) => ({ ...prev, imgMap: generatedMap }));
     }
  
-    }
     return payload;
   }
 
@@ -428,7 +427,7 @@ export default function Page() {
     localStorage.setItem("zumenData", JSON.stringify(payload));
     router.push("/zumen");
   }
-　async function onGeneratePdf() {
+　  async function onGeneratePdf() {
     const payload = await buildPayload();
     localStorage.setItem("zumenData", JSON.stringify(payload));
     router.push("/zumen?export=pdf");
