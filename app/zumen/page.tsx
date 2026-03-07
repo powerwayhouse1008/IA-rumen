@@ -589,18 +589,19 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       link.download = fileName;
       link.href = objectUrl;
       link.rel = "noopener noreferrer";
-      link.target = "_blank";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      return;
     } catch {
       const opened = window.open(objectUrl, "_blank", "noopener,noreferrer");
       if (!opened) {
-        throw new Error("Download was blocked by the browser.");
+        window.location.href = objectUrl;
       }
   }
-
-   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+} finally {
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+    }
   }
 
   async function saveAsImage() {
@@ -654,12 +655,12 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       }
 
       const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
-      const pdfBlob = pdf.output("blob");
       
       try {
-        await triggerDownload(pdfBlob, fileName);
-      } catch {
         await pdf.save(fileName, { returnPromise: true });
+        } catch {
+        const pdfBlob = pdf.output("blob");
+        await triggerDownload(pdfBlob, fileName);
       }
     } catch (error) {
       console.error(error);
