@@ -86,6 +86,19 @@ type MansionDetails = {
   note: string;
 };
 
+function toExportableImageSrc(src?: string) {
+  if (!src) return src;
+  if (/^(data:|blob:|\/|\.\/|\.\.\/)/.test(src)) {
+    return src;
+  }
+
+  if (/^https?:\/\//i.test(src)) {
+    return `/api/image-proxy?url=${encodeURIComponent(src)}`;
+  }
+
+  return src;
+}
+
 type ZumenData = {
   price: string;
   name: string;
@@ -129,7 +142,7 @@ function ImgBox({ src, label, fit = "cover", h }: { src?: string; label: string;
     <div className="flex items-center justify-center overflow-hidden border border-black bg-zinc-50" style={{ height: `${h}px` }}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt={label} className="h-full w-full" style={{ objectFit: fit }} />
+        <img src={toExportableImageSrc(src)} alt={label} className="h-full w-full" style={{ objectFit: fit }} crossOrigin="anonymous" referrerPolicy="no-referrer" />
       ) : (
         <div className="text-xs text-zinc-500">{label}</div>
       )}
@@ -467,6 +480,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     return await html2canvas(sheetRef.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
   }
 async function triggerDownload(blob: Blob, fileName: string) {
+  
    const fileType = blob.type || "application/octet-stream";
 
     if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
