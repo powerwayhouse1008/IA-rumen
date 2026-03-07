@@ -451,7 +451,6 @@ function ZumenPageContent() {
   }, [data, isHouse, isMansion, remarks]);
  const layoutLabel = (isMansion ? data?.mansionDetails?.layout : isHouse ? data?.houseDetails?.layout : data?.propertyType) || "4LDK + WIC";
   const featureRows = data?.featureTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
-  const sideFeatureRows = featureRows.slice(0, 6);
   const salesRows = data?.salesTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
   const inputLifeInfoRows = useMemo(() => {
     return (data?.lifeInformation ?? "")
