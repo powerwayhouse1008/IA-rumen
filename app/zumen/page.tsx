@@ -480,8 +480,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     return await html2canvas(sheetRef.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
   }
 async function triggerDownload(blob: Blob, fileName: string) {
-  
-   const fileType = blob.type || "application/octet-stream";
+  const fileType = blob.type || "application/octet-stream";
 
     if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
       try {
@@ -525,18 +524,19 @@ async function triggerDownload(blob: Blob, fileName: string) {
     }
 
     const objectUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.download = fileName;
-    link.href = objectUrl;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  
-    if (typeof window !== "undefined" && !document.hasFocus()) {
-      window.open(objectUrl, "_blank", "noopener,noreferrer");
-    }
+  const link = document.createElement("a");
+  link.download = fileName;
+  link.href = objectUrl;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  if (typeof window !== "undefined" && !document.hasFocus()) {
+    window.open(objectUrl, "_blank", "noopener,noreferrer");
+  }
+
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
   }
 
   async function saveAsImage() {
@@ -590,8 +590,13 @@ async function triggerDownload(blob: Blob, fileName: string) {
       }
 
       const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
-      const pdfBlob = pdf.output("blob");
-      await triggerDownload(pdfBlob, fileName);
+      
+      try {
+        await pdf.save(fileName, { returnPromise: true });
+      } catch {
+        const pdfBlob = pdf.output("blob");
+        await triggerDownload(pdfBlob, fileName);
+      }
     } catch (error) {
       console.error(error);
       setExportError("PDFの保存に失敗しました。画像URLまたはブラウザのダウンロード設定をご確認ください。");
