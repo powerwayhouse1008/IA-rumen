@@ -90,8 +90,6 @@ function toExportableImageSrc(src?: string) {
   if (!src) return src;
   const normalizedSrc = src.trim();
 
-  const normalizedSrc = src.trim();
-
   if (/^(data:|blob:|\/|\.\/|\.\.\/)/.test(normalizedSrc)) {
     return normalizedSrc;
   }
@@ -102,10 +100,6 @@ function toExportableImageSrc(src?: string) {
 
   if (/^https?:\/\//i.test(normalizedSrc)) {
     return `/api/image-proxy?url=${encodeURIComponent(normalizedSrc)}`;
-  }
-
-  if (/^\/\//.test(normalizedSrc)) {
-    return `/api/image-proxy?url=${encodeURIComponent(`https:${normalizedSrc}`)}`;
   }
 
   if (/^[\w.-]+\.[a-z]{2,}(?:[/:?#]|$)/i.test(normalizedSrc)) {
