@@ -808,7 +808,7 @@ async function triggerDownload(blob: Blob, fileName: string) {
                         ))}
                       </div>
                     </div>
-                     <div className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.45fr_390px_150px] items-center px-3 py-1`}>
+                     <div className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.45fr_390px_200px] items-center px-3 py-1`}>
                       <div>
                          <div className="text-[12px] font-semibold text-[#243b64]">免許番号：{contact.licenseNo || "-"}</div>
                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
