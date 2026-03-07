@@ -801,7 +801,7 @@ async function triggerDownload(blob: Blob, fileName: string) {
                         )}
                       </div>
                     </div>
-                       <div className="h-[90px] w-[29cm] border-b border-black px-3 py-1.5 text-[11px] leading-5 overflow-hidden">
+                       <div className="h-[100px] w-[29cm] border-b border-black px-3 py-1.5 text-[11px] leading-5 overflow-hidden">
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
                         {popRemarkItems.map((item, index) => (
                           <span key={`${item}-${index}`}>{item}</span>
