@@ -794,9 +794,18 @@ async function triggerDownload(blob: Blob, fileName: string) {
                         <div className="text-[12px] leading-5 [overflow-wrap:anywhere]">
                            <div>Email: {contact.companyEmail}</div>
                           <div>FAX:{contact.companyFax}</div>
-                           <div className="mt-1 text-center leading-tight">
-                            <div className="whitespace-nowrap">取引形態 {contact.transactionType || "-"}</div>
-                            <div>担当者 {contact.staffName || "-"}</div>
+                            <div className="mt-1 flex justify-center leading-tight">
+                            <div className="grid grid-cols-[4.8em_1em_auto] gap-x-1 text-left">
+                              <div className="text-right whitespace-nowrap">取引形態</div>
+                              <div>：</div>
+                              <div>{contact.transactionType || "-"}</div>
+                              <div className="text-right whitespace-nowrap">担当者</div>
+                              <div>：</div>
+                              <div>{contact.staffName || "-"}</div>
+                              <div className="text-right whitespace-nowrap">手数料</div>
+                              <div>：</div>
+                              <div>{contact.fee || "-"}</div>
+                            </div>
                           </div>
                         </div>
                         </div>
@@ -909,9 +918,19 @@ async function triggerDownload(blob: Blob, fileName: string) {
                       <div className="self-start justify-self-end text-right text-[12px] leading-4 [overflow-wrap:anywhere]">
                           <div>Email: {contact.companyEmail}</div>
                         <div>FAX:{contact.companyFax}</div>
-                      <div className="mt-1 text-center leading-tight">
-                            <div className="whitespace-nowrap">取引形態 {contact.transactionType || "-"}</div>
-                            <div>担当者 {contact.staffName || "-"}</div>
+                      <div className="mt-1 flex justify-center leading-tight">
+                        <div className="grid grid-cols-[4.8em_1em_auto] gap-x-1 text-left">
+                          <div className="text-right whitespace-nowrap">取引形態</div>
+                          <div>：</div>
+                          <div>{contact.transactionType || "-"}</div>
+                          <div className="text-right whitespace-nowrap">担当者</div>
+                          <div>：</div>
+                          <div>{contact.staffName || "-"}</div>
+                          <div className="text-right whitespace-nowrap">手数料</div>
+                          <div>：</div>
+                          <div>{contact.fee || "-"}</div>
+                        </div>
+                      </div>
                           </div>
                       </div>
                     </div>
