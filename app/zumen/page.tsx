@@ -546,7 +546,6 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       useCORS: true,
       imageTimeout: 0,
       allowTaint: false,
-      proxy: "/api/image-proxy",
       logging: false,
       onclone: (clonedDocument) => {
         const clonedSheet = clonedDocument.getElementById("zumen-export-sheet");
@@ -640,6 +639,21 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     }
  }, []);
 
+  const canvasToBlob = useCallback(async (canvas: HTMLCanvasElement, mimeType: string, quality?: number) => {
+    const blobFromToBlob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((nextBlob) => resolve(nextBlob), mimeType, quality);
+    });
+
+    if (blobFromToBlob) {
+      return blobFromToBlob;
+    }
+
+    const dataUrl = canvas.toDataURL(mimeType, quality);
+    const response = await fetch(dataUrl);
+    return await response.blob();
+  }, []);
+
+  function getExportErrorMessage(e
   function getExportErrorMessage(error: unknown, type: "image" | "pdf") {
     const errorName = error instanceof Error ? error.name : "";
     const crossOriginHint = errorName === "SecurityError" ? " 一部の画像URLが外部ドメイン(CORS制限)の可能性があります。" : "";
@@ -663,15 +677,12 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       const quality = imageFormat === "jpeg" ? 0.95 : undefined;
       const fileName = `zumen-${selectedTemplate ?? "preview"}.${extension}`;
 
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob((nextBlob) => resolve(nextBlob), mimeType, quality);
-      });
-
-      if (!blob) {
+       const blob = await canvasToBlob(canvas, mimeType, quality);
+      if (!blob || blob.size === 0) {
         throw new Error("画像の生成に失敗しました。");
       }
 
-     const downloaded = await triggerDownload(blob, fileName);
+    const downloaded = await triggerDownload(blob, fileName);
       if (downloaded === "failed") {
         throw new Error("画像の保存がブロックされました。");
       }
