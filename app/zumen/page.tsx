@@ -249,6 +249,9 @@ function ZumenPageContent() {
   const shouldExportPdf = searchParams.get("export") === "pdf";
   const [data] = useState<ZumenData | null>(() => {
     if (typeof window === "undefined") return null;
+     const runtimePayload = (window as Window & { __zumenPayload?: ZumenData }).__zumenPayload;
+    if (runtimePayload) return runtimePayload;
+
     const saved = localStorage.getItem("zumenData");
     return saved ? JSON.parse(saved) : null;
   });
