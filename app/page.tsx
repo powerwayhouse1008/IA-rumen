@@ -36,6 +36,21 @@ type ZumenData = {
      infoPageUrl: string;
   };
 };
+type DraftPayload = ZumenData & {
+  catchCopy?: string;
+  districts?: string;
+  salesTags?: string[];
+  featureTags?: string[];
+  category?: CategoryKey;
+  propertyType?: string;
+  houseDetails?: typeof INITIAL_HOUSE_DETAILS;
+  mansionDetails?: typeof INITIAL_MANSION_DETAILS;
+  managerNo?: string;
+  publishDate?: string;
+  expireDate?: string;
+  draftSavedAt?: string;
+};
+
 type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion";
 type ThemeColorKey = "sunset-red" | "ocean-blue" | "forest-green" | "royal-purple" | "charcoal-gold" | "sky-blue";
 
@@ -122,6 +137,91 @@ const FEATURE_TAGS = ["# シャワートイレ", "# DEN", "# LDKカウンター�
 const DEFAULT_QR_NOTE = "☚内見、物件確認";
 const DEFAULT_LIFE_INFORMATION_ROWS = ["□スーパー 徒歩6分", "□小学校 徒歩7分", "□総合病院 徒歩12分", "□公園 徒歩3分"];
 const DEFAULT_LIFE_INFORMATION_TEXT = DEFAULT_LIFE_INFORMATION_ROWS.join("\n");
+const DEFAULT_CATEGORY: CategoryKey = "new-house";
+const DEFAULT_MANAGER_NO = "12345678";
+const DEFAULT_PUBLISH_DATE = "2025-06-01";
+const DEFAULT_EXPIRE_DATE = "2025-12-31";
+const DEFAULT_CONTACT_INFO = {
+  companyName: "株式会社パワーウェイ",
+  companyPhone: "090-6695-1306",
+  companyAddress: "〒101-0025 東京都千代田区神田須田町2-2 3-1芝崎ビル4F",
+  companyFax: "03-5207-2768",
+  companyEmail: "lianghf2000@gmail.com",
+  licenseNo: "東京都知事（2）第101930号",
+  transactionType: "一般",
+  staffName: "野村",
+  fee: "分かれて",
+  inspectionNote: DEFAULT_QR_NOTE,
+  infoPageUrl: "",
+};
+const INITIAL_MANSION_DETAILS = {
+  right: "所有権",
+  landArea: "25246.57",
+  zoning: "第二種住居地域",
+  exclusiveArea: "104.35",
+  balconyArea: "14.66",
+  layout: "3LDK+WIC+SIC+TR",
+  structure: "鉄筋コンクリート造 地上14階地下2階",
+  floor: "6",
+  builtAt: "2025年3月",
+  developer: "三井不動産レジデンシャル(株)",
+  constructor: "大成建設(株)",
+  totalUnits: "1002",
+  managementCompany: "三井不動産レジデンシャルサービス(株)",
+  managementStyle: "全部委託 管理方式:日勤",
+  managementFee: "85240",
+  reserveFund: "23610",
+  internetFee: "1430",
+  monthlyTotal: "110280",
+  gas: "都市ガス",
+  elevator: "無し",
+  currentStatus: "空室",
+  handover: "即時",
+  note: `●ペット飼育可(細則有り)
+●敷地内駐車場 有空き要確認`,
+};
+
+const INITIAL_HOUSE_DETAILS = {
+  right: "所有権",
+  landArea: "2718.30",
+  lot: "",
+  privateRoad: "",
+  roadSurface: "",
+  exclusiveArea: "",
+  layout: "3LDK",
+  structure: "RC造 5階建3階部分",
+  floor: "",
+  builtAt: "",
+  cityPlan: "",
+  zoning: "",
+  buildingCoverage: "",
+  floorAreaRatio: "",
+  parking: "",
+  water: "",
+  gas: "",
+  sewage: "",
+  drain: "",
+  status: "居住中",
+  handover: "即時",
+  note: `●ペット飼育不可
+●駐車場 / 有（継承不可、月額10,000円）
+※空き状況は管理会社へ要確認`,
+};
+
+function loadDraftPayload(): DraftPayload | null {
+  if (typeof window === "undefined") return null;
+
+  const saved = localStorage.getItem("zumenData");
+  if (!saved) return null;
+
+  try {
+    return JSON.parse(saved) as DraftPayload;
+  } catch {
+    return null;
+  }
+}
+
+
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
     <label className="mb-1 block text-sm font-semibold text-zinc-700">
@@ -178,86 +278,32 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
 export default function Page() {
   const router = useRouter();
 
-  const [selectedCategory, setSelectedCategory] = useState<CategoryKey>("new-house");
-  const [propertyType, setPropertyType] = useState(CATEGORY_PRESETS["new-house"].propertyType);
+  const initialDraft = useMemo(() => loadDraftPayload(), []);
+  const initialCategory = initialDraft?.category ?? DEFAULT_CATEGORY;
+  const initialCategoryPreset = CATEGORY_PRESETS[initialCategory];
+  const [selectedCategory, setSelectedCategory] = useState<CategoryKey>(initialCategory);
+  const [propertyType, setPropertyType] = useState(initialDraft?.propertyType ?? initialCategoryPreset.propertyType);
   const [data, setData] = useState<ZumenData>({
-    ...CATEGORY_PRESETS["new-house"].data,
-    lifeInformation: CATEGORY_PRESETS["new-house"].data.lifeInformation ?? DEFAULT_LIFE_INFORMATION_TEXT,
+     ...initialCategoryPreset.data,
+    ...initialDraft,
+    lifeInformation: initialDraft?.lifeInformation ?? initialCategoryPreset.data.lifeInformation ?? DEFAULT_LIFE_INFORMATION_TEXT,
   });
-  const [catchCopy, setCatchCopy] = useState(CATEGORY_PRESETS["new-house"].catchCopy);
-  const [managerNo, setManagerNo] = useState("12345678");
-  const [publishDate, setPublishDate] = useState("2025-06-01");
-  const [expireDate, setExpireDate] = useState("2025-12-31");
-  const [districts, setDistricts] = useState(CATEGORY_PRESETS["new-house"].districts);
-  const [savedAt, setSavedAt] = useState<string>("");
-  const [salesTags, setSalesTags] = useState<string[]>([]);
-  const [featureTags, setFeatureTags] = useState<string[]>([]);
-  const [contactInfo, setContactInfo] = useState({
-    companyName: "株式会社パワーウェイ",
-    companyPhone: "090-6695-1306",
-    companyAddress: "〒101-0025 東京都千代田区神田須田町2-2 3-1芝崎ビル4F",
-    companyFax: "03-5207-2768",
-    companyEmail: "lianghf2000@gmail.com",
-    licenseNo: "東京都知事（2）第101930号",
-    transactionType: "一般",
-    staffName: "野村",
-    fee: "分かれて",
-   inspectionNote: DEFAULT_QR_NOTE,
-    infoPageUrl: "",
-  });
-  const [themeColor, setThemeColor] = useState<ThemeColorKey>("sunset-red");
+   const [catchCopy, setCatchCopy] = useState(initialDraft?.catchCopy ?? initialCategoryPreset.catchCopy);
+  const [managerNo, setManagerNo] = useState(initialDraft?.managerNo ?? DEFAULT_MANAGER_NO);
+  const [publishDate, setPublishDate] = useState(initialDraft?.publishDate ?? DEFAULT_PUBLISH_DATE);
+  const [expireDate, setExpireDate] = useState(initialDraft?.expireDate ?? DEFAULT_EXPIRE_DATE);
+  const [districts, setDistricts] = useState(initialDraft?.districts ?? initialCategoryPreset.districts);
+  const [savedAt, setSavedAt] = useState<string>(initialDraft?.draftSavedAt ?? "");
+  const [salesTags, setSalesTags] = useState<string[]>(initialDraft?.salesTags ?? []);
+  const [featureTags, setFeatureTags] = useState<string[]>(initialDraft?.featureTags ?? []);
+  const [contactInfo, setContactInfo] = useState(initialDraft?.contactInfo ?? DEFAULT_CONTACT_INFO);
+  const [themeColor, setThemeColor] = useState<ThemeColorKey>(initialDraft?.themeColor ?? "sunset-red");
   const [highlightSection, setHighlightSection] = useState<"basic" | "house" | "mansion" | "contact" | null>(null);
   const [mansionDetails, setMansionDetails] = useState({
-    right: "所有権",
-    landArea: "25246.57",
-    zoning: "第二種住居地域",
-    exclusiveArea: "104.35",
-    balconyArea: "14.66",
-    layout: "3LDK+WIC+SIC+TR",
-    structure: "鉄筋コンクリート造 地上14階地下2階",
-    floor: "6",
-    builtAt: "2025年3月",
-    developer: "三井不動産レジデンシャル(株)",
-    constructor: "大成建設(株)",
-    totalUnits: "1002",
-    managementCompany: "三井不動産レジデンシャルサービス(株)",
-    managementStyle: "全部委託 管理方式:日勤",
-    managementFee: "85240",
-    reserveFund: "23610",
-    internetFee: "1430",
-    monthlyTotal: "110280",
-    gas: "都市ガス",
-    elevator: "無し",
-    currentStatus: "空室",
-    handover: "即時",
-    note: `●ペット飼育可(細則有り)
-●敷地内駐車場 有空き要確認`,
+     ...(initialDraft?.mansionDetails ?? INITIAL_MANSION_DETAILS),
   });
   const [houseDetails, setHouseDetails] = useState({
-    right: "所有権",
-    landArea: "2718.30",
-    lot: "",
-    privateRoad: "",
-    roadSurface: "",
-    exclusiveArea: "",
-    layout: "3LDK",
-    structure: "RC造 5階建3階部分",
-    floor: "",
-    builtAt: "",
-    cityPlan: "",
-    zoning: "",
-    buildingCoverage: "",
-    floorAreaRatio: "",
-    parking: "",
-    water: "",
-    gas: "",
-    sewage: "",
-    drain: "",
-    status: "居住中",
-    handover: "即時",
-    note: `●ペット飼育不可
-●駐車場 / 有（継承不可、月額10,000円）
-※空き状況は管理会社へ要確認`,
+     ...(initialDraft?.houseDetails ?? INITIAL_HOUSE_DETAILS),
   });
 
   const normalizedPropertyType = propertyType.trim();
@@ -360,6 +406,9 @@ async function createQrFromUrl(url: string): Promise<string | undefined> {
       mansionDetails,
       contactInfo,
       themeColor,
+       managerNo,
+      publishDate,
+      expireDate,
     };
     
     if (generatedMap) {
@@ -373,8 +422,9 @@ async function createQrFromUrl(url: string): Promise<string | undefined> {
 
   async function onSaveDraft() {
     const payload = await buildPayload();
-    localStorage.setItem("zumenData", JSON.stringify(payload));
-    setSavedAt(new Date().toLocaleString("ja-JP"));
+   const draftSavedAt = new Date().toLocaleString("ja-JP");
+    localStorage.setItem("zumenData", JSON.stringify({ ...payload, draftSavedAt }));
+    setSavedAt(draftSavedAt);
   }
 
   async function onGenerate() {
