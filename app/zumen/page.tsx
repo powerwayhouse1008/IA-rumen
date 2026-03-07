@@ -697,22 +697,25 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
         unit: "px",
         format: [canvas.width, canvas.height],
       });
-      
-　　 　let pdfImageData: string;
-      let pdfImageType: "PNG" | "JPEG" = "PNG";
-      try {
-        pdfImageData = canvas.toDataURL("image/png");
-      } catch {
-        pdfImageData = canvas.toDataURL("image/jpeg", 0.95);
-        pdfImageType = "JPEG";
-      }
+     
 　　　　
       try {
-        pdf.addImage(pdfImageData, pdfImageType, 0, 0, canvas.width, canvas.height, undefined, "FAST");
+        pdf.addImage(canvas, "PNG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
       } catch {
-        pdfImageData = canvas.toDataURL("image/jpeg", 0.95);
-        pdfImageType = "JPEG";
-        pdf.addImage(pdfImageData, pdfImageType, 0, 0, canvas.width, canvas.height, undefined, "FAST");
+         const flattenedCanvas = document.createElement("canvas");
+        flattenedCanvas.width = canvas.width;
+        flattenedCanvas.height = canvas.height;
+
+        const flattenedContext = flattenedCanvas.getContext("2d");
+        if (!flattenedContext) {
+          throw new Error("PDF画像変換に失敗しました。");
+        }
+
+        flattenedContext.fillStyle = "#ffffff";
+        flattenedContext.fillRect(0, 0, flattenedCanvas.width, flattenedCanvas.height);
+        flattenedContext.drawImage(canvas, 0, 0);
+
+        pdf.addImage(flattenedCanvas, "JPEG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
       }
       
       const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
