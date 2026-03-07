@@ -583,11 +583,11 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
           const writable = await fileHandle.createWritable();
           await writable.write(blob);
           await writable.close();
-          return;
+          return true;
         }
       } catch (error) {
         if ((error as DOMException).name === "AbortError") {
-          return;
+         return false;
         }
       }
     }
@@ -599,15 +599,17 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       link.download = fileName;
       link.href = objectUrl;
       link.rel = "noopener noreferrer";
+      link.target = "_blank";
       document.body.appendChild(link);
-      link.click();
+      link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
       document.body.removeChild(link);
-      return;
+      return true;
     } catch {
       const opened = window.open(objectUrl, "_blank", "noopener,noreferrer");
       if (!opened) {
         window.location.href = objectUrl;
       }
+     return Boolean(opened);
   } finally {
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
     }
@@ -633,7 +635,10 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
         throw new Error("画像の生成に失敗しました。");
       }
 
-      await triggerDownload(blob, fileName);
+     const downloaded = await triggerDownload(blob, fileName);
+      if (!downloaded) {
+        throw new Error("画像の保存がキャンセルまたはブロックされました。");
+      }
     } catch (error) {
       console.error(error);
       setExportError("画像の保存に失敗しました。画像URLまたはブラウザのダウンロード設定をご確認ください。");
@@ -668,9 +673,27 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       try {
         
         const pdfBlob = pdf.output("blob");
-        await triggerDownload(pdfBlob, fileName);
+        const downloaded = await triggerDownload(pdfBlob, fileName);
+        if (!downloaded) {
+          throw new Error("PDFの保存がキャンセルまたはブロックされました。");
+        }
         } catch {
-        await pdf.save(fileName, { returnPromise: true });
+        try {
+          await pdf.save(fileName, { returnPromise: true });
+        } catch {
+          const dataUrl = pdf.output("dataurlstring");
+          const opened = window.open(dataUrl, "_blank", "noopener,noreferrer");
+          if (!opened) {
+            const fallbackLink = document.createElement("a");
+            fallbackLink.href = dataUrl;
+            fallbackLink.download = fileName;
+            fallbackLink.rel = "noopener noreferrer";
+            fallbackLink.target = "_blank";
+            document.body.appendChild(fallbackLink);
+            fallbackLink.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+            document.body.removeChild(fallbackLink);
+          }
+        }
       }
     } catch (error) {
       console.error(error);
