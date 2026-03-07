@@ -718,10 +718,10 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
       try {
         
-         await pdf.save(fileName, { returnPromise: true });
+        await pdf.save(fileName, { returnPromise: true });
+        return;
       } catch {
-        const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
-        }
+        
         
         try {
           const pdfBlob = pdf.output("blob");
