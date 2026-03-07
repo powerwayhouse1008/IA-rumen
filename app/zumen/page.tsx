@@ -477,10 +477,16 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
 
   async function captureSheet() {
     if (!sheetRef.current) return null;
-    return await html2canvas(sheetRef.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+   return await html2canvas(sheetRef.current, {
+      scale: 1.5,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      imageTimeout: 15000,
+    });
   }
-async function triggerDownload(blob: Blob, fileName: string) {
-  const fileType = blob.type || "application/octet-stream";
+
+  async function triggerDownload(blob: Blob, fileName: string) {
+    const fileType = blob.type || "application/octet-stream";
 
     if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
       try {
@@ -498,6 +504,7 @@ async function triggerDownload(blob: Blob, fileName: string) {
             }>;
           }>;
         };
+        
         const fileHandle = await pickerWindow.showSaveFilePicker?.({
           suggestedName: fileName,
           types: [
@@ -524,19 +531,24 @@ async function triggerDownload(blob: Blob, fileName: string) {
     }
 
     const objectUrl = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.download = fileName;
-  link.href = objectUrl;
-  link.rel = "noopener";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  if (typeof window !== "undefined" && !document.hasFocus()) {
-    window.open(objectUrl, "_blank", "noopener,noreferrer");
+  
+    try {
+      const link = document.createElement("a");
+      link.download = fileName;
+      link.href = objectUrl;
+      link.rel = "noopener noreferrer";
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch {
+      const opened = window.open(objectUrl, "_blank", "noopener,noreferrer");
+      if (!opened) {
+        throw new Error("Download was blocked by the browser.");
+      }
   }
 
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
   }
 
   async function saveAsImage() {
@@ -590,12 +602,12 @@ async function triggerDownload(blob: Blob, fileName: string) {
       }
 
       const fileName = `zumen-${selectedTemplate ?? "preview"}.pdf`;
+      const pdfBlob = pdf.output("blob");
       
       try {
-        await pdf.save(fileName, { returnPromise: true });
-      } catch {
-        const pdfBlob = pdf.output("blob");
         await triggerDownload(pdfBlob, fileName);
+      } catch {
+        await pdf.save(fileName, { returnPromise: true });
       }
     } catch (error) {
       console.error(error);
