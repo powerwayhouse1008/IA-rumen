@@ -546,6 +546,8 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       backgroundColor: "#ffffff",
       useCORS: true,
       imageTimeout: 0,
+      allowTaint: false,
+      proxy: "/api/image-proxy",
       logging: false,
     });
    }, [waitForSheetImages]);
@@ -619,6 +621,17 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
     }
   }
 
+  function getExportErrorMessage(error: unknown, type: "image" | "pdf") {
+    const errorName = error instanceof Error ? error.name : "";
+    const crossOriginHint = errorName === "SecurityError" ? " 一部の画像URLが外部ドメイン(CORS制限)の可能性があります。" : "";
+
+    if (type === "image") {
+      return `画像の保存に失敗しました。${crossOriginHint}画像URLまたはブラウザのダウンロード設定をご確認ください。`;
+    }
+
+    return `PDFの保存に失敗しました。${crossOriginHint}画像URLまたはブラウザのダウンロード設定をご確認ください。`;
+  }
+
   async function saveAsImage() {
     setIsExporting(true);
      setExportError(null);
@@ -645,7 +658,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       }
     } catch (error) {
       console.error(error);
-      setExportError("画像の保存に失敗しました。画像URLまたはブラウザのダウンロード設定をご確認ください。");
+      setExportError(getExportErrorMessage(error, "image"));
     } finally {
       setIsExporting(false);
     }
@@ -701,7 +714,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
       }
     } catch (error) {
       console.error(error);
-      setExportError("PDFの保存に失敗しました。画像URLまたはブラウザのダウンロード設定をご確認ください。");
+      setExportError(getExportErrorMessage(error, "pdf"));
     } finally {
       setIsExporting(false);
     }
