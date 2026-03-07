@@ -935,7 +935,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                      <div className={`grid ${FOOTER_HEIGHT_CLASS} grid-cols-[1.2fr_330px_190px] items-center px-3 py-1`}>
                      <div>
                         <div className="text-[12px] font-semibold text-[#243b64] [overflow-wrap:anywhere]">{contact.licenseNo || "-"}</div>
-                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
+                         <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 22, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                       </div>
                          <div className="flex flex-col items-center justify-center text-center font-serif text-[#a21717]" style={{ letterSpacing: "0.01em" }}>
@@ -1068,7 +1068,7 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                      <div className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.45fr_390px_200px] items-center px-3 py-1`}>
                       <div>
                          <div className="text-[12px] font-semibold text-[#243b64]">免許番号：{contact.licenseNo || "-"}</div>
-                        <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 24, 42)}>{contact.companyName}</div>
+                        <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 22, 42)}>{contact.companyName}</div>
                         <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                       </div>
                      <div className="flex flex-col items-center justify-center text-center font-serif text-[#a21717]" style={{ letterSpacing: "0.01em" }}>
@@ -1086,12 +1086,14 @@ const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
                         ) : (
                           <div className={`flex ${FOOTER_QR_SIZE_CLASS} items-center justify-center border border-zinc-300 text-[10px] text-zinc-500`}>QR</div>
                         )}
-                        <div className="text-[11px] leading-tight text-[#243b64]">{inspectionNote}</div>
+                        <div className="text-left text-[11px] leading-tight text-[#243b64]">
+                          <div className="font-semibold">FAX:{contact.companyFax}</div>
+                          <div>{inspectionNote}</div>
+                        </div>
                       </div>
                      </div>
                       <div className="self-start justify-self-end text-right text-[12px] leading-4 [overflow-wrap:anywhere]">
                           <div>Email: {contact.companyEmail}</div>
-                        <div>FAX:{contact.companyFax}</div>
                       <div className="mt-1 flex justify-center leading-tight">
                         <div className="grid grid-cols-[4.8em_1em_auto] gap-x-1 text-left">
                           <div className="text-right whitespace-nowrap">取引形態</div>
