@@ -1,54 +1,85 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
 
-export async function GET(request: NextRequest) {
-  const rawUrl = request.nextUrl.searchParams.get("url");
+export async function GET(req: NextRequest) {
+  const url = req.nextUrl.searchParams.get("url");
 
-  if (!rawUrl) {
-    return NextResponse.json({ error: "Missing url" }, { status: 400 });
-  }
-
-  let targetUrl: URL;
-  try {
-    targetUrl = new URL(rawUrl);
-  } catch {
-    return NextResponse.json({ error: "Invalid url" }, { status: 400 });
-  }
-
-  if (!["http:", "https:"].includes(targetUrl.protocol)) {
-    return NextResponse.json({ error: "Unsupported protocol" }, { status: 400 });
+  if (!url) {
+    return new Response("Missing url", { status: 400 });
   }
 
   try {
-    const upstream = await fetch(targetUrl.toString(), {
-      cache: "no-store",
+    const response = await fetch(url, {
       headers: {
-        "user-agent": "Mozilla/5.0 (compatible; IA-rumen-export/1.0)",
-        accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
-        referer: `${targetUrl.protocol}//${targetUrl.host}/`,
+        "User-Agent": "Mozilla/5.0",
+        Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
       },
+      cache: "no-store",
+      redirect: "follow",
     });
 
-    if (!upstream.ok) {
-      return NextResponse.json({ error: `Upstream image fetch failed (${upstream.status})` }, { status: 400 });
+    if (!response.ok) {
+      return new Response(`Failed to fetch image: ${response.status}`, {
+        status: 500,
+      });
     }
 
-    const contentType = upstream.headers.get("content-type") ?? "";
-    if (!contentType.startsWith("image/")) {
-      return NextResponse.json({ error: "URL is not an image" }, { status: 400 });
-    }
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    const arrayBuffer = await response.arrayBuffer();
 
-    const bytes = await upstream.arrayBuffer();
-
-    return new NextResponse(bytes, {
+    return new Response(arrayBuffer, {
       status: 200,
       headers: {
-        "content-type": contentType,
-        "cache-control": "private, no-store, no-cache, must-revalidate",
+        "Content-Type": contentType,
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=3600, s-maxage=3600",
       },
     });
-  } catch {
-    return NextResponse.json({ error: "Failed to fetch remote image" }, { status: 500 });
+  } catch (error) {
+    console.error("image proxy error:", error);
+    return new Response("Image proxy failed", { status: 500 });
+  }
+}import { NextRequest } from "next/server";
+
+export const runtime = "nodejs";
+
+export async function GET(req: NextRequest) {
+  const url = req.nextUrl.searchParams.get("url");
+
+  if (!url) {
+    return new Response("Missing url", { status: 400 });
+  }
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+      },
+      cache: "no-store",
+      redirect: "follow",
+    });
+
+    if (!response.ok) {
+      return new Response(`Failed to fetch image: ${response.status}`, {
+        status: 500,
+      });
+    }
+
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    const arrayBuffer = await response.arrayBuffer();
+
+    return new Response(arrayBuffer, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=3600, s-maxage=3600",
+      },
+    });
+  } catch (error) {
+    console.error("image proxy error:", error);
+    return new Response("Image proxy failed", { status: 500 });
   }
 }
