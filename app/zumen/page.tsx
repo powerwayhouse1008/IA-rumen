@@ -652,7 +652,7 @@ function ZumenPageContent() {
         `●構造：${mansion.structure || "-"}`,
         `●所在階：${mansion.floor || "-"}`,
         `●築年月：${mansion.builtAt || "-"}`,
-        ●敷地面積：${mansion.landArea ? `${mansion.landArea}㎡` : "-"}`,
+        `●敷地面積：${mansion.landArea ? `${mansion.landArea}㎡` : "-"}`,
         `●用途地域：${mansion.zoning || "-"}`,
         `●分譲会社：${mansion.developer || "-"}`,
         `●施工会社：${mansion.constructor || "-"}`,
