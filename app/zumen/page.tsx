@@ -823,7 +823,10 @@ function ZumenPageContent() {
 
     return `PDFの保存に失敗しました。${msg}${crossOriginHint}`;
   }
-
+  function isEmptyDataUrl(dataUrl: string) {
+    const payload = dataUrl.split(",", 2)[1];
+    return !payload;
+  }
   async function saveAsImage() {
     setIsExporting(true);
     setExportError(null);
@@ -887,7 +890,7 @@ function ZumenPageContent() {
         pdf.addImage(canvas, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
       } catch {
         const imgData = canvas.toDataURL("image/png", 1);
-        if (imgData === "data:,") {
+         if (isEmptyDataUrl(imgData)) {
           throw new Error("PDF画像の生成に失敗しました。");
         }
         pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
