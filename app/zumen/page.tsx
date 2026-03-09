@@ -877,19 +877,15 @@ function ZumenPageContent() {
         compress: true,
       });
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.98);
-      if (imgData === "data:,") {
-        throw new Error("PDF画像の生成に失敗しました。");
-      }
-      pdf.addImage({
-        imageData: imgData,
-        format: "JPEG",
-        x: 0,
-        y: 0,
-        width: pageWidth,
-        height: pageHeight,
-        compression: "MEDIUM",
-      });
+      try {
+        pdf.addImage(canvas, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
+      } catch {
+        const imgData = canvas.toDataURL("image/png", 1);
+        if (imgData === "data:,") {
+          throw new Error("PDF画像の生成に失敗しました。");
+        }
+        pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
+         }
       pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`);
     } catch (error) {
       console.error("PDF export error:", error);
