@@ -907,6 +907,23 @@ function ZumenPageContent() {
     const payload = dataUrl.split(",", 2)[1];
     return !payload;
   }
+async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality?: number) {
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob || blob.size === 0) {
+            reject(new Error("画像データのBlob生成に失敗しました。"));
+            return;
+          }
+
+          resolve(blob);
+        },
+        mimeType,
+        quality
+      );
+    });
+  }
+
 
   async function saveAsImage() {
     setIsExporting(true);
@@ -919,17 +936,16 @@ function ZumenPageContent() {
       const extension = imageFormat === "jpeg" ? "jpg" : "png";
       const quality = imageFormat === "jpeg" ? 0.95 : 1;
 
-      const dataUrl = canvas.toDataURL(mimeType, quality);
-      if (dataUrl === "data:," || isEmptyDataUrl(dataUrl)) {
-        throw new Error("画像データの生成に失敗しました。");
-      }
+       const blob = await canvasToBlob(canvas, mimeType, quality);
+      const objectUrl = URL.createObjectURL(blob);
 
       const link = document.createElement("a");
-      link.href = dataUrl;
+       link.href = objectUrl;
       link.download = `zumen-${selectedTemplate ?? "preview"}.${extension}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
     } catch (error) {
       console.error("Image export error:", error);
       setExportError(getExportErrorMessage(error, "image"));
