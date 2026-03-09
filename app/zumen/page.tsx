@@ -312,7 +312,6 @@ function AutoFitText({
 
     const resizeObserver = new ResizeObserver(fitText);
     resizeObserver.observe(node);
-
     return () => resizeObserver.disconnect();
   }, [text, minSize, maxSize]);
 
@@ -344,7 +343,9 @@ function ZumenPageContent() {
 
   const [sheetScale, setSheetScale] = useState(1);
   const [selectedTheme, setSelectedTheme] = useState<ThemeColorKey>("sunset-red");
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>(
+    null
+  );
   const [isExporting, setIsExporting] = useState(false);
   const [imageFormat, setImageFormat] = useState<ImageFormat>("png");
   const [exportError, setExportError] = useState<string | null>(null);
@@ -394,7 +395,8 @@ function ZumenPageContent() {
 
   const isHouse =
     propertyType.includes("住宅") ||
-    (!isMansion && (category === "new-house" || category === "used-house"));
+    (!isMansion &&
+      (category === "new-house" || category === "used-house"));
 
   const isLand = propertyType === "土地" || category === "land";
 
@@ -407,7 +409,9 @@ function ZumenPageContent() {
         { label: "権利", value: data.houseDetails.right || "-" },
         {
           label: "敷地面積",
-          value: data.houseDetails.landArea ? `${data.houseDetails.landArea}㎡` : "-",
+          value: data.houseDetails.landArea
+            ? `${data.houseDetails.landArea}㎡`
+            : "-",
         },
         {
           label: "地目",
@@ -444,13 +448,6 @@ function ZumenPageContent() {
       return [
         { label: "所在地", value: data.address },
         { label: "権利", value: data.mansionDetails.right || "-" },
-        {
-          label: "敷地面積",
-          value: data.mansionDetails.landArea
-            ? `${data.mansionDetails.landArea}㎡`
-            : "-",
-        },
-        { label: "用途地域", value: data.mansionDetails.zoning || "-" },
         {
           label: "専有面積",
           value: data.mansionDetails.exclusiveArea
@@ -517,24 +514,6 @@ function ZumenPageContent() {
         {
           label: "管理会社",
           value: data.mansionDetails.managementCompany || "-",
-        },
-        {
-          label: "管理形態",
-          value: data.mansionDetails.managementStyle || "-",
-        },
-        {
-          label: "月額合計",
-          value: data.mansionDetails.monthlyTotal
-            ? `${data.mansionDetails.monthlyTotal}円`
-            : "-",
-        },
-        {
-          label: "分譲会社",
-          value: data.mansionDetails.developer || "-",
-        },
-        {
-          label: "施工会社",
-          value: data.mansionDetails.constructor || "-",
         },
       ];
     }
@@ -652,14 +631,7 @@ function ZumenPageContent() {
         `●構造：${mansion.structure || "-"}`,
         `●所在階：${mansion.floor || "-"}`,
         `●築年月：${mansion.builtAt || "-"}`,
-        `●敷地面積：${mansion.landArea ? `${mansion.landArea}㎡` : "-"}`,
-        `●用途地域：${mansion.zoning || "-"}`,
-        `●分譲会社：${mansion.developer || "-"}`,
-        `●施工会社：${mansion.constructor || "-"}`,
-        `●管理形態：${mansion.managementStyle || "-"}`,
         `●管理費 / 修繕積立金：${mansion.managementFee || "-"}円 / ${mansion.reserveFund || "-"}円`,
-        `●インターネット使用料：${mansion.internetFee ? `${mansion.internetFee}円` : "-"}`,
-        `●月額合計：${mansion.monthlyTotal ? `${mansion.monthlyTotal}円` : "-"}`,
         `●現況 / 引渡し：${mansion.currentStatus || "-"} / ${mansion.handover || "-"}`,
         ...(mansion.note ? [mansion.note] : []),
       ];
@@ -715,99 +687,96 @@ function ZumenPageContent() {
   const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
   const theme = THEME_COLORS[selectedTheme];
 
-  const waitForImages = useCallback(async (root: HTMLElement) => {
-    const images = Array.from(root.querySelectorAll("img")).filter((img) => {
-      const src = img.getAttribute("src") || img.currentSrc || img.src;
-      return Boolean(src);
-    });
+  const waitForSheetImages = useCallback(async (root: HTMLElement) => {
+    const images = Array.from(root.querySelectorAll("img")).filter((img) =>
+      Boolean(img.getAttribute("src") || img.currentSrc || img.src)
+    );
 
     await Promise.all(
-      images.map(
-        (img) =>
-          new Promise<void>((resolve) => {
-            const done = () => resolve();
+      images.map(async (img) => {
+        await new Promise<void>((resolve) => {
+          if (img.complete && img.naturalWidth > 0) {
+            resolve();
+            return;
+          }
 
-            if (img.complete && img.naturalWidth > 0) {
-              done();
-              return;
-            }
+          const cleanUp = () => {
+            img.removeEventListener("load", onLoad);
+            img.removeEventListener("error", onError);
+          };
 
-            const onLoad = async () => {
-              cleanup();
-              try {
-                if (typeof img.decode === "function") {
-                  await img.decode();
-                }
-              } catch {
-                //
-              }
-              done();
-            };
+          const onLoad = () => {
+            cleanUp();
+            resolve();
+          };
 
-            const onError = () => {
-              cleanup();
-              done();
-            };
+          const onError = () => {
+            cleanUp();
+            resolve();
+          };
 
-            const cleanup = () => {
-              img.removeEventListener("load", onLoad);
-              img.removeEventListener("error", onError);
-            };
+          img.addEventListener("load", onLoad, { once: true });
+          img.addEventListener("error", onError, { once: true });
 
-            img.addEventListener("load", onLoad, { once: true });
-            img.addEventListener("error", onError, { once: true });
+          window.setTimeout(() => {
+            cleanUp();
+            resolve();
+          }, 15000);
+        });
 
-            window.setTimeout(() => {
-              cleanup();
-              done();
-            }, 15000);
-          })
-      )
+        if (typeof img.decode === "function") {
+          try {
+            await img.decode();
+          } catch {
+            //
+          }
+        }
+      })
     );
   }, []);
 
-  const createExportRoot = useCallback(() => {
-    const exportRoot = document.createElement("div");
-    exportRoot.style.position = "fixed";
-    exportRoot.style.left = "-100000px";
-    exportRoot.style.top = "0";
-    exportRoot.style.width = `${SHEET_WIDTH}px`;
-    exportRoot.style.height = `${SHEET_HEIGHT}px`;
-    exportRoot.style.background = "#ffffff";
-    exportRoot.style.overflow = "hidden";
-    exportRoot.style.zIndex = "-1";
-    document.body.appendChild(exportRoot);
-    return exportRoot;
-  }, []);
-
-  const buildExportNode = useCallback(async () => {
+  const createExportClone = useCallback(async () => {
     if (!sheetRef.current) {
       throw new Error("出力対象が見つかりません。");
     }
 
-    const exportRoot = createExportRoot();
-    const clonedSheet = sheetRef.current.cloneNode(true) as HTMLDivElement;
+    const wrapper = document.createElement("div");
+    wrapper.style.position = "fixed";
+    wrapper.style.left = "-99999px";
+    wrapper.style.top = "0";
+    wrapper.style.width = `${SHEET_WIDTH}px`;
+    wrapper.style.height = `${SHEET_HEIGHT}px`;
+    wrapper.style.margin = "0";
+    wrapper.style.padding = "0";
+    wrapper.style.overflow = "hidden";
+    wrapper.style.background = "#ffffff";
+    wrapper.style.zIndex = "-1";
 
-    clonedSheet.style.transform = "none";
-    clonedSheet.style.width = `${SHEET_WIDTH}px`;
-    clonedSheet.style.height = `${SHEET_HEIGHT}px`;
-    clonedSheet.style.overflow = "hidden";
-    clonedSheet.style.margin = "0";
-    clonedSheet.style.background = "#ffffff";
+    const clone = sheetRef.current.cloneNode(true) as HTMLDivElement;
+    clone.style.width = `${SHEET_WIDTH}px`;
+    clone.style.height = `${SHEET_HEIGHT}px`;
+    clone.style.transform = "none";
+    clone.style.transformOrigin = "top left";
+    clone.style.overflow = "hidden";
+    clone.style.margin = "0";
+    clone.style.background = "#ffffff";
 
-    const images = Array.from(clonedSheet.querySelectorAll("img"));
-    images.forEach((img) => {
-      const currentSrc = img.getAttribute("src") || img.currentSrc || img.src;
-      const exportableSrc = toExportableImageSrc(currentSrc);
+    const clonedImages = Array.from(clone.querySelectorAll("img"));
+    clonedImages.forEach((img) => {
+      const src = img.getAttribute("src") ?? img.currentSrc ?? img.src ?? "";
+      if (!src) return;
+
+      const exportableSrc = toExportableImageSrc(src);
       if (exportableSrc) {
         img.setAttribute("src", exportableSrc);
       }
+
       img.setAttribute("crossorigin", "anonymous");
       img.setAttribute("referrerpolicy", "no-referrer");
-      img.style.maxWidth = "100%";
     });
 
-    exportRoot.appendChild(clonedSheet);
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
 
     if (document.fonts?.ready) {
       try {
@@ -817,76 +786,78 @@ function ZumenPageContent() {
       }
     }
 
-    await waitForImages(clonedSheet);
+    await waitForSheetImages(clone);
 
     return {
-      exportRoot,
-      clonedSheet,
+      clone,
       cleanup: () => {
-        if (exportRoot.parentNode) {
-          exportRoot.parentNode.removeChild(exportRoot);
+        if (wrapper.parentNode) {
+          wrapper.parentNode.removeChild(wrapper);
         }
       },
     };
-  }, [createExportRoot, waitForImages]);
+  }, [waitForSheetImages]);
 
   const captureSheet = useCallback(async () => {
-    const { clonedSheet, cleanup } = await buildExportNode();
+    const { clone, cleanup } = await createExportClone();
 
     try {
-      const canvas = await html2canvas(clonedSheet, {
+      const canvas = await html2canvas(clone, {
         scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
         allowTaint: false,
-        logging: false,
         imageTimeout: 15000,
+        logging: false,
+        foreignObjectRendering: false,
         width: SHEET_WIDTH,
         height: SHEET_HEIGHT,
         windowWidth: SHEET_WIDTH,
         windowHeight: SHEET_HEIGHT,
-        foreignObjectRendering: false,
+        scrollX: 0,
+        scrollY: 0,
       });
 
       if (!canvas.width || !canvas.height) {
-        throw new Error("Canvasの生成結果が空です。");
+        throw new Error("Canvasの生成に失敗しました。");
       }
 
       return canvas;
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
-
-      const needsFallback =
+      const fallbackNeeded =
         /unsupported color function\s+"oklch"/i.test(message) ||
         /unsupported color function\s+"oklab"/i.test(message);
 
-      if (!needsFallback) {
+      if (!fallbackNeeded) {
         throw error;
       }
 
-      const canvas = await html2canvas(clonedSheet, {
+      const canvas = await html2canvas(clone, {
         scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
         allowTaint: false,
-        logging: false,
         imageTimeout: 15000,
+        logging: false,
+        foreignObjectRendering: true,
         width: SHEET_WIDTH,
         height: SHEET_HEIGHT,
         windowWidth: SHEET_WIDTH,
         windowHeight: SHEET_HEIGHT,
-        foreignObjectRendering: true,
+        scrollX: 0,
+        scrollY: 0,
       });
 
       if (!canvas.width || !canvas.height) {
-        throw new Error("Canvasの生成結果が空です。");
+        throw new Error("Canvasの生成に失敗しました。");
       }
 
       return canvas;
     } finally {
       cleanup();
     }
-  }, [buildExportNode]);
+  }, [createExportClone]);
 
   function getExportErrorMessage(error: unknown, type: "image" | "pdf") {
     const msg = error instanceof Error ? error.message : "";
@@ -907,23 +878,30 @@ function ZumenPageContent() {
     const payload = dataUrl.split(",", 2)[1];
     return !payload;
   }
-async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality?: number) {
-    return new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => {
-          if (!blob || blob.size === 0) {
-            reject(new Error("画像データのBlob生成に失敗しました。"));
-            return;
-          }
 
-          resolve(blob);
-        },
-        mimeType,
-        quality
-      );
-    });
+  function downloadDataUrl(dataUrl: string, filename: string) {
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
+  async function canvasToImageDataUrl(
+    canvas: HTMLCanvasElement,
+    format: ImageFormat
+  ) {
+    const mimeType = format === "jpeg" ? "image/jpeg" : "image/png";
+    const quality = format === "jpeg" ? 0.98 : 1;
+    const dataUrl = canvas.toDataURL(mimeType, quality);
+
+    if (dataUrl === "data:," || isEmptyDataUrl(dataUrl)) {
+      throw new Error("画像データの生成に失敗しました。");
+    }
+
+    return dataUrl;
+  }
 
   async function saveAsImage() {
     setIsExporting(true);
@@ -931,21 +909,9 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
 
     try {
       const canvas = await captureSheet();
-
-      const mimeType = imageFormat === "jpeg" ? "image/jpeg" : "image/png";
+      const dataUrl = await canvasToImageDataUrl(canvas, imageFormat);
       const extension = imageFormat === "jpeg" ? "jpg" : "png";
-      const quality = imageFormat === "jpeg" ? 0.95 : 1;
-
-       const blob = await canvasToBlob(canvas, mimeType, quality);
-      const objectUrl = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-       link.href = objectUrl;
-      link.download = `zumen-${selectedTemplate ?? "preview"}.${extension}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      downloadDataUrl(dataUrl, `zumen-${selectedTemplate ?? "preview"}.${extension}`);
     } catch (error) {
       console.error("Image export error:", error);
       setExportError(getExportErrorMessage(error, "image"));
@@ -961,25 +927,30 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
     try {
       const canvas = await captureSheet();
 
-      const pdfImageData = canvas.toDataURL("image/png", 1);
-      if (pdfImageData === "data:," || isEmptyDataUrl(pdfImageData)) {
+      // Ổn định nhất: convert canvas sang JPEG rồi nhúng vào PDF A4 ngang
+      const jpegDataUrl = canvas.toDataURL("image/jpeg", 0.98);
+
+      if (jpegDataUrl === "data:," || isEmptyDataUrl(jpegDataUrl)) {
         throw new Error("PDF画像の生成に失敗しました。");
       }
 
       const pdf = new jsPDF({
-        orientation: SHEET_WIDTH >= SHEET_HEIGHT ? "landscape" : "portrait",
-        unit: "pt",
-        format: [SHEET_WIDTH, SHEET_HEIGHT],
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4",
         compress: true,
       });
 
+      const pageWidth = 297;
+      const pageHeight = 210;
+
       pdf.addImage(
-        pdfImageData,
-        "PNG",
+        jpegDataUrl,
+        "JPEG",
         0,
         0,
-        SHEET_WIDTH,
-        SHEET_HEIGHT,
+        pageWidth,
+        pageHeight,
         undefined,
         "FAST"
       );
@@ -1003,7 +974,7 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
 
     const timer = window.setTimeout(() => {
       void saveAsPdf();
-    }, 500);
+    }, 600);
 
     return () => window.clearTimeout(timer);
   }, [data, isExporting, saveAsPdf, selectedTemplate, shouldExportPdf]);
@@ -1054,13 +1025,18 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
               </div>
 
               <div className="flex items-center gap-2">
-                <label htmlFor="image-format" className="text-xs font-medium text-zinc-600">
+                <label
+                  htmlFor="image-format"
+                  className="text-xs font-medium text-zinc-600"
+                >
                   画像形式
                 </label>
                 <select
                   id="image-format"
                   value={imageFormat}
-                  onChange={(event) => setImageFormat(event.target.value as ImageFormat)}
+                  onChange={(event) =>
+                    setImageFormat(event.target.value as ImageFormat)
+                  }
                   className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm"
                 >
                   <option value="png">PNG</option>
@@ -1099,7 +1075,10 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
           {!selectedTemplate ? (
             <div className="grid gap-4 md:grid-cols-3">
               {TEMPLATE_OPTIONS.map((template) => (
-                <div key={template.key} className="rounded-xl border border-zinc-200 p-3">
+                <div
+                  key={template.key}
+                  className="rounded-xl border border-zinc-200 p-3"
+                >
                   <div className="h-36 border border-zinc-400 bg-zinc-100 p-2">
                     <div
                       className={`grid h-full w-full gap-1 border p-1 ${
@@ -1113,19 +1092,32 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                       <div className="h-7 border bg-white/70" />
                       <div className="grid grid-cols-3 gap-1">
                         <ImgBox src={data.imgMain} label="メイン" h={72} />
-                        <ImgBox src={data.imgPlan} label="間取り" fit="contain" h={72} />
+                        <ImgBox
+                          src={data.imgPlan}
+                          label="間取り"
+                          fit="contain"
+                          h={72}
+                        />
                         <ImgBox src={data.imgSub1} label="サブ" h={72} />
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-3 text-xl font-semibold">{template.title}</div>
+                  <div className="mt-3 text-xl font-semibold">
+                    {template.title}
+                  </div>
                   <div className="mt-1 flex gap-1">
                     {template.swatches.map((color) => (
-                      <div key={color} className="h-4 w-4 rounded" style={{ backgroundColor: color }} />
+                      <div
+                        key={color}
+                        className="h-4 w-4 rounded"
+                        style={{ backgroundColor: color }}
+                      />
                     ))}
                   </div>
-                  <div className="mt-2 text-sm text-zinc-700">{template.subtitle}</div>
+                  <div className="mt-2 text-sm text-zinc-700">
+                    {template.subtitle}
+                  </div>
                   <button
                     type="button"
                     onClick={() => setSelectedTemplate(template.key)}
@@ -1138,7 +1130,10 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
             </div>
           ) : (
             <div ref={previewRef} className="overflow-x-auto overflow-y-visible">
-              <div className="mx-auto" style={{ width: `${SHEET_WIDTH * sheetScale}px` }}>
+              <div
+                className="mx-auto"
+                style={{ width: `${SHEET_WIDTH * sheetScale}px` }}
+              >
                 <div
                   style={{
                     width: `${SHEET_WIDTH}px`,
@@ -1176,22 +1171,36 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                             <div className="mt-2 text-center text-2xl font-bold text-[#4a2207]">
                               販売価格 {Number(data.price || 0).toLocaleString()}万円
                             </div>
-                            <div className="mt-2 text-center" style={adaptiveTextStyle(data.catchCopy, 11, 15)}>
-                              {data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境"}
+                            <div
+                              className="mt-2 text-center"
+                              style={adaptiveTextStyle(data.catchCopy, 11, 15)}
+                            >
+                              {data.catchCopy ||
+                                "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境"}
                             </div>
                           </div>
 
                           <div className="border-r border-black p-2">
-                            <div className="border-b border-black pb-1 text-lg font-bold" style={{ color: theme.brand }}>
+                            <div
+                              className="border-b border-black pb-1 text-lg font-bold"
+                              style={{ color: theme.brand }}
+                            >
                               ACCESS
                             </div>
                             <div
                               className="mt-1 font-semibold"
-                              style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 12, 17)}
+                              style={adaptiveTextStyle(
+                                `${data.access} 駅徒歩${data.walk}分`,
+                                12,
+                                17
+                              )}
                             >
                               {data.access} 駅徒歩{data.walk}分
                             </div>
-                            <div className="mt-2 border-b border-black pb-1 text-sm font-bold" style={{ color: theme.brand }}>
+                            <div
+                              className="mt-2 border-b border-black pb-1 text-sm font-bold"
+                              style={{ color: theme.brand }}
+                            >
                               LIFE INFORMATION
                             </div>
                             <div className="mt-1 text-xs leading-5">
@@ -1202,10 +1211,18 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                           </div>
 
                           <div className="p-2">
-                            <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} />
+                            <ImgBox
+                              src={data.imgMap ?? data.imgMain}
+                              label="MAP"
+                              h={170}
+                            />
                             <div
                               className="border-t border-black p-1 text-center"
-                              style={adaptiveTextStyle(`NAVI ${data.address}`, 9, 12)}
+                              style={adaptiveTextStyle(
+                                `NAVI ${data.address}`,
+                                9,
+                                12
+                              )}
                             >
                               NAVI {data.address}
                             </div>
@@ -1228,8 +1245,14 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
 
                         <div className="grid grid-cols-[300px_421px_402px] border-b border-black">
                           <div className="border-r border-black p-2">
-                            <div className="flex items-start justify-between" style={{ color: theme.brand }}>
-                              <div className="font-bold" style={adaptiveTextStyle(data.districts, 10, 14)}>
+                            <div
+                              className="flex items-start justify-between"
+                              style={{ color: theme.brand }}
+                            >
+                              <div
+                                className="font-bold"
+                                style={adaptiveTextStyle(data.districts, 10, 14)}
+                              >
                                 {data.districts || "1区画"}
                               </div>
                               <div
@@ -1258,7 +1281,12 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                           </div>
 
                           <div className="border-r border-black p-2">
-                            <ImgBox src={data.imgPlan} label="間取り図" h={320} fit="contain" />
+                            <ImgBox
+                              src={data.imgPlan}
+                              label="間取り図"
+                              h={320}
+                              fit="contain"
+                            />
                           </div>
 
                           <div className="p-2">
@@ -1272,7 +1300,10 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
 
                             {featureRows.length > 0 && (
                               <>
-                                <div className="mt-3 text-lg font-bold" style={{ color: theme.brand }}>
+                                <div
+                                  className="mt-3 text-lg font-bold"
+                                  style={{ color: theme.brand }}
+                                >
                                   建物備・仕様
                                 </div>
                                 <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
@@ -1294,15 +1325,26 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                           {remarks || "※図面と相違する場合は現況を優先します。"}
                         </div>
 
-                        <div className={`grid ${FOOTER_HEIGHT_CLASS} grid-cols-[1.2fr_330px_190px] items-center px-3 py-1`}>
+                        <div
+                          className={`grid ${FOOTER_HEIGHT_CLASS} grid-cols-[1.2fr_330px_190px] items-center px-3 py-1`}
+                        >
                           <div>
                             <div className="text-[12px] font-semibold text-[#243b64] [overflow-wrap:anywhere]">
                               {contact.licenseNo || "-"}
                             </div>
-                            <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 22, 42)}>
+                            <div
+                              className="font-serif text-[#243b64]"
+                              style={adaptiveTextStyle(
+                                contact.companyName,
+                                22,
+                                42
+                              )}
+                            >
                               {contact.companyName}
                             </div>
-                            <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
+                            <div className="text-[10px] [overflow-wrap:anywhere]">
+                              {contact.companyAddress}
+                            </div>
                           </div>
 
                           <div
@@ -1311,7 +1353,11 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                           >
                             <div
                               style={{
-                                ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28),
+                                ...adaptiveTextStyle(
+                                  `TEL ${contact.companyPhone}`,
+                                  20,
+                                  28
+                                ),
                                 whiteSpace: "nowrap",
                               }}
                             >
@@ -1336,7 +1382,9 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                               )}
 
                               <div className="text-left text-[11px] leading-tight text-[#243b64]">
-                                <div className="font-semibold">FAX:{contact.companyFax}</div>
+                                <div className="font-semibold">
+                                  FAX:{contact.companyFax}
+                                </div>
                                 <div>{inspectionNote}</div>
                               </div>
                             </div>
@@ -1347,13 +1395,19 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                               <div>Email: {contact.companyEmail}</div>
                               <div className="mt-1 flex justify-center leading-tight">
                                 <div className="grid grid-cols-[4.8em_1em_auto] gap-x-1 text-left">
-                                  <div className="text-right whitespace-nowrap">取引形態</div>
+                                  <div className="text-right whitespace-nowrap">
+                                    取引形態
+                                  </div>
                                   <div>：</div>
                                   <div>{contact.transactionType || "-"}</div>
-                                  <div className="text-right whitespace-nowrap">担当者</div>
+                                  <div className="text-right whitespace-nowrap">
+                                    担当者
+                                  </div>
                                   <div>：</div>
                                   <div>{contact.staffName || "-"}</div>
-                                  <div className="text-right whitespace-nowrap">手数料</div>
+                                  <div className="text-right whitespace-nowrap">
+                                    手数料
+                                  </div>
                                   <div>：</div>
                                   <div>{contact.fee || "-"}</div>
                                 </div>
@@ -1372,12 +1426,15 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                             <div
                               className="text-center font-bold leading-tight"
                               style={adaptiveTextStyle(
-                                `${data.propertyType || "中古マンション"} ${data.districts || "全10区画"}`,
+                                `${data.propertyType || "中古マンション"} ${
+                                  data.districts || "全10区画"
+                                }`,
                                 15,
                                 20
                               )}
                             >
-                              {data.propertyType || "中古マンション"} {data.districts || "全10区画"}
+                              {data.propertyType || "中古マンション"}{" "}
+                              {data.districts || "全10区画"}
                             </div>
 
                             <AutoFitText
@@ -1401,7 +1458,10 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                             </div>
 
                             <div className="absolute bottom-2 right-2 text-right">
-                              <div className="font-bold text-[#fff7db]" style={adaptiveTextStyle("販売価格", 11, 15)}>
+                              <div
+                                className="font-bold text-[#fff7db]"
+                                style={adaptiveTextStyle("販売価格", 11, 15)}
+                              >
                                 販売価格
                               </div>
                               <div className="mt-0.5 flex items-baseline justify-end gap-1.5 leading-none">
@@ -1418,7 +1478,10 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                                 >
                                   {Number(data.price || 0).toLocaleString()}
                                 </div>
-                                <div className="font-bold text-[#fff7db]" style={adaptiveTextStyle("万円", 12, 18)}>
+                                <div
+                                  className="font-bold text-[#fff7db]"
+                                  style={adaptiveTextStyle("万円", 12, 18)}
+                                >
                                   万円
                                 </div>
                               </div>
@@ -1428,9 +1491,15 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                           <div className="border-r border-black p-2">
                             <div
                               className="text-right font-bold"
-                              style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 16, 28)}
+                              style={adaptiveTextStyle(
+                                `${data.access} 駅徒歩${data.walk}分`,
+                                16,
+                                28
+                              )}
                             >
-                              {data.access} 駅徒歩<span style={{ color: theme.brand }}>{data.walk}</span>分
+                              {data.access} 駅徒歩
+                              <span style={{ color: theme.brand }}>{data.walk}</span>
+                              分
                             </div>
 
                             <div
@@ -1448,11 +1517,19 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                           </div>
 
                           <div className="p-2">
-                            <ImgBox src={data.imgMap ?? data.imgMain} label="現地MAP" h={185} />
+                            <ImgBox
+                              src={data.imgMap ?? data.imgMain}
+                              label="現地MAP"
+                              h={185}
+                            />
                             <div
                               className="px-1 py-0.5 text-center font-bold text-white"
                               style={{
-                                ...adaptiveTextStyle(`NAVI ${data.address} 付近`, 8, 11),
+                                ...adaptiveTextStyle(
+                                  `NAVI ${data.address} 付近`,
+                                  8,
+                                  11
+                                ),
                                 backgroundColor: theme.brand,
                                 minHeight: "18px",
                               }}
@@ -1463,7 +1540,10 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                         </div>
 
                         <div className="grid grid-cols-[380px_420px_323px] border-b border-black">
-                          <div className="border-r border-black p-2" style={{ backgroundColor: theme.brand }}>
+                          <div
+                            className="border-r border-black p-2"
+                            style={{ backgroundColor: theme.brand }}
+                          >
                             <ImgBox src={data.imgMain} label="メイン画像" h={220} />
                             <div className="mt-2 grid grid-cols-2 gap-2">
                               <ImgBox src={data.imgSub1} label="サブ1" h={85} />
@@ -1473,13 +1553,21 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
 
                           <div className="border-r border-black p-2">
                             <div>
-                              <div className="font-bold text-[#1f2937]" style={adaptiveTextStyle(layoutLabel, 20, 34)}>
+                              <div
+                                className="font-bold text-[#1f2937]"
+                                style={adaptiveTextStyle(layoutLabel, 20, 34)}
+                              >
                                 {layoutLabel}
                               </div>
                               <div className="text-xs">□専有面積/75㎡(22.68坪)</div>
                               <div className="text-xs">□バルコニー面積/10㎡(3.02坪)</div>
                               <div className="mt-2">
-                                <ImgBox src={data.imgPlan} label="間取り" h={205} fit="contain" />
+                                <ImgBox
+                                  src={data.imgPlan}
+                                  label="間取り"
+                                  h={205}
+                                  fit="contain"
+                                />
                               </div>
                             </div>
                           </div>
@@ -1490,7 +1578,10 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                             {featureRows.length > 0 && (
                               <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
                                 {featureRows.slice(0, 10).map((item) => (
-                                  <div key={item} className="flex h-14 items-center justify-center border border-zinc-400">
+                                  <div
+                                    key={item}
+                                    className="flex h-14 items-center justify-center border border-zinc-400"
+                                  >
                                     {item}
                                   </div>
                                 ))}
@@ -1521,15 +1612,26 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                           </div>
                         </div>
 
-                        <div className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.45fr_390px_200px] items-center px-3 py-1`}>
+                        <div
+                          className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.45fr_390px_200px] items-center px-3 py-1`}
+                        >
                           <div>
                             <div className="text-[12px] font-semibold text-[#243b64]">
                               免許番号：{contact.licenseNo || "-"}
                             </div>
-                            <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 22, 42)}>
+                            <div
+                              className="font-serif text-[#243b64]"
+                              style={adaptiveTextStyle(
+                                contact.companyName,
+                                22,
+                                42
+                              )}
+                            >
                               {contact.companyName}
                             </div>
-                            <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
+                            <div className="text-[10px] [overflow-wrap:anywhere]">
+                              {contact.companyAddress}
+                            </div>
                           </div>
 
                           <div
@@ -1538,7 +1640,11 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                           >
                             <div
                               style={{
-                                ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28),
+                                ...adaptiveTextStyle(
+                                  `TEL ${contact.companyPhone}`,
+                                  20,
+                                  28
+                                ),
                                 whiteSpace: "nowrap",
                               }}
                             >
@@ -1563,7 +1669,9 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                               )}
 
                               <div className="text-left text-[11px] leading-tight text-[#243b64]">
-                                <div className="font-semibold">FAX:{contact.companyFax}</div>
+                                <div className="font-semibold">
+                                  FAX:{contact.companyFax}
+                                </div>
                                 <div>{inspectionNote}</div>
                               </div>
                             </div>
@@ -1573,13 +1681,19 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                             <div>Email: {contact.companyEmail}</div>
                             <div className="mt-1 flex justify-center leading-tight">
                               <div className="grid grid-cols-[4.8em_1em_auto] gap-x-1 text-left">
-                                <div className="text-right whitespace-nowrap">取引形態</div>
+                                <div className="text-right whitespace-nowrap">
+                                  取引形態
+                                </div>
                                 <div>：</div>
                                 <div>{contact.transactionType || "-"}</div>
-                                <div className="text-right whitespace-nowrap">担当者</div>
+                                <div className="text-right whitespace-nowrap">
+                                  担当者
+                                </div>
                                 <div>：</div>
                                 <div>{contact.staffName || "-"}</div>
-                                <div className="text-right whitespace-nowrap">手数料</div>
+                                <div className="text-right whitespace-nowrap">
+                                  手数料
+                                </div>
                                 <div>：</div>
                                 <div>{contact.fee || "-"}</div>
                               </div>
@@ -1598,7 +1712,9 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                             <div className="-translate-y-0.5 text-3xl font-extrabold leading-none">
                               {Number(data.price || 0).toLocaleString()}
                             </div>
-                            <div className="absolute bottom-1.5 right-2 text-xs font-bold">万円</div>
+                            <div className="absolute bottom-1.5 right-2 text-xs font-bold">
+                              万円
+                            </div>
                           </div>
 
                           <div className="p-2">
@@ -1642,7 +1758,12 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                           </div>
 
                           <div className="border-r border-black p-2">
-                            <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={360} fit="contain" />
+                            <ImgBox
+                              src={data.imgPlan}
+                              label="間取り図（中央上）"
+                              h={360}
+                              fit="contain"
+                            />
                             <div className="mt-2 grid grid-cols-2 gap-2">
                               <ImgBox src={data.imgSub2} label="室内（中央下左）" h={168} />
                               <ImgBox src={data.imgSub3} label="共用（中央下右）" h={168} />
@@ -1650,7 +1771,9 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                           </div>
 
                           <div className="p-2">
-                            <SectionTitle bgColor={theme.section}>物件概要</SectionTitle>
+                            <SectionTitle bgColor={theme.section}>
+                              物件概要
+                            </SectionTitle>
                             <InfoTable rows={summaryRows} labelBgColor={theme.label} />
 
                             {managementRows.length > 0 && (
@@ -1658,17 +1781,29 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                                 <SectionTitle bgColor={theme.section}>
                                   {isMansion ? "管理費等" : "制限・施設"}
                                 </SectionTitle>
-                                <InfoTable rows={managementRows} labelBgColor={theme.label} autoValueWidth />
+                                <InfoTable
+                                  rows={managementRows}
+                                  labelBgColor={theme.label}
+                                  autoValueWidth
+                                />
                               </div>
                             )}
 
                             <div className="mt-2">
-                              <SectionTitle bgColor={theme.section}>設備・引渡</SectionTitle>
-                              <InfoTable rows={facilityRows} labelBgColor={theme.label} autoValueWidth />
+                              <SectionTitle bgColor={theme.section}>
+                                設備・引渡
+                              </SectionTitle>
+                              <InfoTable
+                                rows={facilityRows}
+                                labelBgColor={theme.label}
+                                autoValueWidth
+                              />
                             </div>
 
                             <div className="mt-2">
-                              <SectionTitle bgColor={theme.section}>備考</SectionTitle>
+                              <SectionTitle bgColor={theme.section}>
+                                備考
+                              </SectionTitle>
                               <div
                                 className={`whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px] ${
                                   selectedTemplate === "chic" && isMansion
@@ -1676,30 +1811,41 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                                     : "min-h-[2.34cm]"
                                 }`}
                               >
-                                {remarks || "※図面と相違する場合は現況を優先します。"}
+                                {remarks ||
+                                  "※図面と相違する場合は現況を優先します。"}
                               </div>
                             </div>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-[210px_1fr] border-t border-black">
-                          <div className="px-3 py-2 text-white" style={{ backgroundColor: theme.brand }}>
+                          <div
+                            className="px-3 py-2 text-white"
+                            style={{ backgroundColor: theme.brand }}
+                          >
                             <div
                               className={`${
-                                selectedTemplate === "chic" ? "text-[22px]" : "text-2xl"
+                                selectedTemplate === "chic"
+                                  ? "text-[22px]"
+                                  : "text-2xl"
                               } font-extrabold leading-tight tracking-widest`}
                             >
                               POWERWAY HOUSE
                             </div>
-                            <div className="mt-0.5 text-[11px]">不動産　販売・賃貸・管理</div>
+                            <div className="mt-0.5 text-[11px]">
+                              不動産　販売・賃貸・管理
+                            </div>
                           </div>
 
                           <div className="grid grid-cols-[1fr_88px_320px]">
                             <div className="px-2 py-1 text-[10px] leading-4">
                               <div className="grid grid-cols-[1fr_auto] gap-2">
-                                <div className="font-semibold">{contact.licenseNo}</div>
                                 <div className="font-semibold">
-                                  TEL：{contact.companyPhone}　FAX：{contact.companyFax}
+                                  {contact.licenseNo}
+                                </div>
+                                <div className="font-semibold">
+                                  TEL：{contact.companyPhone}　FAX：
+                                  {contact.companyFax}
                                 </div>
                               </div>
 
@@ -1707,7 +1853,9 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                                 {contact.companyName}
                               </div>
 
-                              <div className="truncate text-[10px]">{contact.companyAddress}</div>
+                              <div className="truncate text-[10px]">
+                                {contact.companyAddress}
+                              </div>
                             </div>
 
                             <div className="flex items-center justify-center border-l border-black px-1 py-1">
@@ -1727,12 +1875,18 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
                             <div className="border-l border-black text-[10px]">
                               <div className="grid grid-cols-[1fr_1fr] items-start border-b border-black px-2 py-1">
                                 <div>
-                                  <div className="font-semibold">{inspectionNote}</div>
+                                  <div className="font-semibold">
+                                    {inspectionNote}
+                                  </div>
                                 </div>
                                 <div className="text-right">
                                   <div>取引形態：{contact.transactionType}</div>
-                                  <div className="mt-0.5">担当者：{contact.staffName}</div>
-                                  <div className="mt-0.5">手数料：{contact.fee}</div>
+                                  <div className="mt-0.5">
+                                    担当者：{contact.staffName}
+                                  </div>
+                                  <div className="mt-0.5">
+                                    手数料：{contact.fee}
+                                  </div>
                                 </div>
                               </div>
                               <div className="px-2 py-1 text-right text-[9px]">
