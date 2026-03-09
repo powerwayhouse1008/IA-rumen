@@ -893,15 +893,7 @@ useEffect(() => {
         compress: true,
       });
 
-      try {
-        pdf.addImage(canvas, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
-      } catch {
-        const imgData = canvas.toDataURL("image/png", 1);
-         if (isEmptyDataUrl(imgData)) {
-          throw new Error("PDF画像の生成に失敗しました。");
-        }
-        pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
-         }
+            pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
       pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`);
     } catch (error) {
       console.error("PDF export error:", error);
