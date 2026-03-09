@@ -984,7 +984,7 @@ function ZumenPageContent() {
         compress: true,
       });
 
-       const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const safeMargin = PAPER_MARGIN_CM * 10;
       const availableWidth = pageWidth - safeMargin * 2;
@@ -996,8 +996,10 @@ function ZumenPageContent() {
         imageRatio > pageRatio ? availableWidth : availableHeight * imageRatio;
       const renderHeight =
         imageRatio > pageRatio ? availableWidth / imageRatio : availableHeight;
-      const offsetX = (pageWidth - renderWidth) / 2;
-      const offsetY = (pageHeight - renderHeight) / 2;
+       // Center-out placement to keep left/right and top/bottom spacing balanced,
+      // even when floating point rounding happens during PDF rendering.
+      const offsetX = pageWidth / 2 - renderWidth / 2;
+      const offsetY = pageHeight / 2 - renderHeight / 2;
       pdf.addImage(jpegDataUrl, "JPEG", offsetX, offsetY, renderWidth, renderHeight);
       pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`);
     } catch (error) {
