@@ -225,8 +225,8 @@ function ImgBox({
   );
 }
 
-const SHEET_WIDTH = 1096;
-const SHEET_HEIGHT = 775;
+const SHEET_WIDTH = 1123;
+const SHEET_HEIGHT = 794;
 const PROPERTY_NAME_MAX_HEIGHT = 84;
 const DEFAULT_QR_NOTE = "☚内見、物件確認";
 const DEFAULT_LIFE_INFORMATION_ROWS = [
@@ -980,8 +980,14 @@ function ZumenPageContent() {
 
       const pageWidth = 297;
       const pageHeight = 210;
+      const imageRatio = canvas.width / canvas.height;
+      const pageRatio = pageWidth / pageHeight;
 
-      pdf.addImage(jpegDataUrl, "JPEG", 0, 0, pageWidth, pageHeight);
+      const renderWidth = imageRatio > pageRatio ? pageWidth : pageHeight * imageRatio;
+      const renderHeight = imageRatio > pageRatio ? pageWidth / imageRatio : pageHeight;
+      const offsetX = (pageWidth - renderWidth) / 2;
+      const offsetY = (pageHeight - renderHeight) / 2;
+      pdf.addImage(jpegDataUrl, "JPEG", offsetX, offsetY, renderWidth, renderHeight);
       pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`);
     } catch (error) {
       console.error("PDF export error:", error);
