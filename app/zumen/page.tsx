@@ -801,7 +801,38 @@ function ZumenPageContent() {
   const captureSheet = useCallback(async () => {
     const { clone, cleanup } = await createExportClone();
 
-    try {
+    const isMostlySingleColor = (canvas: HTMLCanvasElement) => {
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) return false;
+
+      const { width, height } = canvas;
+      const points = [
+        [0.1, 0.1],
+        [0.5, 0.1],
+        [0.9, 0.1],
+        [0.1, 0.5],
+        [0.5, 0.5],
+        [0.9, 0.5],
+        [0.1, 0.9],
+        [0.5, 0.9],
+        [0.9, 0.9],
+      ] as const;
+
+      const sampled = points.map(([x, y]) => {
+        const pixel = context.getImageData(
+          Math.max(0, Math.min(width - 1, Math.floor(width * x))),
+          Math.max(0, Math.min(height - 1, Math.floor(height * y))),
+          1,
+          1
+        ).data;
+
+        return `${pixel[0]}-${pixel[1]}-${pixel[2]}-${pixel[3]}`;
+      });
+
+      return new Set(sampled).size <= 1;
+    };
+
+    const renderSheet = async (foreignObjectRendering: boolean) => {
       const canvas = await html2canvas(clone, {
         scale: 2,
         backgroundColor: "#ffffff",
@@ -823,6 +854,16 @@ function ZumenPageContent() {
       }
 
       return canvas;
+      };
+
+    try {
+      const canvas = await renderSheet(false);
+      if (!isMostlySingleColor(canvas)) {
+        return canvas;
+      }
+
+      const fallbackCanvas = await renderSheet(true);
+      return fallbackCanvas;
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       const fallbackNeeded =
@@ -833,27 +874,7 @@ function ZumenPageContent() {
         throw error;
       }
 
-      const canvas = await html2canvas(clone, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        allowTaint: false,
-        imageTimeout: 15000,
-        logging: false,
-        foreignObjectRendering: true,
-        width: SHEET_WIDTH,
-        height: SHEET_HEIGHT,
-        windowWidth: SHEET_WIDTH,
-        windowHeight: SHEET_HEIGHT,
-        scrollX: 0,
-        scrollY: 0,
-      });
-
-      if (!canvas.width || !canvas.height) {
-        throw new Error("Canvasの生成に失敗しました。");
-      }
-
-      return canvas;
+      return await renderSheet(true);
     } finally {
       cleanup();
     }
@@ -914,8 +935,7 @@ function ZumenPageContent() {
 
     const mimeType = format === "jpeg" ? "image/jpeg" : "image/png";
     const quality = format === "jpeg" ? 0.98 : 1;
-    const dataUrl = targetCanvas.toDataURL(mimeType, quality);
-
+    const dataUrl = flattenedCanvas.toDataURL(mimeType, quality);
     if (dataUrl === "data:," || isEmptyDataUrl(dataUrl)) {
       throw new Error("画像データの生成に失敗しました。");
     }
