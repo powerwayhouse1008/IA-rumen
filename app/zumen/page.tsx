@@ -833,13 +833,19 @@ function ZumenPageContent() {
       if (!canvas) {
         throw new Error("Canvasの生成に失敗しました。");
       }
+       if (!canvas.width || !canvas.height) {
+        throw new Error("画像用キャンバスのサイズが不正です。");
+      }
 
       const mimeType = imageFormat === "jpeg" ? "image/jpeg" : "image/png";
       const extension = imageFormat === "jpeg" ? "jpg" : "png";
       const quality = imageFormat === "jpeg" ? 0.95 : 1;
-
+       if (dataUrl === "data:,") {
+        throw new Error("画像データの生成に失敗しました。");
+      }
       const dataUrl = canvas.toDataURL(mimeType, quality);
-
+      if (dataUrl === "data:,") {
+        throw new Error("画像データの生成に失敗しました。");
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = `zumen-${selectedTemplate ?? "preview"}.${extension}`;
