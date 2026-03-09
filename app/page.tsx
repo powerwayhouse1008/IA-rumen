@@ -303,7 +303,12 @@ async function optimizeImageFile(file: File): Promise<string | null> {
   context.drawImage(imageBitmap, 0, 0, targetWidth, targetHeight);
   imageBitmap.close();
 
-  const outputType = file.type === "image/webp" ? "image/webp" : "image/jpeg";
+  const outputType =
+    file.type === "image/png"
+      ? "image/png"
+      : file.type === "image/webp"
+        ? "image/webp"
+        : "image/jpeg";
   return canvas.toDataURL(outputType, 0.82);
 }
 
