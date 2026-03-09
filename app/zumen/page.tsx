@@ -336,20 +336,7 @@ function ZumenPageContent() {
   const searchParams = useSearchParams();
   const shouldExportPdf = searchParams.get("export") === "pdf";
 
-  const [data] = useState<ZumenData | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const runtimePayload = (
-        window as Window & { __zumenPayload?: ZumenData }
-      ).__zumenPayload;
-      if (runtimePayload) return runtimePayload;
-
-      const saved = localStorage.getItem("zumenData");
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [data, setData] = useState<ZumenData | null>(null);
 
   const previewRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
@@ -364,6 +351,27 @@ function ZumenPageContent() {
   const [isExporting, setIsExporting] = useState(false);
   const [imageFormat, setImageFormat] = useState<ImageFormat>("png");
   const [exportError, setExportError] = useState<string | null>(null);
+useEffect(() => {
+    try {
+      const runtimePayload = (
+        window as Window & { __zumenPayload?: ZumenData }
+      ).__zumenPayload;
+      if (runtimePayload) {
+        setData(runtimePayload);
+        return;
+      }
+
+      const saved = localStorage.getItem("zumenData");
+      setData(saved ? (JSON.parse(saved) as ZumenData) : null);
+    } catch {
+      setData(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!data?.themeColor) return;
+    setSelectedTheme(data.themeColor);
+  }, [data?.themeColor]);
 
   useEffect(() => {
     const updateScale = () => {
