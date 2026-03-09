@@ -210,7 +210,6 @@ function ImgBox({
       style={{ height: `${h}px` }}
     >
       {src ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={toExportableImageSrc(src)}
           alt={label}
@@ -269,6 +268,7 @@ function adaptiveTextStyle(
 
   const ratio = (length - minLength) / (maxLength - minLength);
   const size = maxSize - (maxSize - minSize) * ratio;
+
   return {
     fontSize: `${size}px`,
     lineHeight: 1.2,
@@ -312,6 +312,7 @@ function AutoFitText({
 
     const resizeObserver = new ResizeObserver(fitText);
     resizeObserver.observe(node);
+
     return () => resizeObserver.disconnect();
   }, [text, minSize, maxSize]);
 
@@ -342,20 +343,18 @@ function ZumenPageContent() {
   const sheetRef = useRef<HTMLDivElement | null>(null);
 
   const [sheetScale, setSheetScale] = useState(1);
-  const [selectedTheme, setSelectedTheme] = useState<ThemeColorKey>(
-    data?.themeColor ?? "sunset-red"
-  );
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>(
-    null
-  );
+  const [selectedTheme, setSelectedTheme] = useState<ThemeColorKey>("sunset-red");
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [imageFormat, setImageFormat] = useState<ImageFormat>("png");
   const [exportError, setExportError] = useState<string | null>(null);
-useEffect(() => {
+
+  useEffect(() => {
     try {
       const runtimePayload = (
         window as Window & { __zumenPayload?: ZumenData }
       ).__zumenPayload;
+
       if (runtimePayload) {
         setData(runtimePayload);
         return;
@@ -387,14 +386,16 @@ useEffect(() => {
 
   const propertyType = data?.propertyType?.trim() ?? "";
   const category = data?.category;
+
   const isMansion =
     propertyType.includes("マンション") ||
     category === "new-mansion" ||
     category === "used-mansion";
+
   const isHouse =
     propertyType.includes("住宅") ||
-    (!isMansion &&
-      (category === "new-house" || category === "used-house"));
+    (!isMansion && (category === "new-house" || category === "used-house"));
+
   const isLand = propertyType === "土地" || category === "land";
 
   const summaryRows = useMemo(() => {
@@ -406,9 +407,7 @@ useEffect(() => {
         { label: "権利", value: data.houseDetails.right || "-" },
         {
           label: "敷地面積",
-          value: data.houseDetails.landArea
-            ? `${data.houseDetails.landArea}㎡`
-            : "-",
+          value: data.houseDetails.landArea ? `${data.houseDetails.landArea}㎡` : "-",
         },
         {
           label: "地目",
@@ -684,138 +683,178 @@ useEffect(() => {
   const inspectionNote = contact.inspectionNote?.trim() || DEFAULT_QR_NOTE;
   const theme = THEME_COLORS[selectedTheme];
 
-  const waitForSheetImages = useCallback(async (root: HTMLElement) => {
-    const images = Array.from(root.querySelectorAll("img")).filter(
-      (img) => Boolean(img.currentSrc || img.src)
-    );
+  const waitForImages = useCallback(async (root: HTMLElement) => {
+    const images = Array.from(root.querySelectorAll("img")).filter((img) => {
+      const src = img.getAttribute("src") || img.currentSrc || img.src;
+      return Boolean(src);
+    });
 
     await Promise.all(
-      images.map(async (img) => {
-        await new Promise<void>((resolve) => {
-          if (img.complete && img.naturalWidth > 0) {
-            resolve();
-            return;
-          }
+      images.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            const done = () => resolve();
 
-          const cleanUp = () => {
-            img.removeEventListener("load", onLoad);
-            img.removeEventListener("error", onError);
-          };
+            if (img.complete && img.naturalWidth > 0) {
+              done();
+              return;
+            }
 
-          const onLoad = () => {
-            cleanUp();
-            resolve();
-          };
+            const onLoad = async () => {
+              cleanup();
+              try {
+                if (typeof img.decode === "function") {
+                  await img.decode();
+                }
+              } catch {
+                //
+              }
+              done();
+            };
 
-          const onError = () => {
-            cleanUp();
-            resolve();
-          };
+            const onError = () => {
+              cleanup();
+              done();
+            };
 
-          img.addEventListener("load", onLoad, { once: true });
-          img.addEventListener("error", onError, { once: true });
+            const cleanup = () => {
+              img.removeEventListener("load", onLoad);
+              img.removeEventListener("error", onError);
+            };
 
-          window.setTimeout(() => {
-            cleanUp();
-            resolve();
-          }, 15000);
-        });
+            img.addEventListener("load", onLoad, { once: true });
+            img.addEventListener("error", onError, { once: true });
 
-        if (typeof img.decode === "function") {
-          try {
-            await img.decode();
-          } catch {
-            //
-          }
-        }
-      })
+            window.setTimeout(() => {
+              cleanup();
+              done();
+            }, 15000);
+          })
+      )
     );
   }, []);
 
+  const createExportRoot = useCallback(() => {
+    const exportRoot = document.createElement("div");
+    exportRoot.style.position = "fixed";
+    exportRoot.style.left = "-100000px";
+    exportRoot.style.top = "0";
+    exportRoot.style.width = `${SHEET_WIDTH}px`;
+    exportRoot.style.height = `${SHEET_HEIGHT}px`;
+    exportRoot.style.background = "#ffffff";
+    exportRoot.style.overflow = "hidden";
+    exportRoot.style.zIndex = "-1";
+    document.body.appendChild(exportRoot);
+    return exportRoot;
+  }, []);
+
+  const buildExportNode = useCallback(async () => {
+    if (!sheetRef.current) {
+      throw new Error("出力対象が見つかりません。");
+    }
+
+    const exportRoot = createExportRoot();
+    const clonedSheet = sheetRef.current.cloneNode(true) as HTMLDivElement;
+
+    clonedSheet.style.transform = "none";
+    clonedSheet.style.width = `${SHEET_WIDTH}px`;
+    clonedSheet.style.height = `${SHEET_HEIGHT}px`;
+    clonedSheet.style.overflow = "hidden";
+    clonedSheet.style.margin = "0";
+    clonedSheet.style.background = "#ffffff";
+
+    const images = Array.from(clonedSheet.querySelectorAll("img"));
+    images.forEach((img) => {
+      const currentSrc = img.getAttribute("src") || img.currentSrc || img.src;
+      const exportableSrc = toExportableImageSrc(currentSrc);
+      if (exportableSrc) {
+        img.setAttribute("src", exportableSrc);
+      }
+      img.setAttribute("crossorigin", "anonymous");
+      img.setAttribute("referrerpolicy", "no-referrer");
+      img.style.maxWidth = "100%";
+    });
+
+    exportRoot.appendChild(clonedSheet);
+
+    if (document.fonts?.ready) {
+      try {
+        await document.fonts.ready;
+      } catch {
+        //
+      }
+    }
+
+    await waitForImages(clonedSheet);
+
+    return {
+      exportRoot,
+      clonedSheet,
+      cleanup: () => {
+        if (exportRoot.parentNode) {
+          exportRoot.parentNode.removeChild(exportRoot);
+        }
+      },
+    };
+  }, [createExportRoot, waitForImages]);
+
   const captureSheet = useCallback(async () => {
-    if (!sheetRef.current) return null;
+    const { clonedSheet, cleanup } = await buildExportNode();
 
-    const target = sheetRef.current;
-    await waitForSheetImages(target);
-
-     const buildCaptureOptions = (useForeignObjectRendering: boolean) => ({
+    try {
+      const canvas = await html2canvas(clonedSheet, {
         scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
         allowTaint: false,
+        logging: false,
         imageTimeout: 15000,
-        logging: true,
-       foreignObjectRendering: useForeignObjectRendering,
         width: SHEET_WIDTH,
         height: SHEET_HEIGHT,
         windowWidth: SHEET_WIDTH,
         windowHeight: SHEET_HEIGHT,
-        onclone: (clonedDocument: Document) => {
-          const clonedSheet = clonedDocument.getElementById("zumen-export-sheet");
-          if (!clonedSheet) return;
-
-          const html = clonedDocument.documentElement;
-          const body = clonedDocument.body;
-
-          html.style.width = `${SHEET_WIDTH}px`;
-          html.style.height = `${SHEET_HEIGHT}px`;
-          body.style.width = `${SHEET_WIDTH}px`;
-          body.style.height = `${SHEET_HEIGHT}px`;
-          body.style.margin = "0";
-          body.style.padding = "0";
-          body.style.background = "#ffffff";
-
-          const clonedSheetEl = clonedSheet as HTMLElement;
-           let ancestor = clonedSheetEl.parentElement;
-          while (ancestor && ancestor !== body) {
-            ancestor.style.transform = "none";
-            ancestor.style.transformOrigin = "top left";
-            ancestor = ancestor.parentElement;
-          }
-
-          clonedSheetEl.style.transform = "none";
-          clonedSheetEl.style.width = `${SHEET_WIDTH}px`;
-          clonedSheetEl.style.height = `${SHEET_HEIGHT}px`;
-          clonedSheetEl.style.overflow = "hidden";
-
-          const clonedImages = Array.from(clonedSheet.querySelectorAll("img"));
-          clonedImages.forEach((img) => {
-            const source = img.getAttribute("src") ?? img.currentSrc ?? "";
-            if (!source) return;
-
-            const exportableSource = toExportableImageSrc(source);
-            if (exportableSource) {
-              img.setAttribute("src", exportableSource);
-            }
-
-            img.setAttribute("crossorigin", "anonymous");
-            img.setAttribute("referrerpolicy", "no-referrer");
-          });
-        },
+        foreignObjectRendering: false,
       });
 
-     try {
-      const canvas = await html2canvas(target, buildCaptureOptions(false));
+      if (!canvas.width || !canvas.height) {
+        throw new Error("Canvasの生成結果が空です。");
+      }
 
-    return canvas;
+      return canvas;
     } catch (error) {
-       const message = error instanceof Error ? error.message : "";
-      const needsForeignObjectFallback =
+      const message = error instanceof Error ? error.message : "";
+
+      const needsFallback =
         /unsupported color function\s+"oklch"/i.test(message) ||
         /unsupported color function\s+"oklab"/i.test(message);
 
-      if (needsForeignObjectFallback) {
-        console.warn(
-          "html2canvas failed due to color parser limits. Retrying with foreignObjectRendering.",
-          error
-        );
-        return html2canvas(target, buildCaptureOptions(true));
+      if (!needsFallback) {
+        throw error;
       }
 
-      console.error("captureSheet error:", error);
-      throw error;
+      const canvas = await html2canvas(clonedSheet, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        imageTimeout: 15000,
+        width: SHEET_WIDTH,
+        height: SHEET_HEIGHT,
+        windowWidth: SHEET_WIDTH,
+        windowHeight: SHEET_HEIGHT,
+        foreignObjectRendering: true,
+      });
+
+      if (!canvas.width || !canvas.height) {
+        throw new Error("Canvasの生成結果が空です。");
+      }
+
+      return canvas;
+    } finally {
+      cleanup();
     }
-  }, [waitForSheetImages]);
+  }, [buildExportNode]);
 
   function getExportErrorMessage(error: unknown, type: "image" | "pdf") {
     const msg = error instanceof Error ? error.message : "";
@@ -831,31 +870,28 @@ useEffect(() => {
 
     return `PDFの保存に失敗しました。${msg}${crossOriginHint}`;
   }
+
   function isEmptyDataUrl(dataUrl: string) {
     const payload = dataUrl.split(",", 2)[1];
     return !payload;
   }
+
   async function saveAsImage() {
     setIsExporting(true);
     setExportError(null);
 
     try {
       const canvas = await captureSheet();
-      if (!canvas) {
-        throw new Error("Canvasの生成に失敗しました。");
-      }
-       if (!canvas.width || !canvas.height) {
-        throw new Error("画像用キャンバスのサイズが不正です。");
-      }
 
       const mimeType = imageFormat === "jpeg" ? "image/jpeg" : "image/png";
       const extension = imageFormat === "jpeg" ? "jpg" : "png";
       const quality = imageFormat === "jpeg" ? 0.95 : 1;
 
       const dataUrl = canvas.toDataURL(mimeType, quality);
-      if (dataUrl === "data:,") {
-      throw new Error("画像データの生成に失敗しました。");
-       }
+      if (dataUrl === "data:," || isEmptyDataUrl(dataUrl)) {
+        throw new Error("画像データの生成に失敗しました。");
+      }
+
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = `zumen-${selectedTemplate ?? "preview"}.${extension}`;
@@ -876,29 +912,30 @@ useEffect(() => {
 
     try {
       const canvas = await captureSheet();
-      if (!canvas) {
-        throw new Error("Canvasの生成に失敗しました。");
-      }
-      const pageWidth = canvas.width;
-      const pageHeight = canvas.height;
 
-      if (!pageWidth || !pageHeight) {
-        throw new Error("PDF用キャンバスのサイズが不正です。");
-      }
-
-      const pdf = new jsPDF({
-        orientation: pageWidth >= pageHeight ? "landscape" : "portrait",
-        unit: "px",
-        format: [pageWidth, pageHeight],
-        compress: true,
-      });
-
-            const pdfImageData = canvas.toDataURL("image/png", 1);
-      if (isEmptyDataUrl(pdfImageData)) {
+      const pdfImageData = canvas.toDataURL("image/png", 1);
+      if (pdfImageData === "data:," || isEmptyDataUrl(pdfImageData)) {
         throw new Error("PDF画像の生成に失敗しました。");
       }
 
-      pdf.addImage(pdfImageData, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
+      const pdf = new jsPDF({
+        orientation: SHEET_WIDTH >= SHEET_HEIGHT ? "landscape" : "portrait",
+        unit: "pt",
+        format: [SHEET_WIDTH, SHEET_HEIGHT],
+        compress: true,
+      });
+
+      pdf.addImage(
+        pdfImageData,
+        "PNG",
+        0,
+        0,
+        SHEET_WIDTH,
+        SHEET_HEIGHT,
+        undefined,
+        "FAST"
+      );
+
       pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`);
     } catch (error) {
       console.error("PDF export error:", error);
@@ -918,7 +955,7 @@ useEffect(() => {
 
     const timer = window.setTimeout(() => {
       void saveAsPdf();
-    }, 300);
+    }, 500);
 
     return () => window.clearTimeout(timer);
   }, [data, isExporting, saveAsPdf, selectedTemplate, shouldExportPdf]);
@@ -1235,7 +1272,6 @@ useEffect(() => {
 
                             <div className="mt-0.5 flex items-center gap-2">
                               {data.imgQr ? (
-                                // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   src={toExportableImageSrc(data.imgQr)}
                                   alt="QR"
@@ -1463,7 +1499,6 @@ useEffect(() => {
 
                             <div className="mt-0.5 flex items-center gap-2">
                               {data.imgQr ? (
-                                // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   src={toExportableImageSrc(data.imgQr)}
                                   alt="QR"
@@ -1629,7 +1664,6 @@ useEffect(() => {
 
                             <div className="flex items-center justify-center border-l border-black px-1 py-1">
                               {data.imgQr ? (
-                                // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   src={toExportableImageSrc(data.imgQr)}
                                   alt="QR"
