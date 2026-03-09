@@ -872,17 +872,24 @@ function ZumenPageContent() {
 
       const pdf = new jsPDF({
         orientation: pageWidth >= pageHeight ? "landscape" : "portrait",
-        unit: "pt",
+        unit: "px",
         format: [pageWidth, pageHeight],
-        hotfixes: ["px_scaling"],
         compress: true,
       });
 
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/jpeg", 0.98);
       if (imgData === "data:,") {
         throw new Error("PDF画像の生成に失敗しました。");
       }
-      pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
+      pdf.addImage({
+        imageData: imgData,
+        format: "JPEG",
+        x: 0,
+        y: 0,
+        width: pageWidth,
+        height: pageHeight,
+        compression: "MEDIUM",
+      });
       pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`);
     } catch (error) {
       console.error("PDF export error:", error);
