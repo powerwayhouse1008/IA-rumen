@@ -343,12 +343,14 @@ function ZumenPageContent() {
 
   const [sheetScale, setSheetScale] = useState(1);
   const [selectedTheme, setSelectedTheme] = useState<ThemeColorKey>("sunset-red");
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>(
-    null
-  );
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [imageFormat, setImageFormat] = useState<ImageFormat>("png");
   const [exportError, setExportError] = useState<string | null>(null);
+
+  const [debugCanvasUrl, setDebugCanvasUrl] = useState<string | null>(null);
+  const [debugCanvasInfo, setDebugCanvasInfo] = useState<string>("");
+  const [showDebugPreview, setShowDebugPreview] = useState(false);
 
   useEffect(() => {
     try {
@@ -395,8 +397,7 @@ function ZumenPageContent() {
 
   const isHouse =
     propertyType.includes("住宅") ||
-    (!isMansion &&
-      (category === "new-house" || category === "used-house"));
+    (!isMansion && (category === "new-house" || category === "used-house"));
 
   const isLand = propertyType === "土地" || category === "land";
 
@@ -409,9 +410,7 @@ function ZumenPageContent() {
         { label: "権利", value: data.houseDetails.right || "-" },
         {
           label: "敷地面積",
-          value: data.houseDetails.landArea
-            ? `${data.houseDetails.landArea}㎡`
-            : "-",
+          value: data.houseDetails.landArea ? `${data.houseDetails.landArea}㎡` : "-",
         },
         {
           label: "地目",
@@ -591,9 +590,7 @@ function ZumenPageContent() {
       `●物件名：${data.name || "-"}`,
       `●所在地：${data.address || "-"}`,
       `●交通：${data.access || "-"} 徒歩${data.walk || "-"}分`,
-      `●価格：${
-        data.price ? `${Number(data.price).toLocaleString()}万円` : "-"
-      }`,
+      `●価格：${data.price ? `${Number(data.price).toLocaleString()}万円` : "-"}`,
       `●物件種別：${data.propertyType || "-"}`,
     ];
 
@@ -662,14 +659,10 @@ function ZumenPageContent() {
   }, [data?.lifeInformation]);
 
   const lifeInfoRows =
-    inputLifeInfoRows.length > 0
-      ? inputLifeInfoRows
-      : DEFAULT_LIFE_INFORMATION_ROWS;
+    inputLifeInfoRows.length > 0 ? inputLifeInfoRows : DEFAULT_LIFE_INFORMATION_ROWS;
 
   const popLifeInfoRows =
-    inputLifeInfoRows.length > 0
-      ? inputLifeInfoRows
-      : DEFAULT_LIFE_INFORMATION_ROWS;
+    inputLifeInfoRows.length > 0 ? inputLifeInfoRows : DEFAULT_LIFE_INFORMATION_ROWS;
 
   const defaultContact = {
     companyName: "株式会社パワーウェイ",
@@ -741,8 +734,9 @@ function ZumenPageContent() {
     }
 
     const wrapper = document.createElement("div");
+    wrapper.id = "zumen-export-clone-root";
     wrapper.style.position = "fixed";
-    wrapper.style.left = "-99999px";
+    wrapper.style.left = "0";
     wrapper.style.top = "0";
     wrapper.style.width = `${SHEET_WIDTH}px`;
     wrapper.style.height = `${SHEET_HEIGHT}px`;
@@ -750,7 +744,9 @@ function ZumenPageContent() {
     wrapper.style.padding = "0";
     wrapper.style.overflow = "hidden";
     wrapper.style.background = "#ffffff";
-    wrapper.style.zIndex = "-1";
+    wrapper.style.opacity = "0.01";
+    wrapper.style.pointerEvents = "none";
+    wrapper.style.zIndex = "2147483647";
 
     const clone = sheetRef.current.cloneNode(true) as HTMLDivElement;
     clone.style.width = `${SHEET_WIDTH}px`;
@@ -760,6 +756,7 @@ function ZumenPageContent() {
     clone.style.overflow = "hidden";
     clone.style.margin = "0";
     clone.style.background = "#ffffff";
+    clone.style.visibility = "visible";
 
     const clonedImages = Array.from(clone.querySelectorAll("img"));
     clonedImages.forEach((img) => {
@@ -798,41 +795,32 @@ function ZumenPageContent() {
     };
   }, [waitForSheetImages]);
 
+  const analyzeCanvas = useCallback((canvas: HTMLCanvasElement) => {
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      return "canvas分析失敗: 2D contextなし";
+    }
+
+    const samplePoints = [
+      [10, 10],
+      [Math.floor(canvas.width / 2), 10],
+      [10, Math.floor(canvas.height / 2)],
+      [Math.floor(canvas.width / 2), Math.floor(canvas.height / 2)],
+      [canvas.width - 10, canvas.height - 10],
+    ].filter(([x, y]) => x >= 0 && y >= 0 && x < canvas.width && y < canvas.height);
+
+    const samples = samplePoints.map(([x, y]) => {
+      const pixel = ctx.getImageData(x, y, 1, 1).data;
+      return `(${x},${y}) rgba(${pixel[0]},${pixel[1]},${pixel[2]},${pixel[3]})`;
+    });
+
+    return `canvas: ${canvas.width}x${canvas.height} | ${samples.join(" | ")}`;
+  }, []);
+
   const captureSheet = useCallback(async () => {
     const { clone, cleanup } = await createExportClone();
 
-    const isMostlySingleColor = (canvas: HTMLCanvasElement) => {
-      const context = canvas.getContext("2d", { willReadFrequently: true });
-      if (!context) return false;
-
-      const { width, height } = canvas;
-      const points = [
-        [0.1, 0.1],
-        [0.5, 0.1],
-        [0.9, 0.1],
-        [0.1, 0.5],
-        [0.5, 0.5],
-        [0.9, 0.5],
-        [0.1, 0.9],
-        [0.5, 0.9],
-        [0.9, 0.9],
-      ] as const;
-
-      const sampled = points.map(([x, y]) => {
-        const pixel = context.getImageData(
-          Math.max(0, Math.min(width - 1, Math.floor(width * x))),
-          Math.max(0, Math.min(height - 1, Math.floor(height * y))),
-          1,
-          1
-        ).data;
-
-        return `${pixel[0]}-${pixel[1]}-${pixel[2]}-${pixel[3]}`;
-      });
-
-      return new Set(sampled).size <= 1;
-    };
-
-    const renderSheet = async (foreignObjectRendering: boolean) => {
+    try {
       const canvas = await html2canvas(clone, {
         scale: 2,
         backgroundColor: "#ffffff",
@@ -841,6 +829,7 @@ function ZumenPageContent() {
         imageTimeout: 15000,
         logging: false,
         foreignObjectRendering: false,
+        removeContainer: true,
         width: SHEET_WIDTH,
         height: SHEET_HEIGHT,
         windowWidth: SHEET_WIDTH,
@@ -854,27 +843,6 @@ function ZumenPageContent() {
       }
 
       return canvas;
-      };
-
-    try {
-      const canvas = await renderSheet(false);
-      if (!isMostlySingleColor(canvas)) {
-        return canvas;
-      }
-
-      const fallbackCanvas = await renderSheet(true);
-      return fallbackCanvas;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      const fallbackNeeded =
-        /unsupported color function\s+"oklch"/i.test(message) ||
-        /unsupported color function\s+"oklab"/i.test(message);
-
-      if (!fallbackNeeded) {
-        throw error;
-      }
-
-      return await renderSheet(true);
     } finally {
       cleanup();
     }
@@ -909,39 +877,48 @@ function ZumenPageContent() {
     document.body.removeChild(link);
   }
 
-  const canvasToImageDataUrl = useCallback(async (
+  async function canvasToImageDataUrl(
     canvas: HTMLCanvasElement,
     format: ImageFormat
- ) => {
-    let targetCanvas = canvas;
-
-    // JPEG does not support transparency, so we flatten onto a white canvas
-    // to avoid black backgrounds on some browser/device combinations.
-    if (format === "jpeg") {
-      const flattenedCanvas = document.createElement("canvas");
-      flattenedCanvas.width = canvas.width;
-      flattenedCanvas.height = canvas.height;
-
-      const context = flattenedCanvas.getContext("2d");
-      if (!context) {
-        throw new Error("画像データの生成に失敗しました。");
-      }
-
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, flattenedCanvas.width, flattenedCanvas.height);
-      context.drawImage(canvas, 0, 0);
-      targetCanvas = flattenedCanvas;
-    }
-
+  ) {
     const mimeType = format === "jpeg" ? "image/jpeg" : "image/png";
     const quality = format === "jpeg" ? 0.98 : 1;
-    const dataUrl = flattenedCanvas.toDataURL(mimeType, quality);
+    const dataUrl = canvas.toDataURL(mimeType, quality);
+
     if (dataUrl === "data:," || isEmptyDataUrl(dataUrl)) {
       throw new Error("画像データの生成に失敗しました。");
     }
 
     return dataUrl;
-  }, []);
+  }
+
+  async function previewDebugCanvas() {
+    setIsExporting(true);
+    setExportError(null);
+
+    try {
+      const canvas = await captureSheet();
+      const debugUrl = canvas.toDataURL("image/png", 1);
+
+      if (debugUrl === "data:," || isEmptyDataUrl(debugUrl)) {
+        throw new Error("Canvas確認用画像の生成に失敗しました。");
+      }
+
+      setDebugCanvasUrl(debugUrl);
+      setDebugCanvasInfo(analyzeCanvas(canvas));
+      setShowDebugPreview(true);
+    } catch (error) {
+      console.error("Debug canvas preview error:", error);
+      setExportError(getExportErrorMessage(error, "image"));
+      setDebugCanvasInfo(
+        error instanceof Error ? error.message : "unknown debug error"
+      );
+      setShowDebugPreview(true);
+      setDebugCanvasUrl(null);
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   async function saveAsImage() {
     setIsExporting(true);
@@ -967,9 +944,7 @@ function ZumenPageContent() {
     try {
       const canvas = await captureSheet();
 
-      // JPEG does not support alpha; export with white background for stability.
-      const jpegDataUrl = await canvasToImageDataUrl(canvas, "jpeg");
-
+      const jpegDataUrl = canvas.toDataURL("image/jpeg", 0.95);
       if (jpegDataUrl === "data:," || isEmptyDataUrl(jpegDataUrl)) {
         throw new Error("PDF画像の生成に失敗しました。");
       }
@@ -984,17 +959,7 @@ function ZumenPageContent() {
       const pageWidth = 297;
       const pageHeight = 210;
 
-      pdf.addImage(
-        jpegDataUrl,
-        "JPEG",
-        0,
-        0,
-        pageWidth,
-        pageHeight,
-        undefined,
-        "FAST"
-      );
-
+      pdf.addImage(jpegDataUrl, "JPEG", 0, 0, pageWidth, pageHeight);
       pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`);
     } catch (error) {
       console.error("PDF export error:", error);
@@ -1002,7 +967,7 @@ function ZumenPageContent() {
     } finally {
       setIsExporting(false);
     }
-  }, [canvasToImageDataUrl, captureSheet, selectedTemplate]);
+  }, [captureSheet, selectedTemplate]);
 
   useEffect(() => {
     if (!shouldExportPdf || !data || isExporting) return;
@@ -1065,24 +1030,28 @@ function ZumenPageContent() {
               </div>
 
               <div className="flex items-center gap-2">
-                <label
-                  htmlFor="image-format"
-                  className="text-xs font-medium text-zinc-600"
-                >
+                <label htmlFor="image-format" className="text-xs font-medium text-zinc-600">
                   画像形式
                 </label>
                 <select
                   id="image-format"
                   value={imageFormat}
-                  onChange={(event) =>
-                    setImageFormat(event.target.value as ImageFormat)
-                  }
+                  onChange={(event) => setImageFormat(event.target.value as ImageFormat)}
                   className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm"
                 >
                   <option value="png">PNG</option>
                   <option value="jpeg">JPG</option>
                 </select>
               </div>
+
+              <button
+                type="button"
+                onClick={previewDebugCanvas}
+                disabled={isExporting}
+                className="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Canvas確認
+              </button>
 
               <button
                 type="button"
@@ -1111,14 +1080,46 @@ function ZumenPageContent() {
           </div>
         )}
 
+        {showDebugPreview && (
+          <div className="mb-4 rounded-xl border border-sky-300 bg-sky-50 p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-sm font-semibold text-sky-900">
+                Debug Canvas Preview
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDebugPreview(false)}
+                className="rounded-md bg-white px-3 py-1 text-sm text-sky-700 border border-sky-300"
+              >
+                閉じる
+              </button>
+            </div>
+
+            <div className="mb-2 whitespace-pre-wrap break-words rounded-md bg-white p-2 text-xs text-zinc-700 border">
+              {debugCanvasInfo || "no debug info"}
+            </div>
+
+            {debugCanvasUrl ? (
+              <div className="overflow-auto rounded-md border bg-white p-2">
+                <img
+                  src={debugCanvasUrl}
+                  alt="debug-canvas-preview"
+                  className="max-w-full h-auto border"
+                />
+              </div>
+            ) : (
+              <div className="rounded-md border bg-white p-4 text-sm text-red-600">
+                Canvas preview unavailable
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4">
           {!selectedTemplate ? (
             <div className="grid gap-4 md:grid-cols-3">
               {TEMPLATE_OPTIONS.map((template) => (
-                <div
-                  key={template.key}
-                  className="rounded-xl border border-zinc-200 p-3"
-                >
+                <div key={template.key} className="rounded-xl border border-zinc-200 p-3">
                   <div className="h-36 border border-zinc-400 bg-zinc-100 p-2">
                     <div
                       className={`grid h-full w-full gap-1 border p-1 ${
@@ -1132,32 +1133,19 @@ function ZumenPageContent() {
                       <div className="h-7 border bg-white/70" />
                       <div className="grid grid-cols-3 gap-1">
                         <ImgBox src={data.imgMain} label="メイン" h={72} />
-                        <ImgBox
-                          src={data.imgPlan}
-                          label="間取り"
-                          fit="contain"
-                          h={72}
-                        />
+                        <ImgBox src={data.imgPlan} label="間取り" fit="contain" h={72} />
                         <ImgBox src={data.imgSub1} label="サブ" h={72} />
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-3 text-xl font-semibold">
-                    {template.title}
-                  </div>
+                  <div className="mt-3 text-xl font-semibold">{template.title}</div>
                   <div className="mt-1 flex gap-1">
                     {template.swatches.map((color) => (
-                      <div
-                        key={color}
-                        className="h-4 w-4 rounded"
-                        style={{ backgroundColor: color }}
-                      />
+                      <div key={color} className="h-4 w-4 rounded" style={{ backgroundColor: color }} />
                     ))}
                   </div>
-                  <div className="mt-2 text-sm text-zinc-700">
-                    {template.subtitle}
-                  </div>
+                  <div className="mt-2 text-sm text-zinc-700">{template.subtitle}</div>
                   <button
                     type="button"
                     onClick={() => setSelectedTemplate(template.key)}
@@ -1170,10 +1158,7 @@ function ZumenPageContent() {
             </div>
           ) : (
             <div ref={previewRef} className="overflow-x-auto overflow-y-visible">
-              <div
-                className="mx-auto"
-                style={{ width: `${SHEET_WIDTH * sheetScale}px` }}
-              >
+              <div className="mx-auto" style={{ width: `${SHEET_WIDTH * sheetScale}px` }}>
                 <div
                   style={{
                     width: `${SHEET_WIDTH}px`,
@@ -1211,36 +1196,22 @@ function ZumenPageContent() {
                             <div className="mt-2 text-center text-2xl font-bold text-[#4a2207]">
                               販売価格 {Number(data.price || 0).toLocaleString()}万円
                             </div>
-                            <div
-                              className="mt-2 text-center"
-                              style={adaptiveTextStyle(data.catchCopy, 11, 15)}
-                            >
-                              {data.catchCopy ||
-                                "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境"}
+                            <div className="mt-2 text-center" style={adaptiveTextStyle(data.catchCopy, 11, 15)}>
+                              {data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境"}
                             </div>
                           </div>
 
                           <div className="border-r border-black p-2">
-                            <div
-                              className="border-b border-black pb-1 text-lg font-bold"
-                              style={{ color: theme.brand }}
-                            >
+                            <div className="border-b border-black pb-1 text-lg font-bold" style={{ color: theme.brand }}>
                               ACCESS
                             </div>
                             <div
                               className="mt-1 font-semibold"
-                              style={adaptiveTextStyle(
-                                `${data.access} 駅徒歩${data.walk}分`,
-                                12,
-                                17
-                              )}
+                              style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 12, 17)}
                             >
                               {data.access} 駅徒歩{data.walk}分
                             </div>
-                            <div
-                              className="mt-2 border-b border-black pb-1 text-sm font-bold"
-                              style={{ color: theme.brand }}
-                            >
+                            <div className="mt-2 border-b border-black pb-1 text-sm font-bold" style={{ color: theme.brand }}>
                               LIFE INFORMATION
                             </div>
                             <div className="mt-1 text-xs leading-5">
@@ -1251,18 +1222,10 @@ function ZumenPageContent() {
                           </div>
 
                           <div className="p-2">
-                            <ImgBox
-                              src={data.imgMap ?? data.imgMain}
-                              label="MAP"
-                              h={170}
-                            />
+                            <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} />
                             <div
                               className="border-t border-black p-1 text-center"
-                              style={adaptiveTextStyle(
-                                `NAVI ${data.address}`,
-                                9,
-                                12
-                              )}
+                              style={adaptiveTextStyle(`NAVI ${data.address}`, 9, 12)}
                             >
                               NAVI {data.address}
                             </div>
@@ -1285,14 +1248,8 @@ function ZumenPageContent() {
 
                         <div className="grid grid-cols-[300px_421px_402px] border-b border-black">
                           <div className="border-r border-black p-2">
-                            <div
-                              className="flex items-start justify-between"
-                              style={{ color: theme.brand }}
-                            >
-                              <div
-                                className="font-bold"
-                                style={adaptiveTextStyle(data.districts, 10, 14)}
-                              >
+                            <div className="flex items-start justify-between" style={{ color: theme.brand }}>
+                              <div className="font-bold" style={adaptiveTextStyle(data.districts, 10, 14)}>
                                 {data.districts || "1区画"}
                               </div>
                               <div
@@ -1321,12 +1278,7 @@ function ZumenPageContent() {
                           </div>
 
                           <div className="border-r border-black p-2">
-                            <ImgBox
-                              src={data.imgPlan}
-                              label="間取り図"
-                              h={320}
-                              fit="contain"
-                            />
+                            <ImgBox src={data.imgPlan} label="間取り図" h={320} fit="contain" />
                           </div>
 
                           <div className="p-2">
@@ -1340,10 +1292,7 @@ function ZumenPageContent() {
 
                             {featureRows.length > 0 && (
                               <>
-                                <div
-                                  className="mt-3 text-lg font-bold"
-                                  style={{ color: theme.brand }}
-                                >
+                                <div className="mt-3 text-lg font-bold" style={{ color: theme.brand }}>
                                   建物備・仕様
                                 </div>
                                 <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
@@ -1365,26 +1314,15 @@ function ZumenPageContent() {
                           {remarks || "※図面と相違する場合は現況を優先します。"}
                         </div>
 
-                        <div
-                          className={`grid ${FOOTER_HEIGHT_CLASS} grid-cols-[1.2fr_330px_190px] items-center px-3 py-1`}
-                        >
+                        <div className={`grid ${FOOTER_HEIGHT_CLASS} grid-cols-[1.2fr_330px_190px] items-center px-3 py-1`}>
                           <div>
                             <div className="text-[12px] font-semibold text-[#243b64] [overflow-wrap:anywhere]">
                               {contact.licenseNo || "-"}
                             </div>
-                            <div
-                              className="font-serif text-[#243b64]"
-                              style={adaptiveTextStyle(
-                                contact.companyName,
-                                22,
-                                42
-                              )}
-                            >
+                            <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 22, 42)}>
                               {contact.companyName}
                             </div>
-                            <div className="text-[10px] [overflow-wrap:anywhere]">
-                              {contact.companyAddress}
-                            </div>
+                            <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                           </div>
 
                           <div
@@ -1393,11 +1331,7 @@ function ZumenPageContent() {
                           >
                             <div
                               style={{
-                                ...adaptiveTextStyle(
-                                  `TEL ${contact.companyPhone}`,
-                                  20,
-                                  28
-                                ),
+                                ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28),
                                 whiteSpace: "nowrap",
                               }}
                             >
@@ -1422,9 +1356,7 @@ function ZumenPageContent() {
                               )}
 
                               <div className="text-left text-[11px] leading-tight text-[#243b64]">
-                                <div className="font-semibold">
-                                  FAX:{contact.companyFax}
-                                </div>
+                                <div className="font-semibold">FAX:{contact.companyFax}</div>
                                 <div>{inspectionNote}</div>
                               </div>
                             </div>
@@ -1435,19 +1367,13 @@ function ZumenPageContent() {
                               <div>Email: {contact.companyEmail}</div>
                               <div className="mt-1 flex justify-center leading-tight">
                                 <div className="grid grid-cols-[4.8em_1em_auto] gap-x-1 text-left">
-                                  <div className="text-right whitespace-nowrap">
-                                    取引形態
-                                  </div>
+                                  <div className="text-right whitespace-nowrap">取引形態</div>
                                   <div>：</div>
                                   <div>{contact.transactionType || "-"}</div>
-                                  <div className="text-right whitespace-nowrap">
-                                    担当者
-                                  </div>
+                                  <div className="text-right whitespace-nowrap">担当者</div>
                                   <div>：</div>
                                   <div>{contact.staffName || "-"}</div>
-                                  <div className="text-right whitespace-nowrap">
-                                    手数料
-                                  </div>
+                                  <div className="text-right whitespace-nowrap">手数料</div>
                                   <div>：</div>
                                   <div>{contact.fee || "-"}</div>
                                 </div>
@@ -1466,15 +1392,12 @@ function ZumenPageContent() {
                             <div
                               className="text-center font-bold leading-tight"
                               style={adaptiveTextStyle(
-                                `${data.propertyType || "中古マンション"} ${
-                                  data.districts || "全10区画"
-                                }`,
+                                `${data.propertyType || "中古マンション"} ${data.districts || "全10区画"}`,
                                 15,
                                 20
                               )}
                             >
-                              {data.propertyType || "中古マンション"}{" "}
-                              {data.districts || "全10区画"}
+                              {data.propertyType || "中古マンション"} {data.districts || "全10区画"}
                             </div>
 
                             <AutoFitText
@@ -1498,10 +1421,7 @@ function ZumenPageContent() {
                             </div>
 
                             <div className="absolute bottom-2 right-2 text-right">
-                              <div
-                                className="font-bold text-[#fff7db]"
-                                style={adaptiveTextStyle("販売価格", 11, 15)}
-                              >
+                              <div className="font-bold text-[#fff7db]" style={adaptiveTextStyle("販売価格", 11, 15)}>
                                 販売価格
                               </div>
                               <div className="mt-0.5 flex items-baseline justify-end gap-1.5 leading-none">
@@ -1518,10 +1438,7 @@ function ZumenPageContent() {
                                 >
                                   {Number(data.price || 0).toLocaleString()}
                                 </div>
-                                <div
-                                  className="font-bold text-[#fff7db]"
-                                  style={adaptiveTextStyle("万円", 12, 18)}
-                                >
+                                <div className="font-bold text-[#fff7db]" style={adaptiveTextStyle("万円", 12, 18)}>
                                   万円
                                 </div>
                               </div>
@@ -1531,15 +1448,9 @@ function ZumenPageContent() {
                           <div className="border-r border-black p-2">
                             <div
                               className="text-right font-bold"
-                              style={adaptiveTextStyle(
-                                `${data.access} 駅徒歩${data.walk}分`,
-                                16,
-                                28
-                              )}
+                              style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 16, 28)}
                             >
-                              {data.access} 駅徒歩
-                              <span style={{ color: theme.brand }}>{data.walk}</span>
-                              分
+                              {data.access} 駅徒歩<span style={{ color: theme.brand }}>{data.walk}</span>分
                             </div>
 
                             <div
@@ -1557,19 +1468,11 @@ function ZumenPageContent() {
                           </div>
 
                           <div className="p-2">
-                            <ImgBox
-                              src={data.imgMap ?? data.imgMain}
-                              label="現地MAP"
-                              h={185}
-                            />
+                            <ImgBox src={data.imgMap ?? data.imgMain} label="現地MAP" h={185} />
                             <div
                               className="px-1 py-0.5 text-center font-bold text-white"
                               style={{
-                                ...adaptiveTextStyle(
-                                  `NAVI ${data.address} 付近`,
-                                  8,
-                                  11
-                                ),
+                                ...adaptiveTextStyle(`NAVI ${data.address} 付近`, 8, 11),
                                 backgroundColor: theme.brand,
                                 minHeight: "18px",
                               }}
@@ -1580,10 +1483,7 @@ function ZumenPageContent() {
                         </div>
 
                         <div className="grid grid-cols-[380px_420px_323px] border-b border-black">
-                          <div
-                            className="border-r border-black p-2"
-                            style={{ backgroundColor: theme.brand }}
-                          >
+                          <div className="border-r border-black p-2" style={{ backgroundColor: theme.brand }}>
                             <ImgBox src={data.imgMain} label="メイン画像" h={220} />
                             <div className="mt-2 grid grid-cols-2 gap-2">
                               <ImgBox src={data.imgSub1} label="サブ1" h={85} />
@@ -1593,21 +1493,13 @@ function ZumenPageContent() {
 
                           <div className="border-r border-black p-2">
                             <div>
-                              <div
-                                className="font-bold text-[#1f2937]"
-                                style={adaptiveTextStyle(layoutLabel, 20, 34)}
-                              >
+                              <div className="font-bold text-[#1f2937]" style={adaptiveTextStyle(layoutLabel, 20, 34)}>
                                 {layoutLabel}
                               </div>
                               <div className="text-xs">□専有面積/75㎡(22.68坪)</div>
                               <div className="text-xs">□バルコニー面積/10㎡(3.02坪)</div>
                               <div className="mt-2">
-                                <ImgBox
-                                  src={data.imgPlan}
-                                  label="間取り"
-                                  h={205}
-                                  fit="contain"
-                                />
+                                <ImgBox src={data.imgPlan} label="間取り" h={205} fit="contain" />
                               </div>
                             </div>
                           </div>
@@ -1618,10 +1510,7 @@ function ZumenPageContent() {
                             {featureRows.length > 0 && (
                               <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
                                 {featureRows.slice(0, 10).map((item) => (
-                                  <div
-                                    key={item}
-                                    className="flex h-14 items-center justify-center border border-zinc-400"
-                                  >
+                                  <div key={item} className="flex h-14 items-center justify-center border border-zinc-400">
                                     {item}
                                   </div>
                                 ))}
@@ -1652,26 +1541,15 @@ function ZumenPageContent() {
                           </div>
                         </div>
 
-                        <div
-                          className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.45fr_390px_200px] items-center px-3 py-1`}
-                        >
+                        <div className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.45fr_390px_200px] items-center px-3 py-1`}>
                           <div>
                             <div className="text-[12px] font-semibold text-[#243b64]">
                               免許番号：{contact.licenseNo || "-"}
                             </div>
-                            <div
-                              className="font-serif text-[#243b64]"
-                              style={adaptiveTextStyle(
-                                contact.companyName,
-                                22,
-                                42
-                              )}
-                            >
+                            <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 22, 42)}>
                               {contact.companyName}
                             </div>
-                            <div className="text-[10px] [overflow-wrap:anywhere]">
-                              {contact.companyAddress}
-                            </div>
+                            <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                           </div>
 
                           <div
@@ -1680,11 +1558,7 @@ function ZumenPageContent() {
                           >
                             <div
                               style={{
-                                ...adaptiveTextStyle(
-                                  `TEL ${contact.companyPhone}`,
-                                  20,
-                                  28
-                                ),
+                                ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28),
                                 whiteSpace: "nowrap",
                               }}
                             >
@@ -1709,9 +1583,7 @@ function ZumenPageContent() {
                               )}
 
                               <div className="text-left text-[11px] leading-tight text-[#243b64]">
-                                <div className="font-semibold">
-                                  FAX:{contact.companyFax}
-                                </div>
+                                <div className="font-semibold">FAX:{contact.companyFax}</div>
                                 <div>{inspectionNote}</div>
                               </div>
                             </div>
@@ -1721,19 +1593,13 @@ function ZumenPageContent() {
                             <div>Email: {contact.companyEmail}</div>
                             <div className="mt-1 flex justify-center leading-tight">
                               <div className="grid grid-cols-[4.8em_1em_auto] gap-x-1 text-left">
-                                <div className="text-right whitespace-nowrap">
-                                  取引形態
-                                </div>
+                                <div className="text-right whitespace-nowrap">取引形態</div>
                                 <div>：</div>
                                 <div>{contact.transactionType || "-"}</div>
-                                <div className="text-right whitespace-nowrap">
-                                  担当者
-                                </div>
+                                <div className="text-right whitespace-nowrap">担当者</div>
                                 <div>：</div>
                                 <div>{contact.staffName || "-"}</div>
-                                <div className="text-right whitespace-nowrap">
-                                  手数料
-                                </div>
+                                <div className="text-right whitespace-nowrap">手数料</div>
                                 <div>：</div>
                                 <div>{contact.fee || "-"}</div>
                               </div>
@@ -1752,9 +1618,7 @@ function ZumenPageContent() {
                             <div className="-translate-y-0.5 text-3xl font-extrabold leading-none">
                               {Number(data.price || 0).toLocaleString()}
                             </div>
-                            <div className="absolute bottom-1.5 right-2 text-xs font-bold">
-                              万円
-                            </div>
+                            <div className="absolute bottom-1.5 right-2 text-xs font-bold">万円</div>
                           </div>
 
                           <div className="p-2">
@@ -1798,12 +1662,7 @@ function ZumenPageContent() {
                           </div>
 
                           <div className="border-r border-black p-2">
-                            <ImgBox
-                              src={data.imgPlan}
-                              label="間取り図（中央上）"
-                              h={360}
-                              fit="contain"
-                            />
+                            <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={360} fit="contain" />
                             <div className="mt-2 grid grid-cols-2 gap-2">
                               <ImgBox src={data.imgSub2} label="室内（中央下左）" h={168} />
                               <ImgBox src={data.imgSub3} label="共用（中央下右）" h={168} />
@@ -1811,9 +1670,7 @@ function ZumenPageContent() {
                           </div>
 
                           <div className="p-2">
-                            <SectionTitle bgColor={theme.section}>
-                              物件概要
-                            </SectionTitle>
+                            <SectionTitle bgColor={theme.section}>物件概要</SectionTitle>
                             <InfoTable rows={summaryRows} labelBgColor={theme.label} />
 
                             {managementRows.length > 0 && (
@@ -1821,29 +1678,17 @@ function ZumenPageContent() {
                                 <SectionTitle bgColor={theme.section}>
                                   {isMansion ? "管理費等" : "制限・施設"}
                                 </SectionTitle>
-                                <InfoTable
-                                  rows={managementRows}
-                                  labelBgColor={theme.label}
-                                  autoValueWidth
-                                />
+                                <InfoTable rows={managementRows} labelBgColor={theme.label} autoValueWidth />
                               </div>
                             )}
 
                             <div className="mt-2">
-                              <SectionTitle bgColor={theme.section}>
-                                設備・引渡
-                              </SectionTitle>
-                              <InfoTable
-                                rows={facilityRows}
-                                labelBgColor={theme.label}
-                                autoValueWidth
-                              />
+                              <SectionTitle bgColor={theme.section}>設備・引渡</SectionTitle>
+                              <InfoTable rows={facilityRows} labelBgColor={theme.label} autoValueWidth />
                             </div>
 
                             <div className="mt-2">
-                              <SectionTitle bgColor={theme.section}>
-                                備考
-                              </SectionTitle>
+                              <SectionTitle bgColor={theme.section}>備考</SectionTitle>
                               <div
                                 className={`whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px] ${
                                   selectedTemplate === "chic" && isMansion
@@ -1851,41 +1696,30 @@ function ZumenPageContent() {
                                     : "min-h-[2.34cm]"
                                 }`}
                               >
-                                {remarks ||
-                                  "※図面と相違する場合は現況を優先します。"}
+                                {remarks || "※図面と相違する場合は現況を優先します。"}
                               </div>
                             </div>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-[210px_1fr] border-t border-black">
-                          <div
-                            className="px-3 py-2 text-white"
-                            style={{ backgroundColor: theme.brand }}
-                          >
+                          <div className="px-3 py-2 text-white" style={{ backgroundColor: theme.brand }}>
                             <div
                               className={`${
-                                selectedTemplate === "chic"
-                                  ? "text-[22px]"
-                                  : "text-2xl"
+                                selectedTemplate === "chic" ? "text-[22px]" : "text-2xl"
                               } font-extrabold leading-tight tracking-widest`}
                             >
                               POWERWAY HOUSE
                             </div>
-                            <div className="mt-0.5 text-[11px]">
-                              不動産　販売・賃貸・管理
-                            </div>
+                            <div className="mt-0.5 text-[11px]">不動産　販売・賃貸・管理</div>
                           </div>
 
                           <div className="grid grid-cols-[1fr_88px_320px]">
                             <div className="px-2 py-1 text-[10px] leading-4">
                               <div className="grid grid-cols-[1fr_auto] gap-2">
+                                <div className="font-semibold">{contact.licenseNo}</div>
                                 <div className="font-semibold">
-                                  {contact.licenseNo}
-                                </div>
-                                <div className="font-semibold">
-                                  TEL：{contact.companyPhone}　FAX：
-                                  {contact.companyFax}
+                                  TEL：{contact.companyPhone}　FAX：{contact.companyFax}
                                 </div>
                               </div>
 
@@ -1893,9 +1727,7 @@ function ZumenPageContent() {
                                 {contact.companyName}
                               </div>
 
-                              <div className="truncate text-[10px]">
-                                {contact.companyAddress}
-                              </div>
+                              <div className="truncate text-[10px]">{contact.companyAddress}</div>
                             </div>
 
                             <div className="flex items-center justify-center border-l border-black px-1 py-1">
@@ -1915,18 +1747,12 @@ function ZumenPageContent() {
                             <div className="border-l border-black text-[10px]">
                               <div className="grid grid-cols-[1fr_1fr] items-start border-b border-black px-2 py-1">
                                 <div>
-                                  <div className="font-semibold">
-                                    {inspectionNote}
-                                  </div>
+                                  <div className="font-semibold">{inspectionNote}</div>
                                 </div>
                                 <div className="text-right">
                                   <div>取引形態：{contact.transactionType}</div>
-                                  <div className="mt-0.5">
-                                    担当者：{contact.staffName}
-                                  </div>
-                                  <div className="mt-0.5">
-                                    手数料：{contact.fee}
-                                  </div>
+                                  <div className="mt-0.5">担当者：{contact.staffName}</div>
+                                  <div className="mt-0.5">手数料：{contact.fee}</div>
                                 </div>
                               </div>
                               <div className="px-2 py-1 text-right text-[9px]">
