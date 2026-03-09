@@ -445,6 +445,13 @@ function ZumenPageContent() {
         { label: "所在地", value: data.address },
         { label: "権利", value: data.mansionDetails.right || "-" },
         {
+          label: "敷地面積",
+          value: data.mansionDetails.landArea
+            ? `${data.mansionDetails.landArea}㎡`
+            : "-",
+        },
+        { label: "用途地域", value: data.mansionDetails.zoning || "-" },
+        {
           label: "専有面積",
           value: data.mansionDetails.exclusiveArea
             ? `${data.mansionDetails.exclusiveArea}㎡`
@@ -510,6 +517,24 @@ function ZumenPageContent() {
         {
           label: "管理会社",
           value: data.mansionDetails.managementCompany || "-",
+        },
+        {
+          label: "管理形態",
+          value: data.mansionDetails.managementStyle || "-",
+        },
+        {
+          label: "月額合計",
+          value: data.mansionDetails.monthlyTotal
+            ? `${data.mansionDetails.monthlyTotal}円`
+            : "-",
+        },
+        {
+          label: "分譲会社",
+          value: data.mansionDetails.developer || "-",
+        },
+        {
+          label: "施工会社",
+          value: data.mansionDetails.constructor || "-",
         },
       ];
     }
@@ -627,7 +652,14 @@ function ZumenPageContent() {
         `●構造：${mansion.structure || "-"}`,
         `●所在階：${mansion.floor || "-"}`,
         `●築年月：${mansion.builtAt || "-"}`,
+        ●敷地面積：${mansion.landArea ? `${mansion.landArea}㎡` : "-"}`,
+        `●用途地域：${mansion.zoning || "-"}`,
+        `●分譲会社：${mansion.developer || "-"}`,
+        `●施工会社：${mansion.constructor || "-"}`,
+        `●管理形態：${mansion.managementStyle || "-"}`,
         `●管理費 / 修繕積立金：${mansion.managementFee || "-"}円 / ${mansion.reserveFund || "-"}円`,
+        `●インターネット使用料：${mansion.internetFee ? `${mansion.internetFee}円` : "-"}`,
+        `●月額合計：${mansion.monthlyTotal ? `${mansion.monthlyTotal}円` : "-"}`,
         `●現況 / 引渡し：${mansion.currentStatus || "-"} / ${mansion.handover || "-"}`,
         ...(mansion.note ? [mansion.note] : []),
       ];
