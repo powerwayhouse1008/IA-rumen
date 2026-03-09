@@ -864,16 +864,17 @@ function ZumenPageContent() {
         throw new Error("Canvasの生成に失敗しました。");
       }
 
-      const imgData = canvas.toDataURL("image/jpeg", 1.0);
-
       const pdf = new jsPDF({
         orientation: "landscape",
-        unit: "px",
+        unit: "pt",
         format: [SHEET_WIDTH, SHEET_HEIGHT],
         compress: true,
       });
 
-      pdf.addImage(imgData, "JPEG", 0, 0, SHEET_WIDTH, SHEET_HEIGHT);
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      pdf.addImage(canvas, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
       pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`);
     } catch (error) {
       console.error("PDF export error:", error);
