@@ -863,18 +863,26 @@ function ZumenPageContent() {
       if (!canvas) {
         throw new Error("Canvasの生成に失敗しました。");
       }
+      const pageWidth = canvas.width;
+      const pageHeight = canvas.height;
+
+      if (!pageWidth || !pageHeight) {
+        throw new Error("PDF用キャンバスのサイズが不正です。");
+      }
 
       const pdf = new jsPDF({
-        orientation: "landscape",
+        orientation: pageWidth >= pageHeight ? "landscape" : "portrait",
         unit: "pt",
-        format: [SHEET_WIDTH, SHEET_HEIGHT],
+        format: [pageWidth, pageHeight],
+        hotfixes: ["px_scaling"],
         compress: true,
       });
 
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      pdf.addImage(canvas, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
+      const imgData = canvas.toDataURL("image/png");
+      if (imgData === "data:,") {
+        throw new Error("PDF画像の生成に失敗しました。");
+      }
+      pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
       pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`);
     } catch (error) {
       console.error("PDF export error:", error);
