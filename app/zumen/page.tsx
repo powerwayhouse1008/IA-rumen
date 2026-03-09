@@ -225,8 +225,9 @@ function ImgBox({
   );
 }
 
-const SHEET_WIDTH = 1123;
+const A4_RATIO = Math.SQRT2;
 const SHEET_HEIGHT = 794;
+const SHEET_WIDTH = Math.round(SHEET_HEIGHT * A4_RATIO);
 const PROPERTY_NAME_MAX_HEIGHT = 84;
 const DEFAULT_QR_NOTE = "☚内見、物件確認";
 const DEFAULT_LIFE_INFORMATION_ROWS = [
@@ -980,7 +981,7 @@ function ZumenPageContent() {
 
        const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const safeMargin = 2;
+      const safeMargin = 0;
       const availableWidth = pageWidth - safeMargin * 2;
       const availableHeight = pageHeight - safeMargin * 2;
       const imageRatio = canvas.width / canvas.height;
