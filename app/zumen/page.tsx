@@ -978,13 +978,18 @@ function ZumenPageContent() {
         compress: true,
       });
 
-      const pageWidth = 297;
-      const pageHeight = 210;
+       const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const safeMargin = 2;
+      const availableWidth = pageWidth - safeMargin * 2;
+      const availableHeight = pageHeight - safeMargin * 2;
       const imageRatio = canvas.width / canvas.height;
-      const pageRatio = pageWidth / pageHeight;
+      const pageRatio = availableWidth / availableHeight;
 
-      const renderWidth = imageRatio > pageRatio ? pageWidth : pageHeight * imageRatio;
-      const renderHeight = imageRatio > pageRatio ? pageWidth / imageRatio : pageHeight;
+      const renderWidth =
+        imageRatio > pageRatio ? availableWidth : availableHeight * imageRatio;
+      const renderHeight =
+        imageRatio > pageRatio ? availableWidth / imageRatio : availableHeight;
       const offsetX = (pageWidth - renderWidth) / 2;
       const offsetY = (pageHeight - renderHeight) / 2;
       pdf.addImage(jpegDataUrl, "JPEG", offsetX, offsetY, renderWidth, renderHeight);
