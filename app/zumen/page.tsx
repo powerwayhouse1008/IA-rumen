@@ -820,15 +820,15 @@ function ZumenPageContent() {
   const captureSheet = useCallback(async () => {
     const { clone, cleanup } = await createExportClone();
 
-    try {
-      const canvas = await html2canvas(clone, {
+    const renderWithOptions = (foreignObjectRendering: boolean) =>
+      html2canvas(clone, {
         scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
         allowTaint: false,
         imageTimeout: 15000,
         logging: false,
-        foreignObjectRendering: false,
+       foreignObjectRendering,
         removeContainer: true,
         width: SHEET_WIDTH,
         height: SHEET_HEIGHT,
@@ -837,6 +837,28 @@ function ZumenPageContent() {
         scrollX: 0,
         scrollY: 0,
       });
+       try {
+      let canvas: HTMLCanvasElement;
+
+      try {
+        canvas = await renderWithOptions(false);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "";
+        const isOklchParseError = message.includes(
+          'Attempting to parse an unsupported color function "oklch"'
+        );
+
+        if (!isOklchParseError) {
+          throw error;
+        }
+
+        console.warn(
+          "html2canvas parser does not support oklch(). Retrying with foreignObjectRendering.",
+          error
+        );
+
+        canvas = await renderWithOptions(true);
+      }
 
       if (!canvas.width || !canvas.height) {
         throw new Error("Canvasの生成に失敗しました。");
