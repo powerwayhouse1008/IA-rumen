@@ -888,20 +888,40 @@ function ZumenPageContent() {
     document.body.removeChild(link);
   }
 
-  async function canvasToImageDataUrl(
+  const canvasToImageDataUrl = useCallback(async (
     canvas: HTMLCanvasElement,
     format: ImageFormat
-  ) {
+ ) => {
+    let targetCanvas = canvas;
+
+    // JPEG does not support transparency, so we flatten onto a white canvas
+    // to avoid black backgrounds on some browser/device combinations.
+    if (format === "jpeg") {
+      const flattenedCanvas = document.createElement("canvas");
+      flattenedCanvas.width = canvas.width;
+      flattenedCanvas.height = canvas.height;
+
+      const context = flattenedCanvas.getContext("2d");
+      if (!context) {
+        throw new Error("画像データの生成に失敗しました。");
+      }
+
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, flattenedCanvas.width, flattenedCanvas.height);
+      context.drawImage(canvas, 0, 0);
+      targetCanvas = flattenedCanvas;
+    }
+
     const mimeType = format === "jpeg" ? "image/jpeg" : "image/png";
     const quality = format === "jpeg" ? 0.98 : 1;
-    const dataUrl = canvas.toDataURL(mimeType, quality);
+    const dataUrl = targetCanvas.toDataURL(mimeType, quality);
 
     if (dataUrl === "data:," || isEmptyDataUrl(dataUrl)) {
       throw new Error("画像データの生成に失敗しました。");
     }
 
     return dataUrl;
-  }
+  }, []);
 
   async function saveAsImage() {
     setIsExporting(true);
@@ -927,8 +947,8 @@ function ZumenPageContent() {
     try {
       const canvas = await captureSheet();
 
-      // Ổn định nhất: convert canvas sang JPEG rồi nhúng vào PDF A4 ngang
-      const jpegDataUrl = canvas.toDataURL("image/jpeg", 0.98);
+      // JPEG does not support alpha; export with white background for stability.
+      const jpegDataUrl = await canvasToImageDataUrl(canvas, "jpeg");
 
       if (jpegDataUrl === "data:," || isEmptyDataUrl(jpegDataUrl)) {
         throw new Error("PDF画像の生成に失敗しました。");
@@ -962,7 +982,7 @@ function ZumenPageContent() {
     } finally {
       setIsExporting(false);
     }
-  }, [captureSheet, selectedTemplate]);
+  }, [canvasToImageDataUrl, captureSheet, selectedTemplate]);
 
   useEffect(() => {
     if (!shouldExportPdf || !data || isExporting) return;
