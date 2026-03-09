@@ -196,7 +196,7 @@ function toExportableImageSrc(src?: string) {
 function ImgBox({
   src,
   label,
-  fit = "cover",
+  fit = "contain",
   h,
 }: {
   src?: string;
