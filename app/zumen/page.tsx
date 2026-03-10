@@ -228,7 +228,7 @@ function ImgBox({
 const A4_RATIO = Math.SQRT2;
 const SHEET_HEIGHT = 794;
 const SHEET_WIDTH = Math.round(SHEET_HEIGHT * A4_RATIO);
-const PAPER_MARGIN_CM = 0.1;
+const PAPER_MARGIN_CM = 0.2;
 const CM_TO_PX = 96 / 2.54;
 const PAPER_MARGIN_PX = PAPER_MARGIN_CM * CM_TO_PX;
 const EXPORT_SHEET_WIDTH = SHEET_WIDTH - PAPER_MARGIN_PX * 2;
