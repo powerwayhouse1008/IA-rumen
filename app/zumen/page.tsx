@@ -733,6 +733,37 @@ function ZumenPageContent() {
       })
     );
   }, []);
+ const inlineCloneImages = useCallback(async (root: HTMLElement) => {
+    const images = Array.from(root.querySelectorAll("img"));
+
+    await Promise.all(
+      images.map(async (img) => {
+        const src = img.getAttribute("src") ?? img.currentSrc ?? img.src ?? "";
+        if (!src || /^data:/i.test(src)) {
+          return;
+        }
+
+        try {
+          const response = await fetch(src, { cache: "force-cache" });
+          if (!response.ok) {
+            return;
+          }
+
+          const blob = await response.blob();
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = () => reject(new Error("failed to convert image to data url"));
+            reader.readAsDataURL(blob);
+          });
+
+          img.setAttribute("src", dataUrl);
+        } catch {
+          // Fallback to the original URL when the image cannot be inlined.
+        }
+      })
+    );
+  }, []);
 
   const createExportClone = useCallback(async () => {
     if (!sheetRef.current) {
@@ -788,7 +819,7 @@ function ZumenPageContent() {
         //
       }
     }
-
+    await inlineCloneImages(clone);
     await waitForSheetImages(clone);
 
     return {
@@ -799,7 +830,7 @@ function ZumenPageContent() {
         }
       },
     };
-  }, [waitForSheetImages]);
+  }, [inlineCloneImages, waitForSheetImages]);
 
   const analyzeCanvas = useCallback((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
