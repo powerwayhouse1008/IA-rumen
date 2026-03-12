@@ -42,6 +42,15 @@ To enable automatic sync when pressing `Create + QR`, set these env vars:
 - `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_ANON_KEY` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
 - optional `SUPABASE_QR_TABLE` (default: `qr_properties`)
 
+To also mirror the same payload to a second Vercel app (page 2), set:
+
+- `MIRROR_SYNC_URL` (full endpoint URL on the second Vercel app)
+- optional `MIRROR_SYNC_TOKEN` (sent as `Authorization: Bearer <token>`)
+
+When `MIRROR_SYNC_URL` is configured, pressing `Create + QR` will sync both:
+1. Supabase (current app)
+2. Mirror endpoint (second Vercel app)
+
 Expected table columns:
 
 - `uuid` (uuid, primary key)
