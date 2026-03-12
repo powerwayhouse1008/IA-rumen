@@ -44,13 +44,14 @@ To enable automatic sync when pressing `Create + QR`, set these env vars:
 
 Expected table columns:
 
-- `id` (uuid, primary key)
+- `uuid` (uuid, primary key)
 - `property_code` (text)
 - `building_name` (text)
 - `address` (text)
 - `view_method` (text)
-- `available` (text)
+- `status` (text)
 - `manager_name` (text)
 - `manager_email` (text)
-- `inquiry_url` (text)
-- `updated_at` (timestamptz)
+- `form_url` (text)
+- `qr_url` (text)
+- `created_at` (timestamptz, default now())
