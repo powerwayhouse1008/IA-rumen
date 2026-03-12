@@ -6,10 +6,13 @@ type SyncPayload = {
   buildingName: string;
   address: string;
   viewMethod: string;
-  available: string;
+  status: string;
   managerName: string;
   managerEmail: string;
-  inquiryUrl: string;
+ formUrl: string;
+  qrUrl: string;
+  available?: string;
+  inquiryUrl?: string;
 };
 
 function getEnvOrEmpty(name: string) {
@@ -35,19 +38,19 @@ export async function POST(req: NextRequest) {
   }
 
   const row = {
-    id: payload.propertyId,
+    uuid: payload.propertyId,
     property_code: payload.propertyCode,
     building_name: payload.buildingName ?? "",
     address: payload.address ?? "",
     view_method: payload.viewMethod ?? "",
-    available: payload.available ?? "",
+    tatus: payload.status ?? payload.available ?? "",
     manager_name: payload.managerName ?? "",
     manager_email: payload.managerEmail ?? "",
-    inquiry_url: payload.inquiryUrl ?? "",
-    updated_at: new Date().toISOString(),
+    form_url: payload.formUrl ?? payload.inquiryUrl ?? "",
+    qr_url: payload.qrUrl ?? "",
   };
 
-  const restUrl = `${supabaseUrl}/rest/v1/${tableName}?on_conflict=id`;
+  const restUrl = `${supabaseUrl}/rest/v1/${tableName}?on_conflict=uuid`;
   const res = await fetch(restUrl, {
     method: "POST",
     headers: {
