@@ -31,17 +31,20 @@ async function upsertToSupabase(payload: Partial<SyncPayload>) {
   const tableName = getEnvOrEmpty("SUPABASE_QR_TABLE") || "qr_properties";
   const primaryKey = getEnvOrEmpty("SUPABASE_QR_PRIMARY_KEY") || "uuid";
 
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error(
-      "Supabase env missing. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or anon key)."
-    );
-  }
+  function parseMissingColumn(errorText: string) {
+  return errorText.match(/Could not find the '([^']+)' column of '[^']+'/i)?.[1];
+}
+function resolvePrimaryKeyCandidates(initialPrimaryKey: string) {
+  const candidates = [initialPrimaryKey, "property_id", "uuid", "id"];
+  return [...new Set(candidates.filter(Boolean))];
+}
 
+function buildRow(payload: Partial<SyncPayload>, primaryKey: string) {
   const normalizedStatus = payload.status ?? payload.available ?? "";
   const normalizedFormUrl = payload.formUrl ?? payload.inquiryUrl ?? "";
 
-  const row = {
-    uuid: payload.propertyId,
+  return {
+    [primaryKey]: payload.propertyId,
     property_code: payload.propertyCode,
     building_name: payload.buildingName ?? "",
     address: payload.address ?? "",
@@ -52,28 +55,66 @@ async function upsertToSupabase(payload: Partial<SyncPayload>) {
     form_url: normalizedFormUrl,
     qr_url: payload.qrUrl ?? "",
   };
+  }
 
- const headers = {
+ async function upsertToSupabase(payload: Partial<SyncPayload>) {
+  const supabaseUrl =
+    getEnvOrEmpty("SUPABASE_URL") || getEnvOrEmpty("NEXT_PUBLIC_SUPABASE_URL");
+  const supabaseKey =
+    getEnvOrEmpty("SUPABASE_SERVICE_ROLE_KEY") ||
+    getEnvOrEmpty("SUPABASE_ANON_KEY") ||
+    getEnvOrEmpty("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const configuredTableName = getEnvOrEmpty("SUPABASE_QR_TABLE") || "qr_properties";
+  const configuredPrimaryKey = getEnvOrEmpty("SUPABASE_QR_PRIMARY_KEY") || "uuid";
+ if (!supabaseUrl || !supabaseKey) {
+    throw new Error(
+      "Supabase env missing. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or anon key)."
+    );
+  }
+
+  const headers = {
     apikey: supabaseKey,
     Authorization: `Bearer ${supabaseKey}`,
     "Content-Type": "application/json",
     Prefer: "resolution=merge-duplicates,return=representation",
   };
 
-   const upsert = async (targetTable: string) => {
-    const restUrl = `${supabaseUrl}/rest/v1/${targetTable}?on_conflict=${primaryKey}`;
-    return fetch(restUrl, {
+  let currentTable = configuredTableName;
+  const primaryKeyCandidates = resolvePrimaryKeyCandidates(configuredPrimaryKey);
+
+  let lastStatus = 0;
+  let lastErrorText = "";
+  const attemptErrors: string[] = [];
+
+  for (const primaryKey of primaryKeyCandidates) {
+    const row = buildRow(payload, primaryKey);
+    const restUrl = `${supabaseUrl}/rest/v1/${currentTable}?on_conflict=${primaryKey}`;
+    const res = await fetch(restUrl, {
       method: "POST",
       headers,
       body: JSON.stringify(row),
     });
-  };
 
-  const res = await upsert(tableName);
+    if (res.ok) {
+      return res.json();
+    }
 
-  if (res.ok) {
-    return res.json();
-  }
+    lastStatus = res.status;
+    lastErrorText = await res.text();
+    attemptErrors.push(`${currentTable}.${primaryKey}: ${lastStatus} ${lastErrorText}`);
+
+    const suggestedTable = parseSuggestedTable(lastErrorText);
+    if (suggestedTable && suggestedTable !== currentTable) {
+      currentTable = suggestedTable;
+      continue;
+    }
+
+    const missingColumn = parseMissingColumn(lastErrorText);
+    if (missingColumn && missingColumn === primaryKey) {
+      continue;
+    }
+
+    break;
 
   const errText = await res.text();
   const suggestedTable = errText.match(/table\s+'public\.([^']+)'/i)?.[1];
