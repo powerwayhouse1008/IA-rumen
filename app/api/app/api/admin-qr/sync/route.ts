@@ -6,10 +6,15 @@ type SyncPayload = {
   buildingName: string;
   address: string;
   viewMethod: string;
-  available: string;
+  status: string;
   managerName: string;
   managerEmail: string;
-  inquiryUrl: string;
+ formUrl: string;
+  qrUrl: string;
+
+  // backward compatibility with older client payload names
+  available?: string;
+  inquiryUrl?: string;
 };
 
 function getEnvOrEmpty(name: string) {
@@ -24,27 +29,29 @@ async function upsertToSupabase(payload: Partial<SyncPayload>) {
     getEnvOrEmpty("SUPABASE_ANON_KEY") ||
     getEnvOrEmpty("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   const tableName = getEnvOrEmpty("SUPABASE_QR_TABLE") || "qr_properties";
+  const primaryKey = getEnvOrEmpty("SUPABASE_QR_PRIMARY_KEY") || "uuid";
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(
       "Supabase env missing. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or anon key)."
     );
   }
-
+  const normalizedStatus = payload.status ?? payload.available ?? "";
+  const normalizedFormUrl = payload.formUrl ?? payload.inquiryUrl ?? "";
   const row = {
-    id: payload.propertyId,
+     uuid: payload.propertyId,
     property_code: payload.propertyCode,
     building_name: payload.buildingName ?? "",
     address: payload.address ?? "",
     view_method: payload.viewMethod ?? "",
-    available: payload.available ?? "",
+    status: normalizedStatus,
     manager_name: payload.managerName ?? "",
     manager_email: payload.managerEmail ?? "",
-    inquiry_url: payload.inquiryUrl ?? "",
-    updated_at: new Date().toISOString(),
+    form_url: normalizedFormUrl,
+    qr_url: payload.qrUrl ?? "",
   };
 
-  const restUrl = `${supabaseUrl}/rest/v1/${tableName}?on_conflict=id`;
+  const restUrl = `${supabaseUrl}/rest/v1/${tableName}?on_conflict=${primaryKey}`;
   const res = await fetch(restUrl, {
     method: "POST",
     headers: {
