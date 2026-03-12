@@ -53,24 +53,45 @@ async function upsertToSupabase(payload: Partial<SyncPayload>) {
     qr_url: payload.qrUrl ?? "",
   };
 
-  const restUrl = `${supabaseUrl}/rest/v1/${tableName}?on_conflict=${primaryKey}`;
-  const res = await fetch(restUrl, {
-    method: "POST",
-    headers: {
-      apikey: supabaseKey,
-      Authorization: `Bearer ${supabaseKey}`,
-      "Content-Type": "application/json",
-      Prefer: "resolution=merge-duplicates,return=representation",
-    },
-    body: JSON.stringify(row),
-  });
+ const headers = {
+    apikey: supabaseKey,
+    Authorization: `Bearer ${supabaseKey}`,
+    "Content-Type": "application/json",
+    Prefer: "resolution=merge-duplicates,return=representation",
+  };
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Supabase upsert failed: ${res.status} ${errText}`);
+   const upsert = async (targetTable: string) => {
+    const restUrl = `${supabaseUrl}/rest/v1/${targetTable}?on_conflict=${primaryKey}`;
+    return fetch(restUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(row),
+    });
+  };
+
+  const res = await upsert(tableName);
+
+  if (res.ok) {
+    return res.json();
   }
 
-  return res.json();
+  const errText = await res.text();
+  const suggestedTable = errText.match(/table\s+'public\.([^']+)'/i)?.[1];
+
+  if (suggestedTable && suggestedTable !== tableName) {
+    const fallbackRes = await upsert(suggestedTable);
+
+    if (fallbackRes.ok) {
+      return fallbackRes.json();
+    }
+
+    const fallbackErrText = await fallbackRes.text();
+    throw new Error(
+      `Supabase upsert failed for both '${tableName}' and '${suggestedTable}': ${res.status} ${errText} | ${fallbackRes.status} ${fallbackErrText}`
+    );
+  }
+
+   throw new Error(`Supabase upsert failed: ${res.status} ${errText}`);
 }
 
 async function syncToMirrorVercel(payload: Partial<SyncPayload>) {
