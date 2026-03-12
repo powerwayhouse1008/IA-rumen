@@ -49,6 +49,17 @@ type DraftPayload = ZumenData & {
   publishDate?: string;
   expireDate?: string;
   draftSavedAt?: string;
+  adminQr?: AdminQrForm;
+};
+
+type AdminQrForm = {
+  propertyCode: string;
+  buildingName: string;
+  address: string;
+  viewMethod: string;
+  available: string;
+  managerName: string;
+  managerEmail: string;
 };
 type SavePayloadResult = {
   localSaved: boolean;
@@ -164,6 +175,18 @@ const DEFAULT_CONTACT_INFO = {
   inspectionNote: DEFAULT_QR_NOTE,
   infoPageUrl: "",
 };
+const DEFAULT_ADMIN_QR_FORM: AdminQrForm = {
+  propertyCode: "",
+  buildingName: "",
+  address: "",
+  viewMethod: "",
+  available: "募集中",
+  managerName: "",
+  managerEmail: "",
+};
+const SHARED_QR_COUNTER_STORAGE_KEY = "sharedQrPropertyCodeCounter";
+const SHARED_QR_CODE_PREFIX = "P";
+const SHARED_QR_INITIAL_CODE = 1241;
 const INITIAL_MANSION_DETAILS = {
   right: "所有権",
   landArea: "25246.57",
@@ -370,7 +393,14 @@ export default function Page() {
   const [houseDetails, setHouseDetails] = useState({
      ...(initialDraft?.houseDetails ?? INITIAL_HOUSE_DETAILS),
   });
-
+const [adminQrForm, setAdminQrForm] = useState<AdminQrForm>({
+    ...DEFAULT_ADMIN_QR_FORM,
+    ...(initialDraft?.adminQr ?? {}),
+    buildingName: initialDraft?.adminQr?.buildingName ?? initialDraft?.name ?? "",
+    address: initialDraft?.adminQr?.address ?? initialDraft?.address ?? "",
+    managerName: initialDraft?.adminQr?.managerName ?? initialDraft?.contactInfo?.staffName ?? "",
+    managerEmail: initialDraft?.adminQr?.managerEmail ?? initialDraft?.contactInfo?.companyEmail ?? "",
+  });
   const normalizedPropertyType = propertyType.trim();
   const isMansionCategory = normalizedPropertyType.includes("マンション") || selectedCategory === "new-mansion" || selectedCategory === "used-mansion";
   const isHouseCategory = normalizedPropertyType.includes("住宅") || selectedCategory === "new-house" || selectedCategory === "used-house";
@@ -443,6 +473,56 @@ export default function Page() {
       return undefined;
     }
   }
+function readSharedQrCounter() {
+    if (typeof window === "undefined") return SHARED_QR_INITIAL_CODE;
+    const raw = localStorage.getItem(SHARED_QR_COUNTER_STORAGE_KEY);
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed < SHARED_QR_INITIAL_CODE) {
+      return SHARED_QR_INITIAL_CODE;
+    }
+    return Math.floor(parsed);
+  }
+
+  function reserveNextSharedPropertyCode() {
+    const current = readSharedQrCounter();
+    const next = current + 1;
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SHARED_QR_COUNTER_STORAGE_KEY, String(next));
+    }
+    return `${SHARED_QR_CODE_PREFIX}${current}`;
+  }
+
+
+  function updateAdminQr<K extends keyof AdminQrForm>(key: K, value: AdminQrForm[K]) {
+    setAdminQrForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function createSharedQr() {
+    const propertyCode = adminQrForm.propertyCode.trim() || reserveNextSharedPropertyCode();
+    const nextForm = { ...adminQrForm, propertyCode };
+    const sharedUrl = `https://qr.powerway.house/property/${encodeURIComponent(propertyCode)}`;
+    const qrServiceUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(sharedUrl)}`;
+    const proxiedQrUrl = `/api/image-proxy?url=${encodeURIComponent(qrServiceUrl)}`;
+
+    setAdminQrForm(nextForm);
+    setData((prev) => ({
+      ...prev,
+      name: nextForm.buildingName,
+      address: nextForm.address,
+      imgQr: proxiedQrUrl,
+    }));
+    setContactInfo((prev) => ({
+      ...prev,
+      staffName: nextForm.managerName,
+      companyEmail: nextForm.managerEmail,
+      infoPageUrl: sharedUrl,
+    }));
+    setSaveMessageTone("success");
+    setSaveMessage("QR自動作成情報を反映しました。");
+    setTimeout(() => {
+      setSaveMessage("");
+    }, 3200);
+  }
 
   async function buildPayload() {
     const generatedMap = await createAddressMap(data.address);
@@ -464,6 +544,7 @@ export default function Page() {
        managerNo,
       publishDate,
       expireDate,
+      adminQr: adminQrForm,
     };
     
     if (generatedMap) {
@@ -559,6 +640,22 @@ export default function Page() {
 
             <div className="grid gap-6 xl:grid-cols-2">
               <div className="space-y-4">
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+                  <div className="mb-2 text-sm font-semibold text-zinc-700">物件登録 + QR（admin共通）</div>
+                  <div className="mb-2 text-sm text-zinc-700">次のコード: <span className="font-semibold">{adminQrForm.propertyCode || `${SHARED_QR_CODE_PREFIX}${readSharedQrCounter()}`}</span>（自動採番）</div>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <Input value={adminQrForm.buildingName} onChange={(e) => updateAdminQr("buildingName", e.target.value)} placeholder="建物名 (building_name)" />
+                    <Input value={adminQrForm.address} onChange={(e) => updateAdminQr("address", e.target.value)} placeholder="住所 (address)" />
+                    <Input value={adminQrForm.viewMethod} onChange={(e) => updateAdminQr("viewMethod", e.target.value)} placeholder="内見方法 (view_method)" />
+                    <Select value={adminQrForm.available} onChange={(e) => updateAdminQr("available", e.target.value)}>
+                      <option value="募集中">募集中 (available)</option>
+                      <option value="停止中">停止中 (unavailable)</option>
+                    </Select>
+                    <Input value={adminQrForm.managerName} onChange={(e) => updateAdminQr("managerName", e.target.value)} placeholder="担当者名 (manager_name)" />
+                    <Input value={adminQrForm.managerEmail} onChange={(e) => updateAdminQr("managerEmail", e.target.value)} placeholder="担当者メール (manager_email)" />
+                  </div>
+                  <button type="button" onClick={createSharedQr} className="mt-3 rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white">Create + QR</button>
+                </div>
                 <div>
                   <FieldLabel required>物件名</FieldLabel>
                   <Input value={data.name} onChange={(e) => update("name", e.target.value)} />
