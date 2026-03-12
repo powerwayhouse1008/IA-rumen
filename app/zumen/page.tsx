@@ -1417,7 +1417,7 @@ function ZumenPageContent() {
                                 <img
                                   src={toExportableImageSrc(data.imgQr)}
                                   alt="QR"
-                                  className={`${FOOTER_QR_SIZE_CLASS} object-cover`}
+                                  className={`${FOOTER_QR_SIZE_CLASS} bg-white p-[1px] object-contain`}
                                   crossOrigin="anonymous"
                                   referrerPolicy="no-referrer"
                                 />
