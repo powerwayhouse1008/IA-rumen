@@ -54,15 +54,14 @@ type DraftPayload = ZumenData & {
 
 type AdminQrForm = {
   propertyCode: string;
+  propertyId?: string;
+  inquiryUrl?: string;
   buildingName: string;
   address: string;
   viewMethod: string;
   available: string;
   managerName: string;
   managerEmail: string;
-};
-type SavePayloadResult = {
-  localSaved: boolean;
 };
 
 type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion";
@@ -177,6 +176,8 @@ const DEFAULT_CONTACT_INFO = {
 };
 const DEFAULT_ADMIN_QR_FORM: AdminQrForm = {
   propertyCode: "",
+  propertyId: "",
+  inquiryUrl: "",
   buildingName: "",
   address: "",
   viewMethod: "",
@@ -382,6 +383,8 @@ export default function Page() {
   const [savedAt, setSavedAt] = useState<string>(initialDraft?.draftSavedAt ?? "");
   const [saveMessage, setSaveMessage] = useState("");
   const [saveMessageTone, setSaveMessageTone] = useState<"success" | "warning">("success");
+  const [qrSyncMessage, setQrSyncMessage] = useState("");
+  const [isSyncingQr, setIsSyncingQr] = useState(false);
   const [salesTags, setSalesTags] = useState<string[]>(initialDraft?.salesTags ?? []);
   const [featureTags, setFeatureTags] = useState<string[]>(initialDraft?.featureTags ?? []);
   const [contactInfo, setContactInfo] = useState(initialDraft?.contactInfo ?? DEFAULT_CONTACT_INFO);
@@ -393,7 +396,7 @@ export default function Page() {
   const [houseDetails, setHouseDetails] = useState({
      ...(initialDraft?.houseDetails ?? INITIAL_HOUSE_DETAILS),
   });
-const [adminQrForm, setAdminQrForm] = useState<AdminQrForm>({
+  const [adminQrForm, setAdminQrForm] = useState<AdminQrForm>({
     ...DEFAULT_ADMIN_QR_FORM,
     ...(initialDraft?.adminQr ?? {}),
     buildingName: initialDraft?.adminQr?.buildingName ?? initialDraft?.name ?? "",
@@ -401,6 +404,7 @@ const [adminQrForm, setAdminQrForm] = useState<AdminQrForm>({
     managerName: initialDraft?.adminQr?.managerName ?? initialDraft?.contactInfo?.staffName ?? "",
     managerEmail: initialDraft?.adminQr?.managerEmail ?? initialDraft?.contactInfo?.companyEmail ?? "",
   });
+
   const normalizedPropertyType = propertyType.trim();
   const isMansionCategory = normalizedPropertyType.includes("マンション") || selectedCategory === "new-mansion" || selectedCategory === "used-mansion";
   const isHouseCategory = normalizedPropertyType.includes("住宅") || selectedCategory === "new-house" || selectedCategory === "used-house";
@@ -473,7 +477,8 @@ const [adminQrForm, setAdminQrForm] = useState<AdminQrForm>({
       return undefined;
     }
   }
-function readSharedQrCounter() {
+
+  function readSharedQrCounter() {
     if (typeof window === "undefined") return SHARED_QR_INITIAL_CODE;
     const raw = localStorage.getItem(SHARED_QR_COUNTER_STORAGE_KEY);
     const parsed = Number(raw);
@@ -497,12 +502,53 @@ function readSharedQrCounter() {
     setAdminQrForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function createSharedQr() {
+  async function createSharedQr() {
     const propertyCode = adminQrForm.propertyCode.trim() || reserveNextSharedPropertyCode();
-    const nextForm = { ...adminQrForm, propertyCode };
-    const sharedUrl = `https://qr.powerway.house/property/${encodeURIComponent(propertyCode)}`;
-    const qrServiceUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(sharedUrl)}`;
+    const propertyId = adminQrForm.propertyId?.trim() || crypto.randomUUID();
+    const inquiryUrl = `https://qr.powerway.house/inquiry?property_id=${encodeURIComponent(propertyId)}&via=qrcode`;
+    const qrServiceUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(inquiryUrl)}`;
     const proxiedQrUrl = `/api/image-proxy?url=${encodeURIComponent(qrServiceUrl)}`;
+    const nextForm = { ...adminQrForm, propertyCode, propertyId, inquiryUrl };
+
+    setIsSyncingQr(true);
+    setQrSyncMessage("");
+
+    try {
+      const syncRes = await fetch("/api/admin-qr/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyId,
+          propertyCode,
+          buildingName: nextForm.buildingName,
+          address: nextForm.address,
+          viewMethod: nextForm.viewMethod,
+          available: nextForm.available,
+          managerName: nextForm.managerName,
+          managerEmail: nextForm.managerEmail,
+          inquiryUrl,
+        }),
+      });
+
+      const syncJson = (await syncRes.json().catch(() => ({}))) as { error?: string };
+      if (!syncRes.ok) {
+        throw new Error(syncJson.error || "Supabase sync failed");
+      }
+
+      setQrSyncMessage("Supabase同期完了");
+      setSaveMessageTone("success");
+      setSaveMessage("QR作成＋Supabase同期に成功しました。");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Supabase同期に失敗しました。";
+      setQrSyncMessage(`同期エラー: ${msg}`);
+      setSaveMessageTone("warning");
+      setSaveMessage("QRは作成しましたが、Supabase同期でエラーが発生しました。");
+    } finally {
+      setIsSyncingQr(false);
+      setTimeout(() => {
+        setSaveMessage("");
+      }, 3200);
+    }
 
     setAdminQrForm(nextForm);
     setData((prev) => ({
@@ -515,13 +561,8 @@ function readSharedQrCounter() {
       ...prev,
       staffName: nextForm.managerName,
       companyEmail: nextForm.managerEmail,
-      infoPageUrl: sharedUrl,
+      infoPageUrl: inquiryUrl,
     }));
-    setSaveMessageTone("success");
-    setSaveMessage("QR自動作成情報を反映しました。");
-    setTimeout(() => {
-      setSaveMessage("");
-    }, 3200);
   }
 
   async function buildPayload() {
@@ -643,6 +684,7 @@ function readSharedQrCounter() {
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
                   <div className="mb-2 text-sm font-semibold text-zinc-700">物件登録 + QR（admin共通）</div>
                   <div className="mb-2 text-sm text-zinc-700">次のコード: <span className="font-semibold">{adminQrForm.propertyCode || `${SHARED_QR_CODE_PREFIX}${readSharedQrCounter()}`}</span>（自動採番）</div>
+                  <div className="mb-2 text-xs text-zinc-500">property_id: {adminQrForm.propertyId || "(自動生成)"}</div>
                   <div className="grid gap-2 md:grid-cols-2">
                     <Input value={adminQrForm.buildingName} onChange={(e) => updateAdminQr("buildingName", e.target.value)} placeholder="建物名 (building_name)" />
                     <Input value={adminQrForm.address} onChange={(e) => updateAdminQr("address", e.target.value)} placeholder="住所 (address)" />
@@ -654,7 +696,9 @@ function readSharedQrCounter() {
                     <Input value={adminQrForm.managerName} onChange={(e) => updateAdminQr("managerName", e.target.value)} placeholder="担当者名 (manager_name)" />
                     <Input value={adminQrForm.managerEmail} onChange={(e) => updateAdminQr("managerEmail", e.target.value)} placeholder="担当者メール (manager_email)" />
                   </div>
-                  <button type="button" onClick={createSharedQr} className="mt-3 rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white">Create + QR</button>
+                  <button type="button" onClick={createSharedQr} disabled={isSyncingQr} className="mt-3 rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{isSyncingQr ? "Syncing..." : "Create + QR"}</button>
+                  {adminQrForm.inquiryUrl ? <div className="mt-2 break-all text-xs text-emerald-700">{adminQrForm.inquiryUrl}</div> : null}
+                  {qrSyncMessage ? <div className="mt-1 text-xs text-zinc-600">{qrSyncMessage}</div> : null}
                 </div>
                 <div>
                   <FieldLabel required>物件名</FieldLabel>
