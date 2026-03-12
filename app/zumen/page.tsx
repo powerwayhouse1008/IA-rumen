@@ -775,8 +775,8 @@ function ZumenPageContent() {
     wrapper.style.position = "fixed";
     wrapper.style.left = "0";
     wrapper.style.top = "0";
-    wrapper.style.width = `${SHEET_WIDTH}px`;
-    wrapper.style.height = `${SHEET_HEIGHT}px`;
+   clone.style.width = `${EXPORT_SHEET_WIDTH}px`;
+    clone.style.height = `${EXPORT_SHEET_HEIGHT}px`;
     wrapper.style.margin = "0";
     wrapper.style.padding = "0";
     wrapper.style.overflow = "hidden";
@@ -1246,9 +1246,10 @@ function ZumenPageContent() {
                       selectedTemplate === "pop" ? "font-semibold" : ""
                     } ${selectedTemplate === "chic" ? "bg-[#fcfbf8]" : ""}`}
                     style={{
-                       width: `${EXPORT_SHEET_WIDTH}px`,
+                      width: `${EXPORT_SHEET_WIDTH}px`,
                       height: `${EXPORT_SHEET_HEIGHT}px`,
                       margin: `${PAPER_MARGIN_PX}px`,
+                      boxSizing: "border-box",
                       overflow: "hidden",
                     }}
                   >
