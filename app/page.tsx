@@ -692,7 +692,7 @@ export default function Page() {
                     <Input value={adminQrForm.viewMethod} onChange={(e) => updateAdminQr("viewMethod", e.target.value)} placeholder="内見方法 (view_method)" />
                     <Select value={adminQrForm.available} onChange={(e) => updateAdminQr("available", e.target.value)}>
                       <option value="募集中">募集中 (available)</option>
-                      <option value="停止中">停止中 (unavailable)</option
+                      <option value="停止中">停止中 (unavailable)</option>
                       <option value="申込有り">申込有り (pending)</option>
                       <option value="成約">成約 (sold)</option>
                       <option value="賃貸中">賃貸中 (rented)</option>
