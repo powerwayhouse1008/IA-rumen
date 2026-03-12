@@ -21,19 +21,14 @@ function getEnvOrEmpty(name: string) {
   return process.env[name]?.trim() ?? "";
 }
 
-async function upsertToSupabase(payload: Partial<SyncPayload>) {
-  const supabaseUrl =
-    getEnvOrEmpty("SUPABASE_URL") || getEnvOrEmpty("NEXT_PUBLIC_SUPABASE_URL");
-  const supabaseKey =
-    getEnvOrEmpty("SUPABASE_SERVICE_ROLE_KEY") ||
-    getEnvOrEmpty("SUPABASE_ANON_KEY") ||
-    getEnvOrEmpty("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  const tableName = getEnvOrEmpty("SUPABASE_QR_TABLE") || "qr_properties";
-  const primaryKey = getEnvOrEmpty("SUPABASE_QR_PRIMARY_KEY") || "uuid";
+  function parseSuggestedTable(errorText: string) {
+  return errorText.match(/table\s+'public\.([^']+)'/i)?.[1];
+}
 
   function parseMissingColumn(errorText: string) {
   return errorText.match(/Could not find the '([^']+)' column of '[^']+'/i)?.[1];
 }
+
 function resolvePrimaryKeyCandidates(initialPrimaryKey: string) {
   const candidates = [initialPrimaryKey, "property_id", "uuid", "id"];
   return [...new Set(candidates.filter(Boolean))];
@@ -57,7 +52,7 @@ function buildRow(payload: Partial<SyncPayload>, primaryKey: string) {
   };
   }
 
- async function upsertToSupabase(payload: Partial<SyncPayload>) {
+  async function upsertToSupabase(payload: Partial<SyncPayload>) {
   const supabaseUrl =
     getEnvOrEmpty("SUPABASE_URL") || getEnvOrEmpty("NEXT_PUBLIC_SUPABASE_URL");
   const supabaseKey =
@@ -116,23 +111,12 @@ function buildRow(payload: Partial<SyncPayload>, primaryKey: string) {
 
     break;
 
-  const errText = await res.text();
-  const suggestedTable = errText.match(/table\s+'public\.([^']+)'/i)?.[1];
 
-  if (suggestedTable && suggestedTable !== tableName) {
-    const fallbackRes = await upsert(suggestedTable);
-
-    if (fallbackRes.ok) {
-      return fallbackRes.json();
-    }
-
-    const fallbackErrText = await fallbackRes.text();
-    throw new Error(
-      `Supabase upsert failed for both '${tableName}' and '${suggestedTable}': ${res.status} ${errText} | ${fallbackRes.status} ${fallbackErrText}`
-    );
   }
 
-   throw new Error(`Supabase upsert failed: ${res.status} ${errText}`);
+  throw new Error(
+    `Supabase upsert failed after retries: ${attemptErrors.join(" | ") || `${lastStatus} ${lastErrorText}`}`
+  );
 }
 
 async function syncToMirrorVercel(payload: Partial<SyncPayload>) {
