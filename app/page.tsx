@@ -629,8 +629,36 @@ export default function Page() {
     }
  
     return payload;
-  }
+     }
+     function saveCurrentDraftSnapshot() {
+     const payload: DraftPayload = {
+      ...data,
+      catchCopy,
+      districts,
+      salesTags,
+      featureTags,
+      category: selectedCategory,
+      propertyType,
+      houseDetails,
+      mansionDetails,
+      rentalDetails,
+      contactInfo,
+      themeColor,
+      managerNo,
+      publishDate,
+      expireDate,
+      adminQr: adminQrForm,
+    };
+    savePayloadToStorage(payload);
+   }
 
+  function goToAddressMapGenerator() {
+    saveCurrentDraftSnapshot();
+    const query = new URLSearchParams({
+      address: data.address ?? "",
+    });
+    router.push(`/address-map?${query.toString()}`);
+  }
   async function onSaveDraft() {
     const payload = (await buildPayload()) as DraftPayload;
     const draftSavedAt = new Date().toLocaleString("ja-JP");
