@@ -879,10 +879,7 @@ export default function Page() {
                     <span>画像アップロード</span>
                     <button
                       type="button"
-                      onClick={async () => {
-                        const generatedMap = await createAddressMap(data.address);
-                        if (generatedMap) update("imgMap", generatedMap);
-                      }}
+                      onClick={goToAddressMapGenerator}
                       className="rounded-md bg-sky-600 px-3 py-1 text-xs text-white"
                     >
                       住所から現地MAP生成
