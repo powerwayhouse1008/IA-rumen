@@ -378,15 +378,6 @@ function savePayloadToStorage(payload: DraftPayload): { localSaved: boolean } {
   return { localSaved };
 }
 
-async function blobToDataUrl(blob: Blob): Promise<string> {
-  return await new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload = () => res(String(reader.result));
-    reader.onerror = rej;
-    reader.readAsDataURL(blob);
-  });
-}
-
 export default function Page() {
   const router = useRouter();
 
@@ -493,19 +484,18 @@ export default function Page() {
     if (!address.trim()) return undefined;
 
     try {
-      const geocodeRes = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`
-      );
-      if (!geocodeRes.ok) return undefined;
-      const geocodeData = (await geocodeRes.json()) as Array<{ lat: string; lon: string }>;
-      const first = geocodeData[0];
-      if (!first) return undefined;
+      const res = await fetch("/api/address-map", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ address }),
+      });
 
-      const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${first.lat},${first.lon}&zoom=16&size=900x540&markers=${first.lat},${first.lon},red-pushpin`;
-      const mapRes = await fetch(mapUrl);
-      if (!mapRes.ok) return undefined;
-      const mapBlob = await mapRes.blob();
-      return await blobToDataUrl(mapBlob);
+      if (!res.ok) return undefined;
+
+      const data = (await res.json()) as { mapDataUrl?: string };
+      return data.mapDataUrl;
     } catch {
       return undefined;
     }
