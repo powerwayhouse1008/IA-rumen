@@ -21,7 +21,8 @@ type CategoryKey =
   | "used-house"
   | "land"
   | "new-mansion"
-  | "used-mansion";
+  | "used-mansion"
+  | "rental";
 
 type ThemeColorKey =
   | "sunset-red"
@@ -130,6 +131,16 @@ type MansionDetails = {
   currentStatus: string;
   handover: string;
   note: string;
+}; 
+
+type RentalDetails = {
+  rent: string;
+  commonFee: string;
+  depositGuarantee: string;
+  renewalFee: string;
+  keyMoney: string;
+  securityDeposit: string;
+  exclusiveArea: string;
 };
 
 type ZumenData = {
@@ -147,6 +158,7 @@ type ZumenData = {
   propertyType?: string;
   houseDetails?: HouseDetails;
   mansionDetails?: MansionDetails;
+  rentalDetails?: RentalDetails;
   imgMain?: string;
   imgPlan?: string;
   imgSub1?: string;
@@ -406,7 +418,8 @@ function ZumenPageContent() {
     (!isMansion && (category === "new-house" || category === "used-house"));
 
   const isLand = propertyType === "土地" || category === "land";
-
+  const isRental = propertyType.includes("賃貸") || category === "rental";
+  
   const summaryRows = useMemo(() => {
     if (!data) return [];
 
@@ -480,6 +493,33 @@ function ZumenPageContent() {
       ];
     }
 
+     if (isRental && data.rentalDetails) {
+      return [
+        {
+          label: "賃　料",
+          value: data.rentalDetails.rent ? `${Number(data.rentalDetails.rent).toLocaleString()}円` : "-",
+          label2: "保証金",
+          value2: data.rentalDetails.depositGuarantee || "-",
+        },
+        {
+          label: "共益費",
+          value: data.rentalDetails.commonFee ? `${Number(data.rentalDetails.commonFee).toLocaleString()}円` : "-",
+          label2: "更新料",
+          value2: data.rentalDetails.renewalFee || "-",
+        },
+        {
+          label: "礼　金",
+          value: data.rentalDetails.keyMoney || "-",
+          label2: "敷　金",
+          value2: data.rentalDetails.securityDeposit || "-",
+        },
+        {
+          label: "専有面積",
+          value: data.rentalDetails.exclusiveArea ? `${data.rentalDetails.exclusiveArea}㎡` : "-",
+        },
+      ];
+    }
+
     if (isLand) {
       return [
         { label: "所在地", value: data.address },
@@ -493,9 +533,12 @@ function ZumenPageContent() {
     }
 
     return [{ label: "所在地", value: data.address }];
-  }, [data, isHouse, isLand, isMansion, selectedTemplate]);
-
+  }, [data, isHouse, isLand, isMansion, isRental, selectedTemplate]);
+  
   const managementRows = useMemo(() => {
+    if (isRental) {
+      return [];
+    }
     if (isMansion && data?.mansionDetails) {
       return [
         {
@@ -538,9 +581,15 @@ function ZumenPageContent() {
     }
 
     return [];
-  }, [data, isHouse, isMansion]);
+   }, [data, isHouse, isMansion, isRental]);
 
   const facilityRows = useMemo(() => {
+     if (isRental) {
+      return [
+        { label: "所在地", value: data?.address || "-" },
+        { label: "交通", value: `${data?.access || "-"} 徒歩${data?.walk || "-"}分` },
+      ];
+    }
     if (isMansion && data?.mansionDetails) {
       return [
         { label: "ガス", value: data.mansionDetails.gas || "-" },
@@ -581,7 +630,7 @@ function ZumenPageContent() {
       { label: "ガス", value: "-" },
       { label: "現況", value: "-", label2: "引渡し", value2: "-" },
     ];
-  }, [data, isHouse, isMansion]);
+ }, [data, isHouse, isMansion, isRental]);
 
   const remarks = isMansion
     ? data?.mansionDetails?.note
@@ -1746,7 +1795,7 @@ function ZumenPageContent() {
                           </div>
 
                           <div className="p-2">
-                            <SectionTitle bgColor={theme.section}>物件概要</SectionTitle>
+                            <SectionTitle bgColor={theme.section}>{isRental ? "賃貸条件（賃貸居住用）" : "物件概要"}</SectionTitle>
                             <InfoTable rows={summaryRows} labelBgColor={theme.label} />
 
                             {managementRows.length > 0 && (
@@ -1757,7 +1806,12 @@ function ZumenPageContent() {
                                 <InfoTable rows={managementRows} labelBgColor={theme.label} autoValueWidth />
                               </div>
                             )}
-
+                              {facilityRows.length > 0 && (
+                              <div className="mt-2">
+                                <SectionTitle bgColor={theme.section}>{isRental ? "物件概要" : "設備・引渡"}</SectionTitle>
+                                <InfoTable rows={facilityRows} labelBgColor={theme.label} autoValueWidth />
+                              </div>
+                            )}
                             <div className="mt-2">
                               <SectionTitle bgColor={theme.section}>設備・引渡</SectionTitle>
                               <InfoTable rows={facilityRows} labelBgColor={theme.label} autoValueWidth />
