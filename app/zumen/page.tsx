@@ -588,12 +588,14 @@ function ZumenPageContent() {
           label2: "容積率",
           value2: data.houseDetails.floorAreaRatio || "-",
         },
-        { label: "駐車場", value: data.houseDetails.parking || "-" },
+        ...(selectedTemplate === "chic"
+          ? []
+          : [{ label: "駐車場", value: data.houseDetails.parking || "-" }]),
       ];
     }
 
     return [];
-   }, [data, isHouse, isMansion, isRental]);
+   }, [data, isHouse, isMansion, isRental, selectedTemplate]);
 
   const facilityRows = useMemo(() => {
      if (isRental) {
