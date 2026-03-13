@@ -121,9 +121,6 @@ export async function POST(req: NextRequest) {
 
     const mapUrl = `/api/image-proxy?url=${encodeURIComponent(buildGsiTileUrl(latitude, longitude))}`;
 
-    const mapUrl = `/api/image-proxy?url=${encodeURIComponent(rawMapUrl)}`;
-
-
     return NextResponse.json({
       success: true,
       lat,
