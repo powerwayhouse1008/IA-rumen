@@ -452,7 +452,6 @@ function ZumenPageContent() {
           value2: data.houseDetails.layout || "-",
         },
         { label: "私道", value: data.houseDetails.privateRoad || "-" },
-        { label: "接道舗装", value: data.houseDetails.roadSurface || "-" },
         {
           label: "専有面積",
           value: data.houseDetails.exclusiveArea
@@ -460,7 +459,6 @@ function ZumenPageContent() {
             : "-",
         },
         { label: "構造・階数", value: data.houseDetails.structure || "-" },
-        { label: "所在階", value: data.houseDetails.floor || "-" },
         { label: "築年月", value: data.houseDetails.builtAt || "-" },
       ];
     }
