@@ -25,8 +25,8 @@ async function createAddressMap(address: string): Promise<string | undefined> {
 
     if (!res.ok) return undefined;
 
-    const data = (await res.json()) as { mapDataUrl?: string };
-    return data.mapDataUrl;
+    const data = (await res.json()) as { mapDataUrl?: string; mapUrl?: string };
+    return data.mapDataUrl ?? data.mapUrl;
   } catch {
     return undefined;
   }
