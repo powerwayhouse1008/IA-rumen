@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const USER_AGENT = "powerway-map-generator/1.0";
-const DEFAULT_MAP_ZOOM = 16;
+const DEFAULT_MAP_ZOOM = 14;
 
 type GeocodeResult = {
   lat: string;
@@ -23,7 +23,7 @@ function buildGsiTileUrl(lat: number, lon: number, zoom = DEFAULT_MAP_ZOOM) {
     ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * scale
   );
 
-  return `https://cyberjapandata.gsi.go.jp/xyz/std/${zoom}/${x}/${y}.png`;
+  return `https://cyberjapandata.gsi.go.jp/xyz/pale/${zoom}/${x}/${y}.png`;
 }
 
 async function geocodeByNominatim(address: string): Promise<GeocodeResult | null> {
