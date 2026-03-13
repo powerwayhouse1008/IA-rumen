@@ -60,6 +60,7 @@ type AdminQrForm = {
   buildingName: string;
   address: string;
   viewMethod: string;
+  price: string;
   available: string;
   managerName: string;
   managerEmail: string;
@@ -194,6 +195,7 @@ const DEFAULT_ADMIN_QR_FORM: AdminQrForm = {
   inquiryUrl: "",
   buildingName: "",
   address: "",
+  price: "",
   viewMethod: "",
   available: "募集中",
   managerName: "",
@@ -427,6 +429,7 @@ export default function Page() {
     ...(initialDraft?.adminQr ?? {}),
     buildingName: initialDraft?.adminQr?.buildingName ?? initialDraft?.name ?? "",
     address: initialDraft?.adminQr?.address ?? initialDraft?.address ?? "",
+    price: initialDraft?.adminQr?.price ?? initialDraft?.price ?? "",
     managerName: initialDraft?.adminQr?.managerName ?? initialDraft?.contactInfo?.staffName ?? "",
     managerEmail: initialDraft?.adminQr?.managerEmail ?? initialDraft?.contactInfo?.companyEmail ?? "",
   });
@@ -552,6 +555,7 @@ export default function Page() {
           propertyCode,
           buildingName: nextForm.buildingName,
           address: nextForm.address,
+          price: nextForm.price,
           viewMethod: nextForm.viewMethod,
           status: nextForm.available,
           managerName: nextForm.managerName,
@@ -720,6 +724,7 @@ export default function Page() {
                   <div className="grid gap-2 md:grid-cols-2">
                     <Input value={adminQrForm.buildingName} onChange={(e) => updateAdminQr("buildingName", e.target.value)} placeholder="建物名 (building_name)" />
                     <Input value={adminQrForm.address} onChange={(e) => updateAdminQr("address", e.target.value)} placeholder="住所 (address)" />
+                    <Input value={adminQrForm.price} onChange={(e) => updateAdminQr("price", e.target.value)} placeholder="価額 (price)" />
                     <Input value={adminQrForm.viewMethod} onChange={(e) => updateAdminQr("viewMethod", e.target.value)} placeholder="内見方法 (view_method)" />
                     <Select value={adminQrForm.available} onChange={(e) => updateAdminQr("available", e.target.value)}>
                       <option value="募集中">募集中 (available)</option>
@@ -732,7 +737,16 @@ export default function Page() {
                     <Input value={adminQrForm.managerEmail} onChange={(e) => updateAdminQr("managerEmail", e.target.value)} placeholder="担当者メール (manager_email)" />
                   </div>
                   <button type="button" onClick={createSharedQr} disabled={isSyncingQr} className="mt-3 rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{isSyncingQr ? "Syncing..." : "Create + QR"}</button>
-                  {adminQrForm.inquiryUrl ? <div className="mt-2 break-all text-xs text-emerald-700">{adminQrForm.inquiryUrl}</div> : null}
+                  {adminQrForm.inquiryUrl ? (
+                    <a
+                      href={adminQrForm.inquiryUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 block break-all text-xs text-emerald-700 underline"
+                    >
+                      {adminQrForm.inquiryUrl}
+                    </a>
+                  ) : null}
                   {qrSyncMessage ? <div className="mt-1 text-xs text-zinc-600">{qrSyncMessage}</div> : null}
                 </div>
                 <div>
