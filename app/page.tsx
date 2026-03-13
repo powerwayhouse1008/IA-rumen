@@ -45,6 +45,7 @@ type DraftPayload = ZumenData & {
   propertyType?: string;
   houseDetails?: typeof INITIAL_HOUSE_DETAILS;
   mansionDetails?: typeof INITIAL_MANSION_DETAILS;
+  rentalDetails?: typeof INITIAL_RENTAL_DETAILS;
   managerNo?: string;
   publishDate?: string;
   expireDate?: string;
@@ -64,7 +65,7 @@ type AdminQrForm = {
   managerEmail: string;
 };
 
-type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion";
+type CategoryKey = "new-house" | "used-house" | "land" | "new-mansion" | "used-mansion" | "rental";
 type ThemeColorKey = "sunset-red" | "ocean-blue" | "forest-green" | "royal-purple" | "charcoal-gold" | "sky-blue";
 
 type CategoryPreset = {
@@ -141,9 +142,22 @@ const CATEGORY_PRESETS: Record<CategoryKey, CategoryPreset> = {
       address: "東京都江東区豊洲4-1-20",
     },
   },
+   rental: {
+    label: "賃貸仮入力",
+    propertyType: "賃貸",
+    catchCopy: "駅近×生活利便。都市型ライフスタイルに合う賃貸レジデンス",
+    districts: "1室",
+    data: {
+      price: "113800",
+      name: "目黒マンション X1号室",
+      access: "JR山手線 目黒",
+      walk: "7",
+      address: "東京都目黒区下目黒2-20-5",
+    },
+  },
 };
 
-const PROPERTY_TYPE_OPTIONS = ["中古マンション", "新築分譲マンション", "新築分譲住宅", "中古住宅", "土地"];
+const PROPERTY_TYPE_OPTIONS = ["中古マンション", "賃貸", "新築分譲マンション", "新築分譲住宅", "中古住宅", "土地"];
 
 const SALES_TAGS = ["# 2沿線以上利用可", "# 駐車2台可", "# 環境重視の住宅地", "# 閑静な住宅街", "# 平坦地", "# 角地"];
 const FEATURE_TAGS = ["# シャワートイレ", "# DEN", "# LDKカウンターテーブル", "# ダイニング収納", "# 納戸", "# シューズクローク"];
@@ -213,6 +227,15 @@ const INITIAL_MANSION_DETAILS = {
   handover: "即時",
   note: `●ペット飼育可(細則有り)
 ●敷地内駐車場 有空き要確認`,
+};
+const INITIAL_RENTAL_DETAILS = {
+  rent: "113800",
+  commonFee: "15000",
+  depositGuarantee: "なし",
+  renewalFee: "1ヶ月",
+  keyMoney: "1ヶ月",
+  securityDeposit: "1ヶ月",
+  exclusiveArea: "18.31",
 };
 
 const INITIAL_HOUSE_DETAILS = {
@@ -396,6 +419,9 @@ export default function Page() {
   const [houseDetails, setHouseDetails] = useState({
      ...(initialDraft?.houseDetails ?? INITIAL_HOUSE_DETAILS),
   });
+  const [rentalDetails, setRentalDetails] = useState({
+    ...(initialDraft?.rentalDetails ?? INITIAL_RENTAL_DETAILS),
+  });
   const [adminQrForm, setAdminQrForm] = useState<AdminQrForm>({
     ...DEFAULT_ADMIN_QR_FORM,
     ...(initialDraft?.adminQr ?? {}),
@@ -408,7 +434,7 @@ export default function Page() {
   const normalizedPropertyType = propertyType.trim();
   const isMansionCategory = normalizedPropertyType.includes("マンション") || selectedCategory === "new-mansion" || selectedCategory === "used-mansion";
   const isHouseCategory = normalizedPropertyType.includes("住宅") || selectedCategory === "new-house" || selectedCategory === "used-house";
-
+  const isRentalCategory = normalizedPropertyType.includes("賃貸") || selectedCategory === "rental";
   const canGo = useMemo(() => data.price.trim() && data.name.trim() && data.address.trim(), [data]);
 
   function update<K extends keyof ZumenData>(key: K, value: ZumenData[K]) {
@@ -424,6 +450,10 @@ export default function Page() {
   function updateHouse(key: keyof typeof houseDetails, value: string) {
     setHighlightSection("house");
     setHouseDetails((prev) => ({ ...prev, [key]: value }));
+  }
+ function updateRental(key: keyof typeof rentalDetails, value: string) {
+    setHighlightSection("mansion");
+    setRentalDetails((prev) => ({ ...prev, [key]: value }));
   }
 
   function updateContact(key: keyof typeof contactInfo, value: string) {
@@ -581,6 +611,7 @@ export default function Page() {
       propertyType,
       houseDetails,
       mansionDetails,
+      rentalDetails,
       contactInfo,
       themeColor,
        managerNo,
@@ -907,6 +938,20 @@ export default function Page() {
                   <div><FieldLabel>現状</FieldLabel><Input value={mansionDetails.currentStatus} onChange={(e) => updateMansion("currentStatus", e.target.value)} /></div>
                   <div><FieldLabel>引渡</FieldLabel><Input value={mansionDetails.handover} onChange={(e) => updateMansion("handover", e.target.value)} /></div>
                   <div className="md:col-span-2"><FieldLabel>備考</FieldLabel><Textarea rows={3} value={mansionDetails.note} onChange={(e) => updateMansion("note", e.target.value)} /></div>
+                </div>
+              </div>
+            )}
+              {isRentalCategory && (
+              <div className={`mt-6 rounded-lg border p-4 transition ${highlightSection === "mansion" ? "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-200" : "border-zinc-200 bg-zinc-50"}`}>
+                <div className="mb-3 text-sm font-semibold text-zinc-700">賃貸詳細</div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div><FieldLabel>賃　料 (円)</FieldLabel><Input value={rentalDetails.rent} onChange={(e) => updateRental("rent", e.target.value)} /></div>
+                  <div><FieldLabel>共益費 (円)</FieldLabel><Input value={rentalDetails.commonFee} onChange={(e) => updateRental("commonFee", e.target.value)} /></div>
+                  <div><FieldLabel>保証金</FieldLabel><Input value={rentalDetails.depositGuarantee} onChange={(e) => updateRental("depositGuarantee", e.target.value)} /></div>
+                  <div><FieldLabel>更新料</FieldLabel><Input value={rentalDetails.renewalFee} onChange={(e) => updateRental("renewalFee", e.target.value)} /></div>
+                  <div><FieldLabel>礼　金</FieldLabel><Input value={rentalDetails.keyMoney} onChange={(e) => updateRental("keyMoney", e.target.value)} /></div>
+                  <div><FieldLabel>敷　金</FieldLabel><Input value={rentalDetails.securityDeposit} onChange={(e) => updateRental("securityDeposit", e.target.value)} /></div>
+                  <div><FieldLabel>専有面積 (㎡)</FieldLabel><Input value={rentalDetails.exclusiveArea} onChange={(e) => updateRental("exclusiveArea", e.target.value)} /></div>
                 </div>
               </div>
             )}
