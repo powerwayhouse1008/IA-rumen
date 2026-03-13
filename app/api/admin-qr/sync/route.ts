@@ -5,6 +5,7 @@ type SyncPayload = {
   propertyCode: string;
   buildingName: string;
   address: string;
+  price: string;
   viewMethod: string;
   status: string;
   managerName: string;
@@ -43,6 +44,7 @@ function buildRow(payload: Partial<SyncPayload>, primaryKey: string) {
     property_code: payload.propertyCode,
     building_name: payload.buildingName ?? "",
     address: payload.address ?? "",
+    price: payload.price ?? "",
     view_method: payload.viewMethod ?? "",
     status: normalizedStatus,
     manager_name: payload.managerName ?? "",
