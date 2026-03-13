@@ -681,6 +681,9 @@ export default function Page() {
     { key: "imgSub3", label: "物件サブ画像（3）" },
    
   ];
+　　function goToSavedZumen() {
+    router.push("/zumen");
+  }
 
   return (
    <main className="min-h-screen bg-[#e6f4ff] p-4 text-zinc-800 md:p-6">
@@ -689,7 +692,21 @@ export default function Page() {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Image src="/powerway-house-logo.svg" alt="Powerway House logo" width={56} height={56} className="h-14 w-14 rounded-xl" priority />
-              <h1 className="text-xl font-bold md:text-2xl">新規登録 STEP1 基本情報</h1>
+               <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={goToSavedZumen}
+                  className="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white"
+                >
+                  作成図面済
+                </button>
+                <a
+                  href="https://qr.powerway.house/admin"
+                  className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
+                >
+                  QR 管理
+                </a>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <button type="button" className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">変更を破棄</button>
