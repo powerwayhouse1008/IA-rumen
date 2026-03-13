@@ -143,7 +143,7 @@ export default function AddressMapPage() {
             marginTop: 20,
             border: "1px solid #d7d7d7",
             borderRadius: 10,
-            minHeight: 380,
+            minHeight: 520,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -152,9 +152,23 @@ export default function AddressMapPage() {
           }}
         >
           {mapUrl ? (
-            <div style={{ width: "100%" }}>
+            <div style={{ width: "100%", position: "relative" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={mapUrl} alt="map preview" style={{ width: "100%", display: "block" }} />
+              <img src={mapUrl} alt="map preview" style={{ width: "100%", display: "block", minHeight: 520, objectFit: "cover" }} />
+              <div
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  top: "50%",
+                  transform: "translate(-50%, -100%)",
+                  width: 44,
+                  height: 44,
+                  filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.25))",
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/powerway-house-logo.svg" alt="home marker" style={{ width: "100%", height: "100%" }} />
+              </div>
               <div style={{ padding: 12, fontSize: 14, color: "#444", borderTop: "1px solid #ececec" }}>{resolvedAddress}</div>
             </div>
           ) : (
