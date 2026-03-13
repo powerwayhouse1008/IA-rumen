@@ -9,10 +9,16 @@ type DraftPayload = {
   [key: string]: unknown;
 };
 
+type MapResponse = {
+  mapUrl?: string;
+  displayName?: string;
+  error?: string;
+};
 
-
-async function createAddressMap(address: string): Promise<string | undefined> {
-  if (!address.trim()) return undefined;
+async function createAddressMap(address: string): Promise<MapResponse> {
+  if (!address.trim()) {
+    return { error: "住所を入力してください。" };
+  }
 
   try {
     const res = await fetch("/api/address-map", {
@@ -23,12 +29,14 @@ async function createAddressMap(address: string): Promise<string | undefined> {
       body: JSON.stringify({ address }),
     });
 
-    if (!res.ok) return undefined;
+    const data = (await res.json()) as MapResponse;
+    if (!res.ok) {
+      return { error: data.error || "MAP生成に失敗しました。住所を確認してください。" };
+    }
 
-    const data = (await res.json()) as { mapDataUrl?: string; mapUrl?: string };
-    return data.mapDataUrl ?? data.mapUrl;
+    return { mapUrl: data.mapUrl, displayName: data.displayName };
   } catch {
-    return undefined;
+    return { error: "サーバーエラーが発生しました。" };
   }
 }
 
@@ -50,19 +58,22 @@ export default function AddressMapPage() {
 
   const [address, setAddress] = useState(initialDraft?.address ?? "");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [previewMap, setPreviewMap] = useState<string | undefined>(initialDraft?.imgMap);
-  const [message, setMessage] = useState("");
+  const [mapUrl, setMapUrl] = useState<string | undefined>(initialDraft?.imgMap);
+  const [resolvedAddress, setResolvedAddress] = useState("");
+  const [error, setError] = useState("");
 
   async function generateMap(targetAddress: string) {
     setIsGenerating(true);
-    setMessage("");
+    setError("");
 
-    const generatedMap = await createAddressMap(targetAddress);
-    if (generatedMap) {
-      setPreviewMap(generatedMap);
-      setMessage("MAPを生成しました。");
+    const result = await createAddressMap(targetAddress);
+    if (result.mapUrl) {
+      setMapUrl(result.mapUrl);
+      setResolvedAddress(result.displayName || targetAddress);
     } else {
-      setMessage("MAP生成に失敗しました。住所を確認してください。");
+      setMapUrl(undefined);
+      setResolvedAddress("");
+      setError(result.error || "MAP生成に失敗しました。住所を確認してください。");
     }
 
     setIsGenerating(false);
@@ -83,12 +94,12 @@ export default function AddressMapPage() {
   }, []);
 
   function useThisMap() {
-    if (!previewMap || typeof window === "undefined") return;
+    if (!mapUrl || typeof window === "undefined") return;
 
     const payload = {
       ...(initialDraft ?? {}),
       address,
-      imgMap: previewMap,
+      imgMap: mapUrl,
     };
 
     localStorage.setItem("zumenData", JSON.stringify(payload));
@@ -125,14 +136,29 @@ export default function AddressMapPage() {
           </button>
         </div>
 
-        {message && <div className="mt-3 text-sm text-zinc-700">{message}</div>}
+        {error ? <p style={{ color: "#a52a2a", marginTop: 16 }}>{error}</p> : null}
 
-        <div className="mt-4 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
-          {previewMap ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={previewMap} alt="生成された現地MAP" className="h-auto w-full object-cover" />
+        <div
+          style={{
+            marginTop: 20,
+            border: "1px solid #d7d7d7",
+            borderRadius: 10,
+            minHeight: 380,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+            background: "#fafafa",
+          }}
+        >
+          {mapUrl ? (
+            <div style={{ width: "100%" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={mapUrl} alt="map preview" style={{ width: "100%", display: "block" }} />
+              <div style={{ padding: 12, fontSize: 14, color: "#444", borderTop: "1px solid #ececec" }}>{resolvedAddress}</div>
+            </div>
           ) : (
-            <div className="flex h-64 items-center justify-center text-sm text-zinc-400">ここにMAPプレビューが表示されます</div>
+            <span style={{ color: "#aaa", fontSize: 28 }}>ここにMAPプレビューが表示されます</span>
           )}
         </div>
 
@@ -140,7 +166,7 @@ export default function AddressMapPage() {
           <button
             type="button"
             onClick={useThisMap}
-            disabled={!previewMap}
+            disabled={!mapUrl}
             className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
           >
             このMAPを使う
