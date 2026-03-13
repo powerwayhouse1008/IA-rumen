@@ -210,26 +210,40 @@ function ImgBox({
   label,
   fit = "cover",
   h,
+  showCenterLogo = false,
 }: {
   src?: string;
   label: string;
   fit?: "cover" | "contain";
   h: number;
+  showCenterLogo?: boolean;
 }) {
   return (
     <div
-      className="flex items-center justify-center overflow-hidden border border-black bg-zinc-50"
+      className="relative flex items-center justify-center overflow-hidden border border-black bg-zinc-50"
       style={{ height: `${h}px` }}
     >
       {src ? (
-        <img
-          src={toExportableImageSrc(src)}
-          alt={label}
-          className="h-full w-full"
-          style={{ objectFit: fit }}
-          crossOrigin="anonymous"
-          referrerPolicy="no-referrer"
-        />
+        <>
+          <img
+            src={toExportableImageSrc(src)}
+            alt={label}
+            className="h-full w-full"
+            style={{ objectFit: fit }}
+            crossOrigin="anonymous"
+            referrerPolicy="no-referrer"
+          />
+          {showCenterLogo ? (
+            <div
+              aria-label="house marker"
+              className="pointer-events-none absolute left-1/2 top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-sky-500 text-white shadow"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
+                <path d="M12 3 3 10.5h2V21h6v-5h2v5h6V10.5h2L12 3Zm5 16h-2v-5H9v5H7v-9.62l5-4.17 5 4.17V19Z" />
+              </svg>
+            </div>
+          ) : null}
+        </>
       ) : (
         <div className="text-xs text-zinc-500">{label}</div>
       )}
@@ -1345,7 +1359,7 @@ function ZumenPageContent() {
                           </div>
 
                           <div className="p-2">
-                            <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} />
+                            <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} />
                             <div
                               className="border-t border-black p-1 text-center"
                               style={adaptiveTextStyle(`NAVI ${data.address}`, 9, 12)}
@@ -1591,7 +1605,7 @@ function ZumenPageContent() {
                           </div>
 
                           <div className="p-2">
-                            <ImgBox src={data.imgMap ?? data.imgMain} label="現地MAP" h={185} />
+                            <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} />
                             <div
                               className="px-1 py-0.5 text-center font-bold text-white"
                               style={{
