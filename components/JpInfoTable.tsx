@@ -27,7 +27,7 @@ export function InfoTable({
   const doubleColumnTemplate = autoValueWidth
     ? `${labelWidth} minmax(0, 1fr) ${labelWidth} minmax(0, 1fr)`
     : `${labelWidth} 1fr ${labelWidth} 1fr`;;
-  c const valueCellClass = "min-w-0 px-2 py-0 whitespace-nowrap border-r border-black overflow-hidden text-ellipsis";
+  const valueCellClass = "min-w-0 px-2 py-0 whitespace-nowrap border-r border-black overflow-hidden text-ellipsis";
   const lastValueCellClass = "min-w-0 px-2 py-0 whitespace-nowrap overflow-hidden text-ellipsis";
   return (
      <div className="w-full border border-black border-t-0 text-[11px]">
