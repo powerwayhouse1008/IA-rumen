@@ -1836,8 +1836,8 @@ function ZumenPageContent() {
                               <div
                                 className={`whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px] ${
                                   selectedTemplate === "chic" && isMansion
-                                    ? "min-h-[3.56cm]"
-                                    : "min-h-[3.34cm]"
+                                    ? "min-h-[3.76cm]"
+                                    : "min-h-[3.54cm]"
                                 }`}
                               >
                                 {remarks || "※図面と相違する場合は現況を優先します。"}
