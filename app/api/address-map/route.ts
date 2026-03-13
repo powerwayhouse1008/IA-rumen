@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const USER_AGENT = "powerway-map-generator/1.0";
+const DEFAULT_MAP_ZOOM = 16;
+
 type GeocodeResult = {
   lat: string;
   lon: string;
@@ -12,6 +14,16 @@ function normalizeAddress(address: string) {
     .normalize("NFKC")
     .replace(/\s+/g, " ")
     .trim();
+}
+function buildGsiTileUrl(lat: number, lon: number, zoom = DEFAULT_MAP_ZOOM) {
+  const scale = 2 ** zoom;
+  const x = Math.floor(((lon + 180) / 360) * scale);
+  const latRad = (lat * Math.PI) / 180;
+  const y = Math.floor(
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * scale
+  );
+
+  return `https://cyberjapandata.gsi.go.jp/xyz/std/${zoom}/${x}/${y}.png`;
 }
 
 async function geocodeByNominatim(address: string): Promise<GeocodeResult | null> {
@@ -91,19 +103,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "住所を入力してください。" }, { status: 400 });
     }
 
-   const normalizedAddress = normalizeAddress(rawAddress);
+    const normalizedAddress = normalizeAddress(rawAddress);
 
-    const geoResult =
-      (await geocodeByNominatim(normalizedAddress)) ||
-      (await geocodeByGsi(normalizedAddress));
+    const geoResult = (await geocodeByNominatim(normalizedAddress)) || (await geocodeByGsi(normalizedAddress));
 
     if (!geoResult) {
       return NextResponse.json({ error: "MAP生成に失敗しました。住所を確認してください。" }, { status: 404 });
     }
 
      const { lat, lon, displayName } = geoResult;
+    const latitude = Number(lat);
+    const longitude = Number(lon);
 
-     const rawMapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=16&size=900x500&markers=${lat},${lon},red-pushpin`;
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      return NextResponse.json({ error: "座標の解決に失敗しました。" }, { status: 500 });
+    }
+
+    const mapUrl = `/api/image-proxy?url=${encodeURIComponent(buildGsiTileUrl(latitude, longitude))}`;
+
     const mapUrl = `/api/image-proxy?url=${encodeURIComponent(rawMapUrl)}`;
 
 
