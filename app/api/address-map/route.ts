@@ -103,7 +103,9 @@ export async function POST(req: NextRequest) {
 
      const { lat, lon, displayName } = geoResult;
 
-    const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=16&size=900x500&markers=${lat},${lon},red-pushpin`;
+     const rawMapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=16&size=900x500&markers=${lat},${lon},red-pushpin`;
+    const mapUrl = `/api/image-proxy?url=${encodeURIComponent(rawMapUrl)}`;
+
 
     return NextResponse.json({
       success: true,
