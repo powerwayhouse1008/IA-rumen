@@ -10,7 +10,20 @@ type StaticMapProvider = {
   name: string;
   buildUrl: (lat: string, lon: string) => string;
 };
+type AddressMapResponse = {
+  mapDataUrl?: string;
+  mapUrl?: string;
+  lat: string;
+  lon: string;
+  provider?: string;
+  fallback?: boolean;
+};
 
+const MAP_FETCH_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+};
 const STATIC_MAP_PROVIDERS: StaticMapProvider[] = [
   {
     name: "openstreetmap.de",
@@ -50,10 +63,7 @@ async function fetchMapImage(lat: string, lon: string) {
   for (const provider of STATIC_MAP_PROVIDERS) {
     try {
       const mapRes = await fetch(provider.buildUrl(lat, lon), {
-        headers: {
-          "User-Agent": "IA-rumen/1.0 (address-map)",
-          Accept: "image/*,*/*;q=0.8",
-        },
+         headers: MAP_FETCH_HEADERS,
         cache: "no-store",
       });
 
@@ -86,6 +96,11 @@ async function fetchMapImage(lat: string, lon: string) {
 
   throw new Error(`all static map providers failed: ${errors.join(" | ")}`);
 }
+function buildFallbackMapUrl(lat: string, lon: string) {
+  const primaryUrl = STATIC_MAP_PROVIDERS[0]?.buildUrl(lat, lon);
+  if (!primaryUrl) return undefined;
+  return `/api/image-proxy?url=${encodeURIComponent(primaryUrl)}`;
+}
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as { address?: string } | null;
@@ -100,7 +115,7 @@ export async function POST(req: NextRequest) {
       `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`,
       {
         headers: {
-          "User-Agent": "IA-rumen/1.0 (address-map)",
+          User-Agent": "IA-rumen/1.0 (address-map; contact: support@powerway.house)",
           Accept: "application/json",
           "Accept-Language": "ja,en;q=0.8",
         },
@@ -119,14 +134,33 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "address not found" }, { status: 404 });
     }
 
-     const mapResult = await fetchMapImage(first.lat, first.lon);
+    try {
+      const mapResult = await fetchMapImage(first.lat, first.lon);
 
-    return Response.json({
-       mapDataUrl: mapResult.mapDataUrl,
-      lat: first.lat,
-      lon: first.lon,
-     provider: mapResult.provider,
-    });
+     const payload: AddressMapResponse = {
+        mapDataUrl: mapResult.mapDataUrl,
+        lat: first.lat,
+        lon: first.lon,
+        provider: mapResult.provider,
+      };
+
+      return Response.json(payload);
+    } catch (mapError) {
+      const fallbackUrl = buildFallbackMapUrl(first.lat, first.lon);
+      if (!fallbackUrl) {
+        throw mapError;
+      }
+
+      const payload: AddressMapResponse = {
+        mapUrl: fallbackUrl,
+        lat: first.lat,
+        lon: first.lon,
+        provider: "image-proxy-fallback",
+        fallback: true,
+      };
+
+      return Response.json(payload);
+    }
   } catch (error) {
     console.error("address-map api error:", error);
     return Response.json({ error: "address map generation failed" }, { status: 500 });
