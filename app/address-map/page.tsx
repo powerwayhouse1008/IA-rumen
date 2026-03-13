@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 type DraftPayload = {
   address?: string;
@@ -56,10 +56,9 @@ function loadDraftPayload(): DraftPayload | null {
 
 export default function AddressMapPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const initialDraft = useMemo(() => loadDraftPayload(), []);
 
-  const [address, setAddress] = useState(searchParams.get("address") ?? initialDraft?.address ?? "");
+  const [address, setAddress] = useState(initialDraft?.address ?? "");
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewMap, setPreviewMap] = useState<string | undefined>(initialDraft?.imgMap);
   const [message, setMessage] = useState("");
@@ -80,6 +79,14 @@ export default function AddressMapPage() {
   }
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const queryAddress = new URLSearchParams(window.location.search).get("address");
+    if (queryAddress?.trim()) {
+      setAddress(queryAddress);
+      void generateMap(queryAddress);
+      return;
+    }
+
     if (!address.trim()) return;
     void generateMap(address);
     // eslint-disable-next-line react-hooks/exhaustive-deps
