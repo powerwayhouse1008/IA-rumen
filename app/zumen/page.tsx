@@ -1144,7 +1144,14 @@ function ZumenPageContent() {
     <main className="min-h-screen bg-[#f3f4f6] p-2 md:p-4">
       <div className="mx-auto w-full max-w-[1500px]">
         <div className="mb-3 flex items-center justify-between">
-         {selectedTemplate ? (
+         {isSavedDraftsView ? (
+            <Link
+              href="/"
+              className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700"
+            >
+              ← 入力画面に戻る
+            </Link>
+          ) : selectedTemplate ? (
             <button
               type="button"
               onClick={() => setSelectedTemplate(null)}
@@ -1161,7 +1168,7 @@ function ZumenPageContent() {
             </Link>
           )}
 
-          {selectedTemplate && (
+           {!isSavedDraftsView && selectedTemplate && (
             <div className="flex items-center gap-3">
               <div className="text-sm font-semibold">デザインカラー選択</div>
 
@@ -1228,13 +1235,13 @@ function ZumenPageContent() {
           )}
         </div>
 
-        {exportError && (
+        {!isSavedDraftsView && exportError && (
           <div className="mb-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
             {exportError}
           </div>
         )}
 
-        {showDebugPreview && (
+        {!isSavedDraftsView && showDebugPreview && (
           <div className="mb-4 rounded-xl border border-sky-300 bg-sky-50 p-3">
             <div className="mb-2 flex items-center justify-between">
               <div className="text-sm font-semibold text-sky-900">
@@ -1270,7 +1277,7 @@ function ZumenPageContent() {
         )}
 
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4">
-          {!selectedTemplate && isSavedDraftsView && savedDrafts.length > 0 ? (
+           {isSavedDraftsView && savedDrafts.length > 0 ? (
             <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 p-3">
               <div className="mb-2 text-sm font-semibold text-sky-900">図面作成済（保存データ）</div>
               <ol className="space-y-2">
@@ -1301,7 +1308,7 @@ function ZumenPageContent() {
                  </ol>
               </div>
           ) : null}
-          {!selectedTemplate && !isSavedDraftsView ? (
+          {!isSavedDraftsView && !selectedTemplate ? (
             <div className="grid gap-4 md:grid-cols-3">
               {TEMPLATE_OPTIONS.map((template) => (
                 <div key={template.key} className="rounded-xl border border-zinc-200 p-4">
@@ -1322,7 +1329,7 @@ function ZumenPageContent() {
                 </div>
               ))}
             </div>
-            ) : !selectedTemplate && isSavedDraftsView && savedDrafts.length === 0 ? (
+            ) : isSavedDraftsView && savedDrafts.length === 0 ? (
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">
               保存済みの図面データはありません。
             </div>
