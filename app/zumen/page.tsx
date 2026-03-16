@@ -250,7 +250,13 @@ function ImgBox({
     </div>
   );
 }
+type StoredDraft = {
+  id: string;
+  savedAt: string;
+  payload: ZumenData & { draftSavedAt?: string; draftId?: string };
+};
 
+const ZUMEN_DRAFTS_STORAGE_KEY = "zumenDrafts";
 const A4_RATIO = Math.SQRT2;
 const SHEET_HEIGHT = 794;
 const SHEET_WIDTH = Math.round(SHEET_HEIGHT * A4_RATIO);
@@ -369,7 +375,7 @@ function ZumenPageContent() {
   const shouldExportPdf = searchParams.get("export") === "pdf";
 
   const [data, setData] = useState<ZumenData | null>(null);
-
+  const [savedDrafts, setSavedDrafts] = useState<StoredDraft[]>([]);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
 
@@ -386,6 +392,9 @@ function ZumenPageContent() {
 
   useEffect(() => {
     try {
+      const rawDrafts = localStorage.getItem(ZUMEN_DRAFTS_STORAGE_KEY);
+      const parsedDrafts = rawDrafts ? (JSON.parse(rawDrafts) as StoredDraft[]) : [];
+      setSavedDrafts(Array.isArray(parsedDrafts) ? parsedDrafts : []);
       const runtimePayload = (
         window as Window & { __zumenPayload?: ZumenData }
       ).__zumenPayload;
@@ -398,6 +407,7 @@ function ZumenPageContent() {
       const saved = localStorage.getItem("zumenData");
       setData(saved ? (JSON.parse(saved) as ZumenData) : null);
     } catch {
+      setSavedDrafts([]);
       setData(null);
     }
   }, []);
@@ -1251,6 +1261,23 @@ function ZumenPageContent() {
         )}
 
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4">
+          {!selectedTemplate && savedDrafts.length > 0 ? (
+            <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 p-3">
+              <div className="mb-2 text-sm font-semibold text-sky-900">図面作成済（保存データ）</div>
+              <div className="grid gap-2 md:grid-cols-2">
+                {savedDrafts.slice(0, 8).map((draft) => (
+                  <Link
+                    key={draft.id}
+                    href={`/?draftId=${encodeURIComponent(draft.id)}`}
+                    className="rounded-md border border-sky-200 bg-white px-3 py-2 text-sm text-sky-800 hover:bg-sky-100"
+                  >
+                    <div className="font-semibold">{draft.payload.name || "(物件名未入力)"}</div>
+                    <div className="text-xs text-zinc-600">{draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}</div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {!selectedTemplate ? (
             <div className="grid gap-4 md:grid-cols-3">
               {TEMPLATE_OPTIONS.map((template) => (
