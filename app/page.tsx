@@ -37,6 +37,7 @@ type ZumenData = {
   };
 };
 type DraftPayload = ZumenData & {
+  draftId?: string;
   catchCopy?: string;
   districts?: string;
   salesTags?: string[];
@@ -51,6 +52,11 @@ type DraftPayload = ZumenData & {
   expireDate?: string;
   draftSavedAt?: string;
   adminQr?: AdminQrForm;
+};
+type StoredDraft = {
+  id: string;
+  savedAt: string;
+  payload: DraftPayload;
 };
 
 type AdminQrForm = {
@@ -202,6 +208,7 @@ const DEFAULT_ADMIN_QR_FORM: AdminQrForm = {
   managerEmail: "",
 };
 const SHARED_QR_COUNTER_STORAGE_KEY = "sharedQrPropertyCodeCounter";
+const ZUMEN_DRAFTS_STORAGE_KEY = "zumenDrafts";
 const SHARED_QR_CODE_PREFIX = "P";
 const SHARED_QR_INITIAL_CODE = 1241;
 const INITIAL_MANSION_DETAILS = {
@@ -266,9 +273,30 @@ const INITIAL_HOUSE_DETAILS = {
 ●駐車場 / 有（継承不可、月額10,000円）
 ※空き状況は管理会社へ要確認`,
 };
+function loadStoredDrafts(): StoredDraft[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = localStorage.getItem(ZUMEN_DRAFTS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed as StoredDraft[];
+  } catch {
+    return [];
+  }
+}
 
 function loadDraftPayload(): DraftPayload | null {
   if (typeof window === "undefined") return null;
+const searchParams = new URLSearchParams(window.location.search);
+  const draftId = searchParams.get("draftId")?.trim();
+  if (draftId) {
+    const found = loadStoredDrafts().find((item) => item.id === draftId);
+    if (found?.payload) {
+      return { ...found.payload, draftId: found.id };
+    }
+  }
 
   const runtimePayload = (window as Window & { __zumenPayload?: DraftPayload }).__zumenPayload;
   if (runtimePayload) return runtimePayload;
@@ -377,6 +405,27 @@ function savePayloadToStorage(payload: DraftPayload): { localSaved: boolean } {
   (window as Window & { __zumenPayload?: DraftPayload }).__zumenPayload = payload;
   return { localSaved };
 }
+function saveDraftToCollection(payload: DraftPayload, draftId?: string): { localSaved: boolean; draftId: string } {
+  if (typeof window === "undefined") {
+    return { localSaved: false, draftId: draftId ?? "" };
+  }
+
+  const id = draftId ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const savedAt = new Date().toLocaleString("ja-JP");
+  const nextPayload = { ...payload, draftId: id, draftSavedAt: savedAt };
+  const currentDrafts = loadStoredDrafts();
+  const filtered = currentDrafts.filter((item) => item.id !== id);
+  const nextDrafts: StoredDraft[] = [{ id, savedAt, payload: nextPayload }, ...filtered];
+
+  let localSaved = true;
+  try {
+    localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(nextDrafts));
+  } catch {
+    localSaved = false;
+  }
+
+  return { localSaved, draftId: id };
+}
 
 export default function Page() {
   const router = useRouter();
@@ -397,6 +446,7 @@ export default function Page() {
   const [expireDate, setExpireDate] = useState(initialDraft?.expireDate ?? DEFAULT_EXPIRE_DATE);
   const [districts, setDistricts] = useState(initialDraft?.districts ?? initialCategoryPreset.districts);
   const [savedAt, setSavedAt] = useState<string>(initialDraft?.draftSavedAt ?? "");
+  const [activeDraftId, setActiveDraftId] = useState<string | undefined>(initialDraft?.draftId);
   const [saveMessage, setSaveMessage] = useState("");
   const [saveMessageTone, setSaveMessageTone] = useState<"success" | "warning">("success");
   const [qrSyncMessage, setQrSyncMessage] = useState("");
@@ -652,12 +702,16 @@ export default function Page() {
   async function onSaveDraft() {
     const payload = (await buildPayload()) as DraftPayload;
     const draftSavedAt = new Date().toLocaleString("ja-JP");
-    const draftPayload = { ...payload, draftSavedAt };
+    const draftPayload = { ...payload, draftSavedAt, draftId: activeDraftId };
    const result = savePayloadToStorage(draftPayload);
+    const collectionResult = saveDraftToCollection(draftPayload, activeDraftId);
+    if (collectionResult.draftId) {
+      setActiveDraftId(collectionResult.draftId);
+    }
     setSavedAt(draftSavedAt);
-    if (result.localSaved) {
+    if (result.localSaved && collectionResult.localSaved) {
       setSaveMessageTone("success");
-      setSaveMessage("保存に成功しました。");
+      setSaveMessage("すべての入力内容を保存しました。");
     } else {
       setSaveMessageTone("warning");
       setSaveMessage("ブラウザ容量の上限に達したため、タブを閉じると下書きが消える可能性があります。");
@@ -727,7 +781,6 @@ export default function Page() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">変更を破棄</button>
               <button type="button" onClick={onSaveDraft} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">一時保存</button>
               <button type="button" onClick={onGenerate} disabled={!canGo} className="rounded-md bg-rose-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">次のステップ</button>
             </div>
