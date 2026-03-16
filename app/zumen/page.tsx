@@ -35,31 +35,6 @@ type ThemeColorKey =
 type TemplateKey = "classic" | "pop" | "chic";
 type ImageFormat = "png" | "jpeg";
 
-const TEMPLATE_OPTIONS: Array<{
-  key: TemplateKey;
-  title: string;
-  subtitle: string;
-  swatches: string[];
-}> = [
-  {
-    key: "classic",
-    title: "CLASSIC",
-    subtitle: "クラシックで高級感あるデザイン",
-    swatches: ["#6f3b14", "#8f1212", "#7c5c00", "#1d4ed8", "#365314", "#44403c"],
-  },
-  {
-    key: "pop",
-    title: "POP",
-    subtitle: "親しみあるデザイン",
-    swatches: ["#003049", "#9d0208", "#ca6702", "#3a5a40", "#582f0e", "#4a4a4a"],
-  },
-  {
-    key: "chic",
-    title: "CHIC",
-    subtitle: "シックで上品なデザイン",
-    swatches: ["#5f0f40", "#9a031e", "#d17b0f", "#1e1b4b", "#3f6212", "#3f3f46"],
-  },
-];
 
 const THEME_COLORS: Record<
   ThemeColorKey,
@@ -382,7 +357,7 @@ function ZumenPageContent() {
 
   const [sheetScale, setSheetScale] = useState(1);
   const [selectedTheme, setSelectedTheme] = useState<ThemeColorKey>("sunset-red");
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>("classic");
   const [isExporting, setIsExporting] = useState(false);
   const [imageFormat, setImageFormat] = useState<ImageFormat>("png");
   const [exportError, setExportError] = useState<string | null>(null);
@@ -1143,22 +1118,12 @@ function ZumenPageContent() {
     <main className="min-h-screen bg-[#f3f4f6] p-2 md:p-4">
       <div className="mx-auto w-full max-w-[1500px]">
         <div className="mb-3 flex items-center justify-between">
-          {selectedTemplate ? (
-            <button
-              type="button"
-              onClick={() => setSelectedTemplate(null)}
-              className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700"
-            >
-              ← テンプレート選択に戻る
-            </button>
-          ) : (
-            <Link
-              href="/"
-              className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700"
-            >
-              ← 入力画面に戻る
-            </Link>
-          )}
+         <Link
+            href="/"
+            className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700"
+          >
+            ← 入力画面に戻る
+          </Link>
 
           {selectedTemplate && (
             <div className="flex items-center gap-3">
@@ -1301,25 +1266,10 @@ function ZumenPageContent() {
               </div>
           ) : null}
           {!selectedTemplate ? (
-            <div className="grid gap-4 md:grid-cols-3">
-              {TEMPLATE_OPTIONS.map((template) => (
-                <div key={template.key} className="rounded-xl border border-zinc-200 p-4">
-                  <div className="text-xl font-semibold">{template.title}</div>
-                  <div className="mt-1 flex gap-1">
-                    {template.swatches.map((color) => (
-                      <div key={color} className="h-4 w-4 rounded" style={{ backgroundColor: color }} />
-                    ))}
-                  </div>
-                  <div className="mt-2 text-sm text-zinc-700">{template.subtitle}</div>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTemplate(template.key)}
-                    className="mt-3 w-full rounded-md bg-emerald-600 py-2 font-semibold text-white"
-                  >
-                    選択(日本語)
-                  </button>
-                </div>
-              ))}
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-center">
+              <div className="text-sm text-zinc-700">
+                テンプレート選択は終了しました。「図面作成済（保存データ）」から図面を開いてください。
+              </div>
             </div>
           ) : (
             <div ref={previewRef} className="overflow-x-auto overflow-y-visible">
