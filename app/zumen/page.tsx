@@ -1321,44 +1321,49 @@ function ZumenPageContent() {
         )}
 
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4">
-           {isSavedDraftsView && savedDrafts.length > 0 ? (
-            <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 p-3">
-              <div className="mb-2 text-sm font-semibold text-sky-900">図面作成済（保存データ）</div>
-              <ol className="space-y-2">
-                {savedDrafts.map((draft, index) => (
-                  <li key={draft.id}>
-                    <div className="flex items-stretch gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleSelectDraft(draft)}
-                        className={`flex flex-1 items-start gap-2 rounded-md border px-3 py-2 text-left text-sm transition ${
-                          selectedDraftId === draft.id
-                            ? "border-sky-300 bg-sky-100 text-sky-900"
-                            : "border-sky-200 bg-white text-sky-800 hover:bg-sky-100"
-                        }`}
-                        aria-label={`保存データ ${index + 1} を表示`}
-                      >
-                        <span className="min-w-6 font-semibold">{index + 1}.</span>
-                        <span>
-                          <span className="block font-semibold">{draft.payload.draftTitle || draft.payload.name || "(物件名未入力)"}</span>
-                          <span className="text-xs text-zinc-600">{draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}</span>
-                        </span>
-                     </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteDraft(draft.id)}
-                        className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
-                        aria-label={`保存データ ${index + 1} を削除`}
-                      >
-                        削除
-                      </button>
-                    </div>
-                  </li>
-                ))}
-                 </ol>
+           {isSavedDraftsView ? (
+            savedDrafts.length > 0 ? (
+              <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
+                <div className="mb-2 text-sm font-semibold text-sky-900">図面作成済（保存データ）</div>
+                <ol className="space-y-2">
+                  {savedDrafts.map((draft, index) => (
+                    <li key={draft.id}>
+                      <div className="flex items-stretch gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectDraft(draft)}
+                          className={`flex flex-1 items-start gap-2 rounded-md border px-3 py-2 text-left text-sm transition ${
+                            selectedDraftId === draft.id
+                              ? "border-sky-300 bg-sky-100 text-sky-900"
+                              : "border-sky-200 bg-white text-sky-800 hover:bg-sky-100"
+                          }`}
+                          aria-label={`保存データ ${index + 1} を表示`}
+                        >
+                          <span className="min-w-6 font-semibold">{index + 1}.</span>
+                          <span>
+                            <span className="block font-semibold">{draft.payload.draftTitle || draft.payload.name || "(物件名未入力)"}</span>
+                            <span className="text-xs text-zinc-600">{draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}</span>
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDraft(draft.id)}
+                          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                          aria-label={`保存データ ${index + 1} を削除`}
+                        >
+                          削除
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
               </div>
-          ) : null}
-          {!isSavedDraftsView && !selectedTemplate ? (
+          ) : (
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">
+                保存済みの図面データはありません。
+              </div>
+            )
+          ) : !selectedTemplate ? (
             <div className="grid gap-4 md:grid-cols-3">
               {TEMPLATE_OPTIONS.map((template) => (
                 <div key={template.key} className="rounded-xl border border-zinc-200 p-4">
@@ -1378,10 +1383,6 @@ function ZumenPageContent() {
                   </button>
                 </div>
               ))}
-            </div>
-            ) : isSavedDraftsView && savedDrafts.length === 0 ? (
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">
-              保存済みの図面データはありません。
             </div>
           ) : (
             <div ref={previewRef} className="overflow-x-auto overflow-y-visible">
