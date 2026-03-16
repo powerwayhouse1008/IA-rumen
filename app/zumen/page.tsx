@@ -11,7 +11,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { InfoTable, SectionTitle } from "../../components/JpInfoTable";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
@@ -373,6 +373,7 @@ function AutoFitText({
 
 function ZumenPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const shouldExportPdf = searchParams.get("export") === "pdf";
   const viewMode = searchParams.get("view") === "saved" ? "saved" : "preview";
   const isSavedDraftsView = viewMode === "saved";
@@ -490,6 +491,10 @@ function ZumenPageContent() {
   const handleSelectDraft = (draft: StoredDraft) => {
     setSelectedDraftId(draft.id);
     setData(draft.payload);
+    
+    if (isSavedDraftsView) {
+      router.push(`/?draftId=${encodeURIComponent(draft.id)}`);
+    }
   };
   const summaryRows = useMemo(() => {
     if (!data) return [];
