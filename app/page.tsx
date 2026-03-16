@@ -21,6 +21,7 @@ type ZumenData = {
   imgSub3?: string;
   imgQr?: string;
   imgMap?: string;
+  draftTitle?: string;
   themeColor?: ThemeColorKey;
   contactInfo?: {
     companyName: string;
@@ -447,6 +448,7 @@ export default function Page() {
   const [districts, setDistricts] = useState(initialDraft?.districts ?? initialCategoryPreset.districts);
   const [savedAt, setSavedAt] = useState<string>(initialDraft?.draftSavedAt ?? "");
   const [activeDraftId, setActiveDraftId] = useState<string | undefined>(initialDraft?.draftId);
+  const [draftTitle, setDraftTitle] = useState(initialDraft?.draftTitle ?? "");
   const [saveMessage, setSaveMessage] = useState("");
   const [saveMessageTone, setSaveMessageTone] = useState<"success" | "warning">("success");
   const [qrSyncMessage, setQrSyncMessage] = useState("");
@@ -662,6 +664,7 @@ export default function Page() {
       publishDate,
       expireDate,
       adminQr: adminQrForm,
+      draftTitle,
     };
     
     if (generatedMap) {
@@ -688,6 +691,7 @@ export default function Page() {
       publishDate,
       expireDate,
       adminQr: adminQrForm,
+      draftTitle,
     };
     savePayloadToStorage(payload);
    }
@@ -701,8 +705,18 @@ export default function Page() {
   }
   async function onSaveDraft() {
     const payload = (await buildPayload()) as DraftPayload;
+    const defaultDraftTitle = draftTitle.trim() || payload.name || "無題の保存データ";
+    const inputDraftTitle = window.prompt("保存名を入力してください", defaultDraftTitle);
+    if (inputDraftTitle === null) return;
+    const normalizedDraftTitle = inputDraftTitle.trim() || defaultDraftTitle;
+    setDraftTitle(normalizedDraftTitle);
     const draftSavedAt = new Date().toLocaleString("ja-JP");
-    const draftPayload = { ...payload, draftSavedAt, draftId: activeDraftId };
+   const draftPayload = {
+      ...payload,
+      draftTitle: normalizedDraftTitle,
+      draftSavedAt,
+      draftId: activeDraftId,
+    };
    const result = savePayloadToStorage(draftPayload);
     const collectionResult = saveDraftToCollection(draftPayload, activeDraftId);
     if (collectionResult.draftId) {
