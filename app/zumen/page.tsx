@@ -493,6 +493,7 @@ function ZumenPageContent() {
     setData(draft.payload);
     
     if (isSavedDraftsView) {
+      localStorage.setItem("zumenData", JSON.stringify(draft.payload));
       router.push(`/?draftId=${encodeURIComponent(draft.id)}`);
     }
   };
