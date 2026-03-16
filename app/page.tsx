@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type ZumenData = {
@@ -427,6 +427,35 @@ function saveDraftToCollection(payload: DraftPayload, draftId?: string): { local
 
   return { localSaved, draftId: id };
 }
+async function loadDraftFromSupabase(draftId: string): Promise<StoredDraft | null> {
+  try {
+    const res = await fetch(`/api/zumen-drafts?draftId=${encodeURIComponent(draftId)}`);
+    if (!res.ok) return null;
+    const json = (await res.json()) as { drafts?: StoredDraft[] };
+    const draft = json.drafts?.[0] ?? null;
+    if (!draft) return null;
+
+    const currentDrafts = loadStoredDrafts();
+    const mergedDrafts = [draft, ...currentDrafts.filter((item) => item.id !== draft.id)];
+    localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(mergedDrafts));
+    return draft;
+  } catch {
+    return null;
+  }
+}
+
+async function syncDraftToSupabase(draft: StoredDraft): Promise<boolean> {
+  try {
+    const res = await fetch("/api/zumen-drafts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(draft),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
 
 export default function Page() {
   const router = useRouter();
@@ -476,6 +505,51 @@ export default function Page() {
     managerName: initialDraft?.adminQr?.managerName ?? initialDraft?.contactInfo?.staffName ?? "",
     managerEmail: initialDraft?.adminQr?.managerEmail ?? initialDraft?.contactInfo?.companyEmail ?? "",
   });
+useEffect(() => {
+    const draftIdParam = new URLSearchParams(window.location.search).get("draftId")?.trim();
+    if (!draftIdParam || initialDraft?.draftId === draftIdParam) return;
+
+    let isMounted = true;
+    void loadDraftFromSupabase(draftIdParam).then((remoteDraft) => {
+      if (!isMounted || !remoteDraft?.payload) return;
+
+      const payload = remoteDraft.payload as DraftPayload;
+      const category = (payload.category as CategoryKey | undefined) ?? DEFAULT_CATEGORY;
+      const preset = CATEGORY_PRESETS[category];
+
+      setSelectedCategory(category);
+      setPropertyType((payload.propertyType as string | undefined) ?? preset.propertyType);
+      setData({
+        ...preset.data,
+        ...(payload as ZumenData),
+        lifeInformation:
+          (payload.lifeInformation as string | undefined) ??
+          preset.data.lifeInformation ??
+          DEFAULT_LIFE_INFORMATION_TEXT,
+      });
+      setCatchCopy((payload.catchCopy as string | undefined) ?? preset.catchCopy);
+      setDistricts((payload.districts as string | undefined) ?? preset.districts);
+      setSalesTags((payload.salesTags as string[] | undefined) ?? []);
+      setFeatureTags((payload.featureTags as string[] | undefined) ?? []);
+      setContactInfo((payload.contactInfo as typeof DEFAULT_CONTACT_INFO | undefined) ?? DEFAULT_CONTACT_INFO);
+      setThemeColor((payload.themeColor as ThemeColorKey | undefined) ?? "sunset-red");
+      setManagerNo((payload.managerNo as string | undefined) ?? DEFAULT_MANAGER_NO);
+      setPublishDate((payload.publishDate as string | undefined) ?? DEFAULT_PUBLISH_DATE);
+      setExpireDate((payload.expireDate as string | undefined) ?? DEFAULT_EXPIRE_DATE);
+      setDraftTitle((payload.draftTitle as string | undefined) ?? "");
+      setSavedAt((payload.draftSavedAt as string | undefined) ?? remoteDraft.savedAt ?? "");
+      setActiveDraftId(remoteDraft.id);
+      setHouseDetails({ ...(payload.houseDetails as typeof INITIAL_HOUSE_DETAILS | undefined ?? INITIAL_HOUSE_DETAILS) });
+      setMansionDetails({ ...(payload.mansionDetails as typeof INITIAL_MANSION_DETAILS | undefined ?? INITIAL_MANSION_DETAILS) });
+      setRentalDetails({ ...(payload.rentalDetails as typeof INITIAL_RENTAL_DETAILS | undefined ?? INITIAL_RENTAL_DETAILS) });
+      setAdminQrForm({ ...(payload.adminQr as AdminQrForm | undefined ?? DEFAULT_ADMIN_QR_FORM) });
+      savePayloadToStorage(payload);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialDraft?.draftId]);
 
   const normalizedPropertyType = propertyType.trim();
   const isMansionCategory = normalizedPropertyType.includes("マンション") || selectedCategory === "new-mansion" || selectedCategory === "used-mansion";
@@ -722,13 +796,18 @@ export default function Page() {
     if (collectionResult.draftId) {
       setActiveDraftId(collectionResult.draftId);
     }
+     const supabaseSaved = await syncDraftToSupabase({
+      id: collectionResult.draftId,
+      savedAt: draftSavedAt,
+      payload: { ...draftPayload, draftId: collectionResult.draftId },
+    });
     setSavedAt(draftSavedAt);
-    if (result.localSaved && collectionResult.localSaved) {
+    if (result.localSaved && collectionResult.localSaved && supabaseSaved) {
       setSaveMessageTone("success");
-      setSaveMessage("すべての入力内容を保存しました。");
+      setSaveMessage("すべての入力内容を保存しました（Supabase同期済み）。");
     } else {
       setSaveMessageTone("warning");
-      setSaveMessage("ブラウザ容量の上限に達したため、タブを閉じると下書きが消える可能性があります。");
+      setSaveMessage("ローカル保存またはSupabase同期の一部に失敗しました。ブラウザ容量上限の場合は下書きが消える可能性があります。");
     }
     setTimeout(() => {
       setSaveMessage("");
