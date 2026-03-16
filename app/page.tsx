@@ -740,11 +740,7 @@ export default function Page() {
     savePayloadToStorage(payload);
     router.push("/zumen");
   }
-　  async function onGeneratePdf() {
-    const payload = (await buildPayload()) as DraftPayload;
-    savePayloadToStorage(payload);
-    router.push("/zumen?export=pdf");
-  }
+　 
 
   function onSelectCategory(category: CategoryKey) {
     const preset = CATEGORY_PRESETS[category];
