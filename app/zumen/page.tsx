@@ -378,6 +378,7 @@ function ZumenPageContent() {
   const isSavedDraftsView = viewMode === "saved";
   const [data, setData] = useState<ZumenData | null>(null);
   const [savedDrafts, setSavedDrafts] = useState<StoredDraft[]>([]);
+  const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
 
@@ -428,6 +429,13 @@ function ZumenPageContent() {
       };
       void loadDrafts();
   }, []);
+    useEffect(() => {
+    if (!isSavedDraftsView || savedDrafts.length === 0 || selectedDraftId) return;
+
+    const firstDraft = savedDrafts[0];
+    setSelectedDraftId(firstDraft.id);
+    setData(firstDraft.payload);
+  }, [isSavedDraftsView, savedDrafts, selectedDraftId]);
 
   useEffect(() => {
     if (!data?.themeColor) return;
@@ -465,11 +473,23 @@ function ZumenPageContent() {
     setSavedDrafts((prevDrafts) => {
       const nextDrafts = prevDrafts.filter((draft) => draft.id !== draftId);
       localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(nextDrafts));
+      
+      if (selectedDraftId === draftId) {
+        const nextSelected = nextDrafts[0] ?? null;
+        setSelectedDraftId(nextSelected?.id ?? null);
+        setData(nextSelected?.payload ?? null);
+      }
+
       return nextDrafts;
     });
     void fetch(`/api/zumen-drafts?draftId=${encodeURIComponent(draftId)}`, {
       method: "DELETE",
     });
+  };
+  
+  const handleSelectDraft = (draft: StoredDraft) => {
+    setSelectedDraftId(draft.id);
+    setData(draft.payload);
   };
   const summaryRows = useMemo(() => {
     if (!data) return [];
@@ -1302,16 +1322,22 @@ function ZumenPageContent() {
                 {savedDrafts.map((draft, index) => (
                   <li key={draft.id}>
                     <div className="flex items-stretch gap-2">
-                      <Link
-                        href={`/?draftId=${encodeURIComponent(draft.id)}`}
-                        className="flex flex-1 items-start gap-2 rounded-md border border-sky-200 bg-white px-3 py-2 text-sm text-sky-800 hover:bg-sky-100"
+                      <button
+                        type="button"
+                        onClick={() => handleSelectDraft(draft)}
+                        className={`flex flex-1 items-start gap-2 rounded-md border px-3 py-2 text-left text-sm transition ${
+                          selectedDraftId === draft.id
+                            ? "border-sky-300 bg-sky-100 text-sky-900"
+                            : "border-sky-200 bg-white text-sky-800 hover:bg-sky-100"
+                        }`}
+                        aria-label={`保存データ ${index + 1} を表示`}
                       >
                         <span className="min-w-6 font-semibold">{index + 1}.</span>
                         <span>
                           <span className="block font-semibold">{draft.payload.draftTitle || draft.payload.name || "(物件名未入力)"}</span>
                           <span className="text-xs text-zinc-600">{draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}</span>
                         </span>
-                      </Link>
+                     </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteDraft(draft.id)}
