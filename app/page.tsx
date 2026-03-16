@@ -777,10 +777,29 @@ useEffect(() => {
     });
     router.push(`/address-map?${query.toString()}`);
   }
+   async function onTemporarySave() {
+    const payload = (await buildPayload()) as DraftPayload;
+    const result = savePayloadToStorage(payload);
+    const temporarySavedAt = new Date().toLocaleString("ja-JP");
+    setSavedAt(temporarySavedAt);
+
+    if (result.localSaved) {
+      setSaveMessageTone("success");
+      setSaveMessage("一時保存しました（この端末の一時メモリのみ）。");
+    } else {
+      setSaveMessageTone("warning");
+      setSaveMessage("一時保存に失敗しました。ブラウザ容量をご確認ください。");
+    }
+
+    setTimeout(() => {
+      setSaveMessage("");
+    }, 3200);
+  }
+
   async function onSaveDraft() {
     const payload = (await buildPayload()) as DraftPayload;
     const defaultDraftTitle = draftTitle.trim() || payload.name || "無題の保存データ";
-    const inputDraftTitle = window.prompt("保存名を入力してください", defaultDraftTitle);
+   const inputDraftTitle = window.prompt("保存名を入力してください（図面作成済に保存されます）", defaultDraftTitle);
     if (inputDraftTitle === null) return;
     const normalizedDraftTitle = inputDraftTitle.trim() || defaultDraftTitle;
     setDraftTitle(normalizedDraftTitle);
@@ -804,10 +823,10 @@ useEffect(() => {
     setSavedAt(draftSavedAt);
     if (result.localSaved && collectionResult.localSaved && supabaseSaved) {
       setSaveMessageTone("success");
-      setSaveMessage("すべての入力内容を保存しました（Supabase同期済み）。");
+     setSaveMessage("名前付き保存が完了しました（図面作成済（保存データ）に反映・Supabase同期済み）。");
     } else {
       setSaveMessageTone("warning");
-      setSaveMessage("ローカル保存またはSupabase同期の一部に失敗しました。ブラウザ容量上限の場合は下書きが消える可能性があります。");
+      setSaveMessage("名前付き保存は実行しましたが、ローカル保存またはSupabase同期の一部に失敗しました。");
     }
     setTimeout(() => {
       setSaveMessage("");
@@ -870,7 +889,8 @@ useEffect(() => {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={onSaveDraft} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">一時保存</button>
+               <button type="button" onClick={onTemporarySave} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">一時保存（メモリのみ）</button>
+              <button type="button" onClick={onSaveDraft} className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white">名前を付けて保存</button>
               <button type="button" onClick={onGenerate} disabled={!canGo} className="rounded-md bg-rose-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">次のステップ</button>
             </div>
           </div>
@@ -1237,7 +1257,8 @@ useEffect(() => {
                  {saveMessage ? <div className={`mt-1 text-xs font-semibold ${saveMessageTone === "success" ? "text-emerald-700" : "text-amber-700"}`} role="status" aria-live="polite">{saveMessage}</div> : null}
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={onSaveDraft} className="rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white">一時保存</button>
+                 <button type="button" onClick={onTemporarySave} className="rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white">一時保存（メモリのみ）</button>
+                <button type="button" onClick={onSaveDraft} className="rounded-md bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white">名前を付けて保存</button>
                 <button type="button" onClick={onGenerate} disabled={!canGo} className="rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">図面を生成してプレビュー</button>
               </div>
             </div>
