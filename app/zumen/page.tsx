@@ -1278,14 +1278,16 @@ function ZumenPageContent() {
                         <span className="text-xs text-zinc-600">{draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}</span>
                       </span>
                     </Link>
-                  </ol>
+                  </li>
                 ))}
+                 </ol>
               </div>
-            </div>
           ) : null}
           {!selectedTemplate ? (
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="text-xl font-semibold">{template.title}</div>
+              {TEMPLATE_OPTIONS.map((template) => (
+                <div key={template.key} className="rounded-xl border border-zinc-200 p-4">
+                  <div className="text-xl font-semibold">{template.title}</div>
                   <div className="mt-1 flex gap-1">
                     {template.swatches.map((color) => (
                       <div key={color} className="h-4 w-4 rounded" style={{ backgroundColor: color }} />
