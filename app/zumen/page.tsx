@@ -1316,7 +1316,7 @@ function ZumenPageContent() {
                     onClick={() => setSelectedTemplate(template.key)}
                     className="mt-3 w-full rounded-md bg-emerald-600 py-2 font-semibold text-white"
                   >
-                    選択(日本語)
+                    選択
                   </button>
                 </div>
               ))}
