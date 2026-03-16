@@ -445,6 +445,13 @@ function ZumenPageContent() {
   const isLand = propertyType === "土地" || category === "land";
   const isRental = propertyType.includes("賃貸") || category === "rental";
   
+  const handleDeleteDraft = (draftId: string) => {
+    setSavedDrafts((prevDrafts) => {
+      const nextDrafts = prevDrafts.filter((draft) => draft.id !== draftId);
+      localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(nextDrafts));
+      return nextDrafts;
+    });
+  };
   const summaryRows = useMemo(() => {
     if (!data) return [];
 
@@ -1268,16 +1275,26 @@ function ZumenPageContent() {
               <ol className="space-y-2">
                 {savedDrafts.map((draft, index) => (
                   <li key={draft.id}>
-                    <Link
-                      href={`/?draftId=${encodeURIComponent(draft.id)}`}
-                      className="flex items-start gap-2 rounded-md border border-sky-200 bg-white px-3 py-2 text-sm text-sky-800 hover:bg-sky-100"
-                    >
-                      <span className="min-w-6 font-semibold">{index + 1}.</span>
-                      <span>
-                        <span className="block font-semibold">{draft.payload.draftTitle || draft.payload.name || "(物件名未入力)"}</span>
-                        <span className="text-xs text-zinc-600">{draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}</span>
-                      </span>
-                    </Link>
+                    <div className="flex items-stretch gap-2">
+                      <Link
+                        href={`/?draftId=${encodeURIComponent(draft.id)}`}
+                        className="flex flex-1 items-start gap-2 rounded-md border border-sky-200 bg-white px-3 py-2 text-sm text-sky-800 hover:bg-sky-100"
+                      >
+                        <span className="min-w-6 font-semibold">{index + 1}.</span>
+                        <span>
+                          <span className="block font-semibold">{draft.payload.draftTitle || draft.payload.name || "(物件名未入力)"}</span>
+                          <span className="text-xs text-zinc-600">{draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}</span>
+                        </span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteDraft(draft.id)}
+                        className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                        aria-label={`保存データ ${index + 1} を削除`}
+                      >
+                        削除
+                      </button>
+                    </div>
                   </li>
                 ))}
                  </ol>
