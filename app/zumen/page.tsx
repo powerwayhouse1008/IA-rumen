@@ -374,7 +374,8 @@ function AutoFitText({
 function ZumenPageContent() {
   const searchParams = useSearchParams();
   const shouldExportPdf = searchParams.get("export") === "pdf";
-
+  const viewMode = searchParams.get("view") === "saved" ? "saved" : "preview";
+  const isSavedDraftsView = viewMode === "saved";
   const [data, setData] = useState<ZumenData | null>(null);
   const [savedDrafts, setSavedDrafts] = useState<StoredDraft[]>([]);
   const previewRef = useRef<HTMLDivElement | null>(null);
@@ -1269,7 +1270,7 @@ function ZumenPageContent() {
         )}
 
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4">
-          {!selectedTemplate && savedDrafts.length > 0 ? (
+          {!selectedTemplate && isSavedDraftsView && savedDrafts.length > 0 ? (
             <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 p-3">
               <div className="mb-2 text-sm font-semibold text-sky-900">図面作成済（保存データ）</div>
               <ol className="space-y-2">
@@ -1300,7 +1301,7 @@ function ZumenPageContent() {
                  </ol>
               </div>
           ) : null}
-          {!selectedTemplate ? (
+          {!selectedTemplate && !isSavedDraftsView ? (
             <div className="grid gap-4 md:grid-cols-3">
               {TEMPLATE_OPTIONS.map((template) => (
                 <div key={template.key} className="rounded-xl border border-zinc-200 p-4">
@@ -1320,6 +1321,10 @@ function ZumenPageContent() {
                   </button>
                 </div>
               ))}
+            </div>
+            ) : !selectedTemplate && isSavedDraftsView && savedDrafts.length === 0 ? (
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">
+              保存済みの図面データはありません。
             </div>
           ) : (
             <div ref={previewRef} className="overflow-x-auto overflow-y-visible">
