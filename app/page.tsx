@@ -1160,7 +1160,7 @@ export default function Page() {
               <div className="flex gap-2">
                 <button type="button" onClick={onSaveDraft} className="rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white">一時保存</button>
                 <button type="button" onClick={onGenerate} disabled={!canGo} className="rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">図面を生成してプレビュー</button>
-                <button type="button" onClick={onGeneratePdf} disabled={!canGo} className="rounded-md bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">PDFを出力</button>
+                 <button type="button" onClick={onGenerate} disabled={!canGo} className="rounded-md bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">PDFを出力</button>
               </div>
             </div>
           </div>
