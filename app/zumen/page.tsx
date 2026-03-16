@@ -166,6 +166,7 @@ type ZumenData = {
   imgSub3?: string;
   imgQr?: string;
   imgMap?: string;
+  draftTitle?: string;
   themeColor?: ThemeColorKey;
   contactInfo?: {
     companyName: string;
@@ -1264,44 +1265,27 @@ function ZumenPageContent() {
           {!selectedTemplate && savedDrafts.length > 0 ? (
             <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 p-3">
               <div className="mb-2 text-sm font-semibold text-sky-900">図面作成済（保存データ）</div>
-              <div className="grid gap-2 md:grid-cols-2">
-                {savedDrafts.slice(0, 8).map((draft) => (
-                  <Link
-                    key={draft.id}
-                    href={`/?draftId=${encodeURIComponent(draft.id)}`}
-                    className="rounded-md border border-sky-200 bg-white px-3 py-2 text-sm text-sky-800 hover:bg-sky-100"
-                  >
-                    <div className="font-semibold">{draft.payload.name || "(物件名未入力)"}</div>
-                    <div className="text-xs text-zinc-600">{draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}</div>
-                  </Link>
+              <ol className="space-y-2">
+                {savedDrafts.map((draft, index) => (
+                  <li key={draft.id}>
+                    <Link
+                      href={`/?draftId=${encodeURIComponent(draft.id)}`}
+                      className="flex items-start gap-2 rounded-md border border-sky-200 bg-white px-3 py-2 text-sm text-sky-800 hover:bg-sky-100"
+                    >
+                      <span className="min-w-6 font-semibold">{index + 1}.</span>
+                      <span>
+                        <span className="block font-semibold">{draft.payload.draftTitle || draft.payload.name || "(物件名未入力)"}</span>
+                        <span className="text-xs text-zinc-600">{draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}</span>
+                      </span>
+                    </Link>
+                  </ol>
                 ))}
               </div>
             </div>
           ) : null}
           {!selectedTemplate ? (
             <div className="grid gap-4 md:grid-cols-3">
-              {TEMPLATE_OPTIONS.map((template) => (
-                <div key={template.key} className="rounded-xl border border-zinc-200 p-3">
-                  <div className="h-36 border border-zinc-400 bg-zinc-100 p-2">
-                    <div
-                      className={`grid h-full w-full gap-1 border p-1 ${
-                        template.key === "classic"
-                          ? "bg-[#f6f0e6]"
-                          : template.key === "pop"
-                          ? "bg-[#f1f5f9]"
-                          : "bg-[#faf7f5]"
-                      }`}
-                    >
-                      <div className="h-7 border bg-white/70" />
-                      <div className="grid grid-cols-3 gap-1">
-                        <ImgBox src={data.imgMain} label="メイン" h={72} />
-                        <ImgBox src={data.imgPlan} label="間取り" fit="contain" h={72} />
-                        <ImgBox src={data.imgSub1} label="サブ" h={72} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 text-xl font-semibold">{template.title}</div>
+              <div className="text-xl font-semibold">{template.title}</div>
                   <div className="mt-1 flex gap-1">
                     {template.swatches.map((color) => (
                       <div key={color} className="h-4 w-4 rounded" style={{ backgroundColor: color }} />
