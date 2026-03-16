@@ -764,7 +764,7 @@ export default function Page() {
    
   ];
 　　function goToSavedZumen() {
-    router.push("/view=saved");
+    router.push("/zumen?view=saved");
   }
 
   return (
