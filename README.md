@@ -64,3 +64,17 @@ Expected table columns:
 - `form_url` (text)
 - `qr_url` (text)
 - `created_at` (timestamptz, default now())
+
+- ## Supabase sync for 図面作成済（保存データ）
+
+To store saved drafts in Supabase (instead of only browser localStorage), set:
+
+- `SUPABASE_URL` (or `NEXT_PUBLIC_SUPABASE_URL`)
+- `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_ANON_KEY` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+- optional `SUPABASE_ZUMEN_DRAFTS_TABLE` (default: `zumen_drafts`)
+
+Expected table columns:
+
+- `id` (text, primary key)
+- `saved_at` (timestamptz)
+- `payload` (jsonb)
