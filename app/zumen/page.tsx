@@ -786,8 +786,7 @@ function ZumenPageContent() {
       .split(/\r?\n/)
       .map((row) => row.trim())
       .filter(Boolean)
-      .slice(0, 6)
-      .map((row) => (row.startsWith("□") ? row : `□${row}`));
+      .slice(0, 6);
   }, [data?.lifeInformation]);
 
   const lifeInfoRows =
@@ -795,6 +794,21 @@ function ZumenPageContent() {
 
   const popLifeInfoRows =
     inputLifeInfoRows.length > 0 ? inputLifeInfoRows : DEFAULT_LIFE_INFORMATION_ROWS;
+const formatCheckboxLifeInfoRow = useCallback((row: string) => {
+    return row.startsWith("□") ? row : `□${row.replace(/^[・･•●]\s*/, "")}`;
+  }, []);
+
+  const formatChicLifeInfoRow = useCallback((row: string) => {
+    if (row.startsWith("□")) {
+      return row.replace(/^□\s*/, "・");
+    }
+
+    if (/^[・･•●]/.test(row)) {
+      return `・${row.replace(/^[・･•●]\s*/, "")}`;
+    }
+
+    return `・${row}`;
+  }, []);
 
   const defaultContact = {
     companyName: "株式会社パワーウェイ",
@@ -1446,7 +1460,7 @@ function ZumenPageContent() {
                             </div>
                             <div className="mt-1 text-xs leading-5">
                               {lifeInfoRows.slice(0, 6).map((row) => (
-                                <div key={row}>{row}</div>
+                                <div key={row}>{formatCheckboxLifeInfoRow(row)}</div>
                               ))}
                             </div>
                           </div>
@@ -1692,7 +1706,7 @@ function ZumenPageContent() {
 
                             <div className="mt-2 text-[12px] leading-5 [overflow-wrap:anywhere]">
                               {popLifeInfoRows.slice(0, 6).map((row) => (
-                                <div key={row}>{row}</div>
+                                <div key={row}>{formatCheckboxLifeInfoRow(row)}</div>
                               ))}
                             </div>
                           </div>
@@ -1888,7 +1902,7 @@ function ZumenPageContent() {
                             </div>
                             <div className="mt-3 text-[10px] leading-5">
                               {lifeInfoRows.slice(0, 6).map((row) => (
-                                <div key={row}>{row.replace(/^□/, "・")}</div>
+                                <div key={row}>{formatChicLifeInfoRow(row)}</div>
                               ))}
                             </div>
                           </div>
