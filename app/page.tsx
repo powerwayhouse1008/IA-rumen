@@ -418,11 +418,25 @@ function saveDraftToCollection(payload: DraftPayload, draftId?: string): { local
   const filtered = currentDrafts.filter((item) => item.id !== id);
   const nextDrafts: StoredDraft[] = [{ id, savedAt, payload: nextPayload }, ...filtered];
 
-  let localSaved = true;
-  try {
-    localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(nextDrafts));
-  } catch {
-    localSaved = false;
+  let localSaved = false;
+  let draftsToPersist = [...nextDrafts];
+
+  while (draftsToPersist.length > 0) {
+    try {
+      localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(draftsToPersist));
+      localSaved = true;
+      break;
+    } catch {
+      draftsToPersist = draftsToPersist.slice(0, -1);
+    }
+  }
+
+  if (!localSaved) {
+    try {
+      localStorage.removeItem(ZUMEN_DRAFTS_STORAGE_KEY);
+    } catch {
+      // no-op
+    }
   }
 
   return { localSaved, draftId: id };
