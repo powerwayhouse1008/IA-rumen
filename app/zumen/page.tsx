@@ -394,42 +394,58 @@ function ZumenPageContent() {
   const [debugCanvasInfo, setDebugCanvasInfo] = useState<string>("");
   const [showDebugPreview, setShowDebugPreview] = useState(false);
 
-  useEffect(() => {
-    const loadDrafts = async () => {
-      try {
-        const rawDrafts = localStorage.getItem(ZUMEN_DRAFTS_STORAGE_KEY);
-        const parsedDrafts = rawDrafts ? (JSON.parse(rawDrafts) as StoredDraft[]) : [];
-        const localDrafts = Array.isArray(parsedDrafts) ? parsedDrafts : [];
+ const loadDrafts = useCallback(async () => {
+    try {
+      const rawDrafts = localStorage.getItem(ZUMEN_DRAFTS_STORAGE_KEY);
+      const parsedDrafts = rawDrafts ? (JSON.parse(rawDrafts) as StoredDraft[]) : [];
+      const localDrafts = Array.isArray(parsedDrafts) ? parsedDrafts : [];
 
-        const supabaseRes = await fetch("/api/zumen-drafts", { cache: "no-store" });
-        if (supabaseRes.ok) {
-          const json = (await supabaseRes.json()) as { drafts?: StoredDraft[] };
-          const remoteDrafts = Array.isArray(json.drafts) ? json.drafts : [];
-          const merged = [...remoteDrafts, ...localDrafts.filter((draft) => !remoteDrafts.some((r) => r.id === draft.id))];
-          setSavedDrafts(merged);
-          localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(merged));
-        } else {
-          setSavedDrafts(localDrafts);
-        }
-
-        const runtimePayload = (
-          window as Window & { __zumenPayload?: ZumenData }
-        ).__zumenPayload;
-
-        if (runtimePayload) {
-          setData(runtimePayload);
-          return;
-        }
-
-        const saved = localStorage.getItem("zumenData");
-        setData(saved ? (JSON.parse(saved) as ZumenData) : null);
-      } catch {
-        setSavedDrafts([]);
-        setData(null);
+      const supabaseRes = await fetch("/api/zumen-drafts", { cache: "no-store" });
+      if (supabaseRes.ok) {
+        const json = (await supabaseRes.json()) as { drafts?: StoredDraft[] };
+        const remoteDrafts = Array.isArray(json.drafts) ? json.drafts : [];
+        const merged = [
+          ...remoteDrafts,
+          ...localDrafts.filter((draft) => !remoteDrafts.some((r) => r.id === draft.id)),
+        ];
+        setSavedDrafts(merged);
+        localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(merged));
+      } else {
+        setSavedDrafts(localDrafts);
       }
-      };
-      void loadDrafts();
+
+        const runtimePayload = (window as Window & { __zumenPayload?: ZumenData }).__zumenPayload;
+
+         if (runtimePayload) {
+        setData(runtimePayload);
+        return;
+      }
+     
+      const saved = localStorage.getItem("zumenData");
+      setData(saved ? (JSON.parse(saved) as ZumenData) : null);
+    } catch {
+      setSavedDrafts([]);
+      setData(null);
+    }
   }, []);
+  useEffect(() => {
+    void loadDrafts();
+  }, [loadDrafts]);
+
+  useEffect(() => {
+    if (!isSavedDraftsView) return;
+
+    const reloadDrafts = () => {
+      void loadDrafts();
+    };
+
+    window.addEventListener("focus", reloadDrafts);
+    document.addEventListener("visibilitychange", reloadDrafts);
+    return () => {
+      window.removeEventListener("focus", reloadDrafts);
+      document.removeEventListener("visibilitychange", reloadDrafts);
+    };
+  }, [isSavedDraftsView, loadDrafts]);
     useEffect(() => {
     if (!isSavedDraftsView || savedDrafts.length === 0 || selectedDraftId) return;
 
