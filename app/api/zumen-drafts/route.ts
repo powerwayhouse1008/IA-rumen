@@ -23,6 +23,14 @@ function getSupabaseConfig() {
 
   return { supabaseUrl, supabaseKey, tableName };
 }
+function normalizeSavedAt(value?: string) {
+  if (!value) return new Date().toISOString();
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date().toISOString();
+  }
+  return parsed.toISOString();
+}
 
 function getHeaders(key: string) {
   return {
@@ -69,7 +77,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Missing id or payload" }, { status: 400 });
   }
 
-  const savedAt = body.savedAt || new Date().toISOString();
+  const savedAt = normalizeSavedAt(body.savedAt);
   const row = {
     id: body.id,
     saved_at: savedAt,
