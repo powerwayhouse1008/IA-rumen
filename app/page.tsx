@@ -803,7 +803,9 @@ useEffect(() => {
     if (inputDraftTitle === null) return;
     const normalizedDraftTitle = inputDraftTitle.trim() || defaultDraftTitle;
     setDraftTitle(normalizedDraftTitle);
-    const draftSavedAt = new Date().toLocaleString("ja-JP");
+    const now = new Date();
+    const draftSavedAt = now.toLocaleString("ja-JP");
+    const draftSavedAtIso = now.toISOString();
    const draftPayload = {
       ...payload,
       draftTitle: normalizedDraftTitle,
@@ -817,7 +819,7 @@ useEffect(() => {
     }
      const supabaseSaved = await syncDraftToSupabase({
       id: collectionResult.draftId,
-      savedAt: draftSavedAt,
+      savedAt: draftSavedAtIso,
       payload: { ...draftPayload, draftId: collectionResult.draftId },
     });
     setSavedAt(draftSavedAt);
