@@ -501,20 +501,33 @@ async function loadDraftFromSupabase(draftId: string): Promise<StoredDraft | nul
   }
 }
 
-type SupabaseSyncStatus = "success" | "skipped" | "failed";
+type SupabaseSyncStatus = "success" | "success_stripped" | "skipped" | "failed";
 
 async function syncDraftToSupabase(draft: StoredDraft): Promise<SupabaseSyncStatus> {
   try {
-    const res = await fetch("/api/zumen-drafts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(draft),
-    });
+    const syncPayload = async (payload: StoredDraft) =>
+      fetch("/api/zumen-drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    const res = await syncPayload(draft);
     if (res.ok) return "success";
     const json = (await res.json().catch(() => null)) as { error?: string } | null;
     if (json?.error?.includes("Supabase environment variables are not configured")) {
       return "skipped";
     }
+    
+    const fallback = createStorageSafePayload(draft.payload as DraftPayload);
+    if (fallback.strippedImages) {
+      const fallbackRes = await syncPayload({ ...draft, payload: fallback.payload });
+      if (fallbackRes.ok) return "success_stripped";
+      const fallbackJson = (await fallbackRes.json().catch(() => null)) as { error?: string } | null;
+      if (fallbackJson?.error?.includes("Supabase environment variables are not configured")) {
+        return "skipped";
+      }
+    }
+
     return "failed";
   } catch {
     return "failed";
@@ -890,7 +903,8 @@ useEffect(() => {
       savedAt: draftSavedAtIso,
       payload: { ...draftPayload, draftId: collectionResult.draftId },
     });
-    const supabaseSaved = supabaseSyncStatus === "success";
+    const supabaseSaved = supabaseSyncStatus === "success" || supabaseSyncStatus === "success_stripped";
+    const supabaseStrippedImages = supabaseSyncStatus === "success_stripped";
     setSavedAt(draftSavedAt);
     const hasDraftListSaved = collectionResult.localSaved || supabaseSaved;
     if (hasDraftListSaved) {
@@ -900,8 +914,8 @@ useEffect(() => {
     if (collectionResult.localSaved && supabaseSaved) {
         if (result.localSaved) {
          setSaveMessage(
-            result.strippedImages || collectionResult.strippedImages
-              ? "名前付き保存が完了しました（反映・Supabase同期済み。端末保存は容量制限により一部画像を除外しました）。"
+            result.strippedImages || collectionResult.strippedImages || supabaseStrippedImages
+              ? "名前付き保存が完了しました（反映・Supabase同期済み。容量制限により一部画像データを除外しました）。"
               : "名前付き保存が完了しました（図面作成済（保存データ）に反映・Supabase同期済み）。"
           );
         } else {
