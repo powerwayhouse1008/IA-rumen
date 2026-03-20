@@ -509,7 +509,11 @@ function ZumenPageContent() {
     setData(draft.payload);
     
     if (isSavedDraftsView) {
-      localStorage.setItem("zumenData", JSON.stringify(draft.payload));
+      try {
+          localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(merged));
+        } catch {
+          // localStorage quota exceededでもSupabaseの一覧表示は継続する
+        }
       router.push(`/?draftId=${encodeURIComponent(draft.id)}`);
     }
   };
