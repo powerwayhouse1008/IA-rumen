@@ -552,6 +552,27 @@ async function loadDraftFromSupabase(draftId: string): Promise<StoredDraft | nul
 }
 
 type SupabaseSyncStatus = "success" | "success_stripped" | "skipped" | "failed";
+function extractErrorMessage(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (!value || typeof value !== "object") return "";
+
+  const errorValue = (value as { error?: unknown }).error;
+  if (typeof errorValue === "string") return errorValue;
+  if (errorValue && typeof errorValue === "object") {
+    const nestedMessage = extractErrorMessage(errorValue);
+    if (nestedMessage) return nestedMessage;
+  }
+
+  const messageValue = (value as { message?: unknown }).message;
+  if (typeof messageValue === "string") return messageValue;
+
+  return "";
+}
+
+function isSupabaseConfigMissingError(errorMessage: string): boolean {
+  if (!errorMessage) return false;
+  return /supabase.*(not configured|unconfigured|missing|未設定|環境変数)/i.test(errorMessage);
+}
 
 async function syncDraftToSupabase(draft: StoredDraft): Promise<SupabaseSyncStatus> {
   try {
@@ -563,17 +584,19 @@ async function syncDraftToSupabase(draft: StoredDraft): Promise<SupabaseSyncStat
       });
     const res = await syncPayload(draft);
     if (res.ok) return "success";
-    const json = (await res.json().catch(() => null)) as { error?: string } | null;
-    if (json?.error?.includes("Supabase environment variables are not configured")) {
-      return "skipped";
+   
+    const json = (await res.json().catch(() => null)) as unknown;
+    const primaryError = extractErrorMessage(json);
+    if (isSupabaseConfigMissingError(primaryError)) {
     }
     
     const fallback = createStorageSafePayload(draft.payload as DraftPayload);
     if (fallback.strippedImages) {
       const fallbackRes = await syncPayload({ ...draft, payload: fallback.payload });
       if (fallbackRes.ok) return "success_stripped";
-      const fallbackJson = (await fallbackRes.json().catch(() => null)) as { error?: string } | null;
-      if (fallbackJson?.error?.includes("Supabase environment variables are not configured")) {
+        const fallbackJson = (await fallbackRes.json().catch(() => null)) as unknown;
+      const fallbackError = extractErrorMessage(fallbackJson);
+      if (isSupabaseConfigMissingError(fallbackError)) {
         return "skipped";
       }
     }
