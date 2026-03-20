@@ -10,13 +10,14 @@ const supabaseKey =
   getEnvOrEmpty("SUPABASE_SERVICE_ROLE_KEY") ||
   getEnvOrEmpty("SUPABASE_ANON_KEY") ||
   getEnvOrEmpty("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const draftsTable = getEnvOrEmpty("SUPABASE_ZUMEN_DRAFTS_TABLE") || "zumen_drafts";
 
 type DraftRecord = {
   id: string;
-  draft_title: string | null;
+  draft_title?: string | null;
   payload: Record<string, unknown> | null;
   saved_at: string | null;
-  updated_at: string | null;
+  updated_at?: string | null;
 };
 
 function ensureSupabaseConfig() {
@@ -61,8 +62,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const draftId = searchParams.get("draftId")?.trim();
   const query = draftId
-    ? `zumen_drafts?select=id,draft_title,payload,saved_at,updated_at&id=eq.${encodeURIComponent(draftId)}&limit=1`
-    : "zumen_drafts?select=id,draft_title,payload,saved_at,updated_at&order=updated_at.desc";
+    ? `${draftsTable}?select=id,payload,saved_at&id=eq.${encodeURIComponent(draftId)}&limit=1`
+    : `${draftsTable}?select=id,payload,saved_at&order=saved_at.desc`;
 
   const { data, error } = await supabaseRequest<DraftRecord[]>(query);
 
@@ -76,8 +77,13 @@ export async function GET(req: NextRequest) {
       savedAt: item.updated_at ?? item.saved_at,
       payload: {
         ...(item.payload || {}),
-        draftTitle: item.draft_title,
-        draftSavedAt: item.updated_at ?? item.saved_at,
+        draftTitle:
+          typeof item.payload?.draftTitle === "string"
+            ? item.payload.draftTitle
+            : typeof item.payload?.name === "string"
+              ? item.payload.name
+              : "無題の図面",
+        draftSavedAt: item.saved_at,
         draftId: item.id,
       },
     })) ?? [];
@@ -104,17 +110,16 @@ export async function POST(req: NextRequest) {
 
     const row = {
       id,
-      draft_title: draftTitle,
       payload: {
         ...payload,
         draftId: id,
         draftTitle,
         draftSavedAt: now,
       },
-      updated_at: now,
+      saved_at: now,
     };
 
-    const { error } = await supabaseRequest<unknown>("zumen_drafts?on_conflict=id", {
+    const { error } = await supabaseRequest<unknown>(`${draftsTable}?on_conflict=id`, {
       method: "POST",
       headers: {
         Prefer: "resolution=merge-duplicates,return=minimal",
@@ -150,7 +155,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "draftId is required" }, { status: 400 });
   }
 
-  const { error } = await supabaseRequest<unknown>(`zumen_drafts?id=eq.${encodeURIComponent(draftId)}`, {
+  const { error } = await supabaseRequest<unknown>(`${draftsTable}?id=eq.${encodeURIComponent(draftId)}`, {
     method: "DELETE",
     headers: {
       Prefer: "return=minimal",
