@@ -841,8 +841,8 @@ useEffect(() => {
       payload: { ...draftPayload, draftId: collectionResult.draftId },
     });
     setSavedAt(draftSavedAt);
-    const hasAnySaveTarget = collectionResult.localSaved || supabaseSaved || result.localSaved;
-    if (hasAnySaveTarget) {
+    const hasDraftListSaved = collectionResult.localSaved || supabaseSaved;
+    if (hasDraftListSaved) {
       setSaveMessageTone("success");
     if (collectionResult.localSaved && supabaseSaved) {
         if (result.localSaved) {
@@ -854,8 +854,9 @@ useEffect(() => {
         setSaveMessage("名前付き保存が完了しました（この端末には保存済み、Supabase同期はスキップまたは失敗しました）。");
        } else if (supabaseSaved) {
         setSaveMessage("名前付き保存が完了しました（Supabaseには反映済み、端末内の保存領域不足のためローカル保存はスキップされました）。");
-      } else {
-        setSaveMessage("名前付き保存が完了しました（下書きキャッシュには保存済み、図面作成済への反映またはSupabase同期は未完了です）。");
+     } else if (result.localSaved) {
+      setSaveMessageTone("warning");
+      setSaveMessage("名前付き保存は未完了です（下書きキャッシュのみ保存）。この状態では「作成図面済」に表示されません。ブラウザ容量または通信状態をご確認ください。");
       }
     } else {
       setSaveMessageTone("warning");
