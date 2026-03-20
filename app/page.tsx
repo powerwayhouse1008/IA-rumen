@@ -1011,7 +1011,7 @@ useEffect(() => {
 
   return (
    <main className="min-h-screen bg-[#e6f4ff] p-4 text-zinc-800 md:p-6">
-      {(savedAt || saveMessage) && (
+     {saveMessage && (
         <div className="pointer-events-none fixed right-4 top-4 z-50 max-w-xs rounded-xl border border-zinc-200 bg-white/95 px-3 py-2 shadow-lg backdrop-blur">
           <div className="flex items-start gap-2">
             <span
@@ -1427,7 +1427,7 @@ useEffect(() => {
                     >
                        {saveStatusTitle}
                     </span>
-                    span className={`text-xs font-semibold ${saveToneTextClass}`}>
+                    <span className={`text-xs font-semibold ${saveToneTextClass}`}>
                       {saveMessage}
                     </span>
                   </div>
