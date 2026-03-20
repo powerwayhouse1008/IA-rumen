@@ -841,9 +841,13 @@ useEffect(() => {
       payload: { ...draftPayload, draftId: collectionResult.draftId },
     });
     setSavedAt(draftSavedAt);
-    if (result.localSaved && collectionResult.localSaved && supabaseSaved) {
+    if (collectionResult.localSaved && supabaseSaved) {
       setSaveMessageTone("success");
-     setSaveMessage("名前付き保存が完了しました（図面作成済（保存データ）に反映・Supabase同期済み）。");
+    if (result.localSaved) {
+        setSaveMessage("名前付き保存が完了しました（図面作成済（保存データ）に反映・Supabase同期済み）。");
+      } else {
+        setSaveMessage("名前付き保存が完了しました（図面作成済（保存データ）・Supabaseには反映済み、下書きキャッシュのみ未保存）。");
+      }
     } else {
       setSaveMessageTone("warning");
       setSaveMessage("名前付き保存は実行しましたが、ローカル保存またはSupabase同期の一部に失敗しました。");
