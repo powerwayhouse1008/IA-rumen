@@ -1,19 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+type DraftRecord = {
+  id: string;
+  draft_title: string | null;
+  payload: Record<string, unknown> | null;
+  saved_at: string | null;
+  updated_at: string | null;
+};
+
+function ensureSupabaseConfig() {
+  if (!supabaseUrl || !supabaseKey) {
+    return "Supabase environment variables are not configured";
+  }
+
+  return null;
+}
+
+async function supabaseRequest<T>(path: string, init?: RequestInit): Promise<{ data: T | null; error: string | null }> {
+  const configError = ensureSupabaseConfig();
+  if (configError) {
+    return { data: null, error: configError };
+  }
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
+    ...init,
+    headers: {
+      apikey: supabaseKey!,
+      Authorization: `Bearer ${supabaseKey!}`,
+      "Content-Type": "application/json",
+      ...(init?.headers || {}),
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    return { data: null, error: message || `Supabase request failed: ${response.status}` };
+  }
+
+  if (response.status === 204) {
+    return { data: null, error: null };
+  }
+
+  const data = (await response.json()) as T;
+  return { data, error: null };
+}
 
 export async function GET() {
-  const { data, error } = await supabase
-    .from("zumen_drafts")
-    .select("id, draft_title, payload, saved_at, updated_at")
-    .order("updated_at", { ascending: false });
+  const { data, error } = await supabaseRequest<DraftRecord[]>(
+    "zumen_drafts?select=id,draft_title,payload,saved_at,updated_at&order=updated_at.desc"
+  );
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error }, { status: 500 });
   }
 
   const drafts =
@@ -60,12 +101,16 @@ export async function POST(req: NextRequest) {
       updated_at: now,
     };
 
-    const { error } = await supabase
-      .from("zumen_drafts")
-      .upsert(row, { onConflict: "id" });
+    const { error } = await supabaseRequest<unknown>("zumen_drafts?on_conflict=id", {
+      method: "POST",
+      headers: {
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify(row),
+    });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+       return NextResponse.json({ error }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -92,10 +137,15 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "draftId is required" }, { status: 400 });
   }
 
-  const { error } = await supabase.from("zumen_drafts").delete().eq("id", draftId);
+  const { error } = await supabaseRequest<unknown>(`zumen_drafts?id=eq.${encodeURIComponent(draftId)}`, {
+    method: "DELETE",
+    headers: {
+      Prefer: "return=minimal",
+    },
+  });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
