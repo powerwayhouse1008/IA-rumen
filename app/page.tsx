@@ -392,12 +392,33 @@ async function optimizeImageFile(file: File): Promise<string | null> {
 
 const STORAGE_IMAGE_KEYS: Array<keyof Pick<
   DraftPayload,
-  "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgMap"
->> = ["imgMain", "imgPlan", "imgSub1", "imgSub2", "imgSub3", "imgMap"];
+   "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr" | "imgMap"
+>> = ["imgMain", "imgPlan", "imgSub1", "imgSub2", "imgSub3", "imgQr", "imgMap"];
 
 function createStorageSafePayload(payload: DraftPayload): { payload: DraftPayload; strippedImages: boolean } {
   let strippedImages = false;
-  const nextPayload: DraftPayload = { ...payload };
+  const stripDataUrlDeep = (value: unknown): unknown => {
+    if (typeof value === "string") {
+      if (value.startsWith("data:")) {
+        strippedImages = true;
+        return "";
+      }
+      return value;
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => stripDataUrlDeep(item));
+    }
+    if (value && typeof value === "object") {
+      const nextObject: Record<string, unknown> = {};
+      for (const [key, childValue] of Object.entries(value as Record<string, unknown>)) {
+        nextObject[key] = stripDataUrlDeep(childValue);
+      }
+      return nextObject;
+    }
+    return value;
+  };
+
+  const nextPayload = stripDataUrlDeep({ ...payload }) as DraftPayload;
 
   for (const key of STORAGE_IMAGE_KEYS) {
     const value = nextPayload[key];
