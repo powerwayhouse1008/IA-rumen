@@ -1367,7 +1367,20 @@ useEffect(() => {
             <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
                 <div>
                 <div className="text-xs text-zinc-500">{savedAt ? `最終保存: ${savedAt}` : "未保存"}</div>
-                 {saveMessage ? <div className={`mt-1 text-xs font-semibold ${saveMessageTone === "success" ? "text-emerald-700" : "text-amber-700"}`} role="status" aria-live="polite">{saveMessage}</div> : null}
+                 {saveMessage ? (
+                  <div className="mt-1.5 flex items-start gap-2" role="status" aria-live="polite">
+                    <span
+                      className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold leading-4 ${
+                        saveMessageTone === "success" ? "bg-sky-100 text-sky-700" : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {saveMessageTone === "success" ? "保存完了" : "保存エラー"}
+                    </span>
+                    <span className={`text-xs font-semibold ${saveMessageTone === "success" ? "text-sky-700" : "text-amber-700"}`}>
+                      {saveMessage}
+                    </span>
+                  </div>
+                ) : null}
               </div>
               <div className="flex gap-2">
                  <button type="button" onClick={onTemporarySave} className="rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white">一時保存（メモリのみ）</button>
