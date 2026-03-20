@@ -577,7 +577,7 @@ export default function Page() {
   const [activeDraftId, setActiveDraftId] = useState<string | undefined>(initialDraft?.draftId);
   const [draftTitle, setDraftTitle] = useState(initialDraft?.draftTitle ?? "");
   const [saveMessage, setSaveMessage] = useState("");
-  const [saveMessageTone, setSaveMessageTone] = useState<"success" | "warning">("success");
+  const [saveMessageTone, setSaveMessageTone] = useState<"success" | "warning" | "error">("success");
   const [qrSyncMessage, setQrSyncMessage] = useState("");
   const [isSyncingQr, setIsSyncingQr] = useState(false);
   const [salesTags, setSalesTags] = useState<string[]>(initialDraft?.salesTags ?? []);
@@ -654,7 +654,17 @@ useEffect(() => {
   const isHouseCategory = normalizedPropertyType.includes("住宅") || selectedCategory === "new-house" || selectedCategory === "used-house";
   const isRentalCategory = normalizedPropertyType.includes("賃貸") || selectedCategory === "rental";
   const canGo = useMemo(() => data.price.trim() && data.name.trim() && data.address.trim(), [data]);
-  const saveStatusTitle = saveMessageTone === "success" ? "保存完了" : "保存エラー";
+  const saveStatusTitle =
+    saveMessageTone === "success" ? "保存完了" : saveMessageTone === "warning" ? "保存注意" : "保存エラー";
+  const saveToneBadgeClass =
+    saveMessageTone === "success"
+      ? "bg-sky-100 text-sky-700"
+      : saveMessageTone === "warning"
+        ? "bg-amber-100 text-amber-700"
+        : "bg-rose-100 text-rose-700";
+  const saveToneTextClass =
+    saveMessageTone === "success" ? "text-sky-700" : saveMessageTone === "warning" ? "text-amber-700" : "text-rose-700";
+  const saveToneIcon = saveMessageTone === "success" ? "✓" : saveMessageTone === "warning" ? "!" : "×";
   function update<K extends keyof ZumenData>(key: K, value: ZumenData[K]) {
     setHighlightSection("basic");
     setData((prev) => ({ ...prev, [key]: value }));
@@ -790,7 +800,7 @@ useEffect(() => {
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Supabase同期に失敗しました。";
       setQrSyncMessage(`同期エラー: ${msg}`);
-      setSaveMessageTone("warning");
+      setSaveMessageTone("error");
       setSaveMessage("QRは作成しましたが、Supabase同期でエラーが発生しました。");
     } finally {
       setIsSyncingQr(false);
@@ -889,7 +899,7 @@ useEffect(() => {
           : "一時保存しました（この端末の一時メモリのみ）。"
       );
     } else {
-      setSaveMessageTone("warning");
+      setSaveMessageTone("error");
       setSaveMessage("一時保存に失敗しました。ブラウザ容量をご確認ください。");
     }
 
@@ -959,7 +969,7 @@ useEffect(() => {
       setSaveMessage("名前付き保存は未完了です（下書きキャッシュのみ保存）。この状態では「作成図面済」に表示されません。ブラウザ容量または通信状態をご確認ください。");
       }
     } else {
-      setSaveMessageTone("warning");
+      setSaveMessageTone("error");
        setSaveMessage("名前付き保存に失敗しました。ブラウザ容量または通信状態をご確認ください。");
     }
     setTimeout(() => {
@@ -1006,14 +1016,14 @@ useEffect(() => {
           <div className="flex items-start gap-2">
             <span
               className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                saveMessageTone === "success" ? "bg-sky-100 text-sky-700" : "bg-amber-100 text-amber-700"
+               saveToneBadgeClass
               }`}
               aria-hidden="true"
             >
-              {saveMessageTone === "success" ? "✓" : "!"}
+              {saveToneIcon}
             </span>
             <div>
-              <div className={`text-xs font-semibold ${saveMessageTone === "success" ? "text-sky-700" : "text-amber-700"}`}>
+               <div className={`text-xs font-semibold ${saveToneTextClass}`}>
                 {saveStatusTitle}
               </div>
               <div className="text-[11px] text-zinc-500">{savedAt ? `最終保存: ${savedAt}` : "未保存"}</div>
@@ -1412,12 +1422,12 @@ useEffect(() => {
                   <div className="mt-1.5 flex items-start gap-2" role="status" aria-live="polite">
                     <span
                       className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold leading-4 ${
-                        saveMessageTone === "success" ? "bg-sky-100 text-sky-700" : "bg-amber-100 text-amber-700"
+                       saveToneBadgeClass
                       }`}
                     >
-                      {saveMessageTone === "success" ? "保存完了" : "保存エラー"}
+                       {saveStatusTitle}
                     </span>
-                    <span className={`text-xs font-semibold ${saveMessageTone === "success" ? "text-sky-700" : "text-amber-700"}`}>
+                    span className={`text-xs font-semibold ${saveToneTextClass}`}>
                       {saveMessage}
                     </span>
                   </div>
