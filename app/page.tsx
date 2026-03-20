@@ -414,22 +414,24 @@ function savePayloadToStorage(payload: DraftPayload): { localSaved: boolean; str
   if (typeof window === "undefined") {
     return { localSaved: false, strippedImages: false };
   }
-
+  
+  let localSaved = false;
   let strippedImages = false;
   try {
     localStorage.setItem("zumenData", JSON.stringify(payload));
+    localSaved = true;
   } catch {
-     const fallback = createStorageSafePayload(payload);
+    const fallback = createStorageSafePayload(payload);
     strippedImages = fallback.strippedImages;
 
     try {
       localStorage.setItem("zumenData", JSON.stringify(fallback.payload));
+      localSaved = true;
     } catch {
       localSaved = false;
     }
   }
 
-  
   (window as Window & { __zumenPayload?: DraftPayload }).__zumenPayload = payload;
   return { localSaved, strippedImages };
 }
