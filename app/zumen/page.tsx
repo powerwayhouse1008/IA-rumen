@@ -398,7 +398,20 @@ function ZumenPageContent() {
     try {
       const rawDrafts = localStorage.getItem(ZUMEN_DRAFTS_STORAGE_KEY);
       const parsedDrafts = rawDrafts ? (JSON.parse(rawDrafts) as StoredDraft[]) : [];
-      const localDrafts = Array.isArray(parsedDrafts) ? parsedDrafts : [];
+      const localDrafts = Array.isArray(parsedDrafts)
+        ? parsedDrafts.filter(
+            (draft): draft is StoredDraft =>
+              Boolean(
+                draft &&
+                  typeof draft === "object" &&
+                  typeof draft.id === "string" &&
+                  draft.id.trim() &&
+                  typeof draft.payload === "object" &&
+                  draft.payload !== null,
+              ),
+          )
+        : [];
+
 
       const supabaseRes = await fetch("/api/zumen-drafts", { cache: "no-store" });
       if (supabaseRes.ok) {
@@ -408,10 +421,62 @@ function ZumenPageContent() {
           ...remoteDrafts,
           ...localDrafts.filter((draft) => !remoteDrafts.some((r) => r.id === draft.id)),
         ];
-        setSavedDrafts(merged);
-        localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(merged));
+        const mergedWithFallback = merged.length > 0 ? merged : (() => {
+          const rawSingleDraft = localStorage.getItem("zumenData");
+          if (!rawSingleDraft) return merged;
+          try {
+            const parsed = JSON.parse(rawSingleDraft) as ZumenData & {
+              draftId?: string;
+              draftSavedAt?: string;
+            };
+            const fallbackId =
+              parsed.draftId?.trim() ||
+              `draft-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            const fallbackSavedAt = parsed.draftSavedAt || new Date().toISOString();
+            if (!parsed.name && !parsed.draftTitle) return merged;
+            return [{ id: fallbackId, savedAt: fallbackSavedAt, payload: parsed }];
+          } catch {
+            return merged;
+          }
+        })();
+
+        setSavedDrafts(mergedWithFallback);
+        localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(mergedWithFallback));
       } else {
-        setSavedDrafts(localDrafts);
+        if (localDrafts.length > 0) {
+          setSavedDrafts(localDrafts);
+          return;
+        }
+
+        const rawSingleDraft = localStorage.getItem("zumenData");
+        if (!rawSingleDraft) {
+          setSavedDrafts([]);
+          return;
+        }
+
+        try {
+          const parsed = JSON.parse(rawSingleDraft) as ZumenData & {
+            draftId?: string;
+            draftSavedAt?: string;
+          };
+          const fallbackId =
+            parsed.draftId?.trim() ||
+            `draft-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+          const fallbackSavedAt = parsed.draftSavedAt || new Date().toISOString();
+          if (!parsed.name && !parsed.draftTitle) {
+            setSavedDrafts([]);
+            return;
+          }
+          const fallbackDraft: StoredDraft = {
+            id: fallbackId,
+            savedAt: fallbackSavedAt,
+            payload: parsed,
+          };
+          setSavedDrafts([fallbackDraft]);
+          localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify([fallbackDraft]));
+        } catch {
+          setSavedDrafts([]);
+        }
       }
 
         const runtimePayload = (window as Window & { __zumenPayload?: ZumenData }).__zumenPayload;
