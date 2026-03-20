@@ -841,18 +841,23 @@ useEffect(() => {
       payload: { ...draftPayload, draftId: collectionResult.draftId },
     });
     setSavedAt(draftSavedAt);
-    if (supabaseSaved) {
+    const hasAnySaveTarget = collectionResult.localSaved || supabaseSaved;
+    if (hasAnySaveTarget) {
       setSaveMessageTone("success");
-    if (result.localSaved && collectionResult.localSaved) {
-        setSaveMessage("名前付き保存が完了しました（図面作成済（保存データ）に反映・Supabase同期済み）。");
-      } else if (!collectionResult.localSaved) {
-        setSaveMessage("名前付き保存が完了しました（Supabaseには反映済み、端末内の保存領域不足のためローカル保存はスキップされました）。");
+    if (collectionResult.localSaved && supabaseSaved) {
+        if (result.localSaved) {
+          setSaveMessage("名前付き保存が完了しました（図面作成済（保存データ）に反映・Supabase同期済み）。");
+        } else {
+          setSaveMessage("名前付き保存が完了しました（図面作成済（保存データ）・Supabaseには反映済み、下書きキャッシュのみ未保存）。");
+        }
+      } else if (collectionResult.localSaved) {
+        setSaveMessage("名前付き保存が完了しました（この端末には保存済み、Supabase同期はスキップまたは失敗しました）。");
       } else {
-        setSaveMessage("名前付き保存が完了しました（図面作成済（保存データ）・Supabaseには反映済み、下書きキャッシュのみ未保存）。");
+        setSaveMessage("名前付き保存が完了しました（Supabaseには反映済み、端末内の保存領域不足のためローカル保存はスキップされました）。");
       }
     } else {
       setSaveMessageTone("warning");
-      setSaveMessage("名前付き保存は実行しましたが、ローカル保存またはSupabase同期の一部に失敗しました。");
+       setSaveMessage("名前付き保存に失敗しました。ブラウザ容量または通信状態をご確認ください。");
     }
     setTimeout(() => {
       setSaveMessage("");
