@@ -348,21 +348,7 @@ function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   );
 }
 
-async function fileToDataUrl(file: File): Promise<string> {
-   if (file.type.startsWith("image/") && file.type !== "image/gif" && file.type !== "image/svg+xml") {
-    const optimized = await optimizeImageFile(file);
-    if (optimized) return optimized;
-  }
-
-  return await new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload = () => res(String(reader.result));
-    reader.onerror = rej;
-    reader.readAsDataURL(file);
-  });
-}
-
-async function optimizeImageFile(file: File): Promise<string | null> {
+async function optimizeImageFile(file: File): Promise<Blob | null> {
   const imageBitmap = await createImageBitmap(file);
   const maxDimension = 1600;
   const scale = Math.min(1, maxDimension / Math.max(imageBitmap.width, imageBitmap.height));
@@ -387,7 +373,50 @@ async function optimizeImageFile(file: File): Promise<string | null> {
       : file.type === "image/webp"
         ? "image/webp"
         : "image/jpeg";
-  return canvas.toDataURL(outputType, 0.82);
+ const outputBlob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), outputType, 0.82);
+  });
+  return outputBlob;
+}
+
+type UploadedImageResult = {
+  publicUrl: string;
+};
+
+async function uploadImageToSupabase(file: File): Promise<string> {
+  const optimizedBlob =
+    file.type.startsWith("image/") && file.type !== "image/gif" && file.type !== "image/svg+xml"
+      ? await optimizeImageFile(file)
+      : null;
+
+  const uploadBlob = optimizedBlob ?? file;
+  const extFromName = file.name.includes(".") ? file.name.split(".").pop()?.toLowerCase() : undefined;
+  const mimeExt = uploadBlob.type.split("/")[1]?.toLowerCase();
+  const extension = extFromName || mimeExt || "jpg";
+  const uploadFile = new File([uploadBlob], file.name || `image.${extension}`, {
+    type: uploadBlob.type || file.type || "image/jpeg",
+  });
+
+  const formData = new FormData();
+  formData.append("file", uploadFile);
+  formData.append("extension", extension);
+
+  const response = await fetch("/api/zumen-images", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(errorPayload?.error || "Image upload failed");
+  }
+
+  const payload = (await response.json()) as UploadedImageResult;
+  if (!payload.publicUrl) {
+    throw new Error("Missing uploaded image URL");
+  }
+
+  return payload.publicUrl;
 }
 
 const STORAGE_IMAGE_KEYS: Array<keyof Pick<
@@ -706,8 +735,16 @@ useEffect(() => {
     file?: File
   ) {
     if (!file) return;
-    const url = await fileToDataUrl(file);
-    update(key, url);
+     try {
+      const uploadedUrl = await uploadImageToSupabase(file);
+      update(key, uploadedUrl);
+      setSaveMessage("画像を圧縮してSupabase Storageへアップロードしました。");
+      setSaveMessageTone("success");
+    } catch (error) {
+      console.error("image upload error:", error);
+      setSaveMessage("画像アップロードに失敗しました。設定または通信状態をご確認ください。");
+      setSaveMessageTone("error");
+    }
   }
 
   function removeImage(key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgQr" | "imgMap">) {
