@@ -57,10 +57,14 @@ async function supabaseRequest<T>(path: string, init?: RequestInit): Promise<{ d
   return { data, error: null };
 }
 
-export async function GET() {
-  const { data, error } = await supabaseRequest<DraftRecord[]>(
-    "zumen_drafts?select=id,draft_title,payload,saved_at,updated_at&order=updated_at.desc"
-  );
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const draftId = searchParams.get("draftId")?.trim();
+  const query = draftId
+    ? `zumen_drafts?select=id,draft_title,payload,saved_at,updated_at&id=eq.${encodeURIComponent(draftId)}&limit=1`
+    : "zumen_drafts?select=id,draft_title,payload,saved_at,updated_at&order=updated_at.desc";
+
+  const { data, error } = await supabaseRequest<DraftRecord[]>(query);
 
   if (error) {
     return NextResponse.json({ error }, { status: 500 });
