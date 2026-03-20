@@ -1212,7 +1212,64 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
     return () => window.clearTimeout(timer);
   }, [data, isExporting, saveAsPdf, selectedTemplate, shouldExportPdf]);
 
-  if (!data && !isSavedDraftsView) return null;
+  if (!data) {
+    if (!isSavedDraftsView) return null;
+
+    return (
+      <main className="min-h-screen bg-[#f3f4f6] p-2 md:p-4">
+        <div className="mx-auto w-full max-w-[1500px]">
+          <div className="mb-3 flex items-center justify-between">
+            <Link
+              href="/"
+              className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700"
+            >
+              ← 入力画面に戻る
+            </Link>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4">
+            {savedDrafts.length > 0 ? (
+              <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
+                <div className="mb-2 text-sm font-semibold text-sky-900">図面作成済（保存データ）</div>
+                <ol className="space-y-2">
+                  {savedDrafts.map((draft, index) => (
+                    <li key={draft.id}>
+                      <div className="flex items-stretch gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectDraft(draft)}
+                          className="flex flex-1 items-start gap-2 rounded-md border border-sky-200 bg-white px-3 py-2 text-left text-sm text-sky-800 transition hover:bg-sky-100"
+                          aria-label={`保存データ ${index + 1} を表示`}
+                        >
+                          <span className="min-w-6 font-semibold">{index + 1}.</span>
+                          <span>
+                            <span className="block font-semibold">{draft.payload.draftTitle || draft.payload.name || "(物件名未入力)"}</span>
+                            <span className="text-xs text-zinc-600">{draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}</span>
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDraft(draft.id)}
+                          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                          aria-label={`保存データ ${index + 1} を削除`}
+                        >
+                          削除
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">
+                保存済みの図面データはありません。
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#f3f4f6] p-2 md:p-4">
