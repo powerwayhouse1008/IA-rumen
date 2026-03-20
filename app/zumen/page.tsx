@@ -1278,7 +1278,35 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
   }, [data, isExporting, saveAsPdf, selectedTemplate, shouldExportPdf]);
 
   if (!data) {
-    if (!isSavedDraftsView) return null;
+    if (!isSavedDraftsView) {
+      return (
+        <main className="min-h-screen bg-[#f3f4f6] p-2 md:p-4">
+          <div className="mx-auto flex w-full max-w-[900px] flex-col gap-3">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+              <h1 className="text-lg font-bold text-zinc-900">図面データが見つかりません</h1>
+              <p className="mt-2 text-sm leading-6 text-zinc-700">
+                入力画面から物件情報を保存してから図面ページを開いてください。
+                既に保存済みのデータがある場合は、保存一覧から選択できます。
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Link
+                  href="/"
+                  className="rounded-md bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-200"
+                >
+                  ← 入力画面に戻る
+                </Link>
+                <Link
+                  href="/zumen?view=saved"
+                  className="rounded-md bg-sky-100 px-3 py-1.5 text-sm font-medium text-sky-700 hover:bg-sky-200"
+                >
+                  保存データを開く
+                </Link>
+              </div>
+            </div>
+          </div>
+        </main>
+      );
+    }
 
     return (
       <main className="min-h-screen bg-[#f3f4f6] p-2 md:p-4">
