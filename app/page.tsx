@@ -451,7 +451,11 @@ async function loadDraftFromSupabase(draftId: string): Promise<StoredDraft | nul
 
     const currentDrafts = loadStoredDrafts();
     const mergedDrafts = [draft, ...currentDrafts.filter((item) => item.id !== draft.id)];
-    localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(mergedDrafts));
+    try {
+      localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(mergedDrafts));
+    } catch {
+      // localStorage quota exceededでもSupabase取得結果は返す
+    }
     return draft;
   } catch {
     return null;
