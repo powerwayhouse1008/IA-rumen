@@ -654,7 +654,7 @@ useEffect(() => {
   const isHouseCategory = normalizedPropertyType.includes("住宅") || selectedCategory === "new-house" || selectedCategory === "used-house";
   const isRentalCategory = normalizedPropertyType.includes("賃貸") || selectedCategory === "rental";
   const canGo = useMemo(() => data.price.trim() && data.name.trim() && data.address.trim(), [data]);
-
+  const saveStatusTitle = saveMessageTone === "success" ? "保存完了" : "保存エラー";
   function update<K extends keyof ZumenData>(key: K, value: ZumenData[K]) {
     setHighlightSection("basic");
     setData((prev) => ({ ...prev, [key]: value }));
@@ -1001,6 +1001,26 @@ useEffect(() => {
 
   return (
    <main className="min-h-screen bg-[#e6f4ff] p-4 text-zinc-800 md:p-6">
+      {(savedAt || saveMessage) && (
+        <div className="pointer-events-none fixed right-4 top-4 z-50 max-w-xs rounded-xl border border-zinc-200 bg-white/95 px-3 py-2 shadow-lg backdrop-blur">
+          <div className="flex items-start gap-2">
+            <span
+              className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                saveMessageTone === "success" ? "bg-sky-100 text-sky-700" : "bg-amber-100 text-amber-700"
+              }`}
+              aria-hidden="true"
+            >
+              {saveMessageTone === "success" ? "✓" : "!"}
+            </span>
+            <div>
+              <div className={`text-xs font-semibold ${saveMessageTone === "success" ? "text-sky-700" : "text-amber-700"}`}>
+                {saveStatusTitle}
+              </div>
+              <div className="text-[11px] text-zinc-500">{savedAt ? `最終保存: ${savedAt}` : "未保存"}</div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mx-auto w-full max-w-[1500px]">
         <section>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
