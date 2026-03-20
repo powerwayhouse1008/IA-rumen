@@ -390,31 +390,59 @@ async function optimizeImageFile(file: File): Promise<string | null> {
   return canvas.toDataURL(outputType, 0.82);
 }
 
-function savePayloadToStorage(payload: DraftPayload): { localSaved: boolean } {
-  if (typeof window === "undefined") {
-    return { localSaved: false };
+const STORAGE_IMAGE_KEYS: Array<keyof Pick<
+  DraftPayload,
+  "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgMap"
+>> = ["imgMain", "imgPlan", "imgSub1", "imgSub2", "imgSub3", "imgMap"];
+
+function createStorageSafePayload(payload: DraftPayload): { payload: DraftPayload; strippedImages: boolean } {
+  let strippedImages = false;
+  const nextPayload: DraftPayload = { ...payload };
+
+  for (const key of STORAGE_IMAGE_KEYS) {
+    const value = nextPayload[key];
+    if (typeof value === "string" && value.startsWith("data:")) {
+      nextPayload[key] = "";
+      strippedImages = true;
+    }
   }
 
-  let localSaved = true;
+  return { payload: nextPayload, strippedImages };
+}
+
+function savePayloadToStorage(payload: DraftPayload): { localSaved: boolean; strippedImages: boolean } {
+  if (typeof window === "undefined") {
+    return { localSaved: false, strippedImages: false };
+  }
+
+  let strippedImages = false;
   try {
     localStorage.setItem("zumenData", JSON.stringify(payload));
   } catch {
-    localSaved = false;
+     const fallback = createStorageSafePayload(payload);
+    strippedImages = fallback.strippedImages;
+
+    try {
+      localStorage.setItem("zumenData", JSON.stringify(fallback.payload));
+    } catch {
+      localSaved = false;
+    }
   }
 
   
   (window as Window & { __zumenPayload?: DraftPayload }).__zumenPayload = payload;
-  return { localSaved };
+  return { localSaved, strippedImages };
 }
-function saveDraftToCollection(payload: DraftPayload, draftId?: string): { localSaved: boolean; draftId: string } {
+function saveDraftToCollection(payload: DraftPayload, draftId?: string): { localSaved: boolean; draftId: string; strippedImages: boolean } {
   if (typeof window === "undefined") {
-    return { localSaved: false, draftId: draftId ?? "" };
+   return { localSaved: false, draftId: draftId ?? "", strippedImages: false };
   }
 
   const id = draftId ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const savedAt = new Date().toLocaleString("ja-JP");
   const nextPayload = { ...payload, draftId: id, draftSavedAt: savedAt };
   const currentDrafts = loadStoredDrafts();
+  let strippedImages = false;
   const filtered = currentDrafts.filter((item) => item.id !== id);
   const nextDrafts: StoredDraft[] = [{ id, savedAt, payload: nextPayload }, ...filtered];
 
@@ -427,6 +455,15 @@ function saveDraftToCollection(payload: DraftPayload, draftId?: string): { local
       localSaved = true;
       break;
     } catch {
+      if (draftsToPersist[0]?.id === id) {
+        const storageSafeDraft = createStorageSafePayload(draftsToPersist[0].payload as DraftPayload);
+        draftsToPersist[0] = {
+          ...draftsToPersist[0],
+          payload: storageSafeDraft.payload,
+        };
+        strippedImages = strippedImages || storageSafeDraft.strippedImages;
+        continue;
+      }
       draftsToPersist = draftsToPersist.slice(0, -1);
     }
   }
@@ -439,7 +476,7 @@ function saveDraftToCollection(payload: DraftPayload, draftId?: string): { local
     }
   }
 
-  return { localSaved, draftId: id };
+  return { localSaved, draftId: id, strippedImages };
 }
 async function loadDraftFromSupabase(draftId: string): Promise<StoredDraft | null> {
   try {
@@ -802,8 +839,12 @@ useEffect(() => {
     setSavedAt(temporarySavedAt);
 
     if (result.localSaved) {
-      setSaveMessageTone("success");
-      setSaveMessage("一時保存しました（この端末の一時メモリのみ）。");
+      setSaveMessageTone(result.strippedImages ? "warning" : "success");
+      setSaveMessage(
+        result.strippedImages
+          ? "一時保存しました（保存容量の制限により画像データを除外しました）。"
+          : "一時保存しました（この端末の一時メモリのみ）。"
+      );
     } else {
       setSaveMessageTone("warning");
       setSaveMessage("一時保存に失敗しました。ブラウザ容量をご確認ください。");
@@ -846,12 +887,20 @@ useEffect(() => {
       setSaveMessageTone("success");
     if (collectionResult.localSaved && supabaseSaved) {
         if (result.localSaved) {
-          setSaveMessage("名前付き保存が完了しました（図面作成済（保存データ）に反映・Supabase同期済み）。");
+         setSaveMessage(
+            result.strippedImages || collectionResult.strippedImages
+              ? "名前付き保存が完了しました（反映・Supabase同期済み。端末保存は容量制限により一部画像を除外しました）。"
+              : "名前付き保存が完了しました（図面作成済（保存データ）に反映・Supabase同期済み）。"
+          );
         } else {
           setSaveMessage("名前付き保存が完了しました（図面作成済（保存データ）・Supabaseには反映済み、下書きキャッシュのみ未保存）。");
         }
       } else if (collectionResult.localSaved) {
-        setSaveMessage("名前付き保存が完了しました（この端末には保存済み、Supabase同期はスキップまたは失敗しました）。");
+         setSaveMessage(
+          collectionResult.strippedImages || result.strippedImages
+            ? "名前付き保存が完了しました（端末保存時に容量制限のため画像データを除外しました。Supabase同期はスキップまたは失敗しました）。"
+            : "名前付き保存が完了しました（この端末には保存済み、Supabase同期はスキップまたは失敗しました）。"
+        );
        } else if (supabaseSaved) {
         setSaveMessage("名前付き保存が完了しました（Supabaseには反映済み、端末内の保存領域不足のためローカル保存はスキップされました）。");
      } else if (result.localSaved) {
