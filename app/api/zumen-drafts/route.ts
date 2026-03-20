@@ -11,6 +11,20 @@ type StoredDraft = {
 function isDraftPayload(value: unknown): value is DraftPayload {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+function normalizeDraftPayload(value: unknown): DraftPayload {
+  if (isDraftPayload(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (isDraftPayload(parsed)) {
+        return parsed;
+      }
+    } catch {
+      // Keep fallback below for invalid JSON strings.
+    }
+  }
+  return {};
+}
 
 function getEnvOrEmpty(name: string) {
   return process.env[name]?.trim() ?? "";
