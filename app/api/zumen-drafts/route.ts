@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+function getEnvOrEmpty(name: string) {
+  return process.env[name]?.trim() ?? "";
+}
+
+const supabaseUrl =
+  getEnvOrEmpty("SUPABASE_URL") || getEnvOrEmpty("NEXT_PUBLIC_SUPABASE_URL");
+const supabaseKey =
+  getEnvOrEmpty("SUPABASE_SERVICE_ROLE_KEY") ||
+  getEnvOrEmpty("SUPABASE_ANON_KEY") ||
+  getEnvOrEmpty("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
 type DraftRecord = {
   id: string;
