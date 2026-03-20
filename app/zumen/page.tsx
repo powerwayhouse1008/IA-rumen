@@ -1428,7 +1428,7 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
                         >
                           <span className="min-w-6 font-semibold">{index + 1}.</span>
                           <span>
-                            <span className="block font-semibold">{draft.payload.draftTitle || draft.payload.name || "(物件名未入力)"}</span>
+                            <span className="block font-semibold">{draft.payload.draftTitle || draft.payload.name || draft.id || "(物件名未入力)"}</span>
                             <span className="text-xs text-zinc-600">{draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}</span>
                           </span>
                         </button>
