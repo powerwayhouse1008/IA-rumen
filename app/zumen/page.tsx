@@ -131,7 +131,7 @@ type MansionDetails = {
   currentStatus: string;
   handover: string;
   note: string;
-}; 
+};
 
 type RentalDetails = {
   rent: string;
@@ -167,6 +167,8 @@ type ZumenData = {
   imgQr?: string;
   imgMap?: string;
   draftTitle?: string;
+  draftId?: string;
+  draftSavedAt?: string;
   themeColor?: ThemeColorKey;
   contactInfo?: {
     companyName: string;
@@ -251,10 +253,11 @@ function ImgBox({
     </div>
   );
 }
+
 type StoredDraft = {
   id: string;
   savedAt: string;
-  payload: ZumenData & { draftSavedAt?: string; draftId?: string };
+  payload: ZumenData;
 };
 
 const ZUMEN_DRAFTS_STORAGE_KEY = "zumenDrafts";
@@ -374,12 +377,16 @@ function AutoFitText({
 function ZumenPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+
   const shouldExportPdf = searchParams.get("export") === "pdf";
   const viewMode = searchParams.get("view") === "saved" ? "saved" : "preview";
+  const draftIdFromQuery = searchParams.get("draftId");
   const isSavedDraftsView = viewMode === "saved";
+
   const [data, setData] = useState<ZumenData | null>(null);
   const [savedDrafts, setSavedDrafts] = useState<StoredDraft[]>([]);
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
+
   const previewRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
 
@@ -394,108 +401,64 @@ function ZumenPageContent() {
   const [debugCanvasInfo, setDebugCanvasInfo] = useState<string>("");
   const [showDebugPreview, setShowDebugPreview] = useState(false);
 
- const loadDrafts = useCallback(async () => {
+  const activeTemplate: TemplateKey | null = isSavedDraftsView
+    ? selectedTemplate ?? "classic"
+    : selectedTemplate;
+
+  const loadPreviewData = useCallback(() => {
     try {
-      const rawDrafts = localStorage.getItem(ZUMEN_DRAFTS_STORAGE_KEY);
-      const parsedDrafts = rawDrafts ? (JSON.parse(rawDrafts) as StoredDraft[]) : [];
-      const localDrafts = Array.isArray(parsedDrafts)
-        ? parsedDrafts.filter(
-            (draft): draft is StoredDraft =>
-              Boolean(
-                draft &&
-                  typeof draft === "object" &&
-                  typeof draft.id === "string" &&
-                  draft.id.trim() &&
-                  typeof draft.payload === "object" &&
-                  draft.payload !== null,
-              ),
-          )
-        : [];
-
-
-      const supabaseRes = await fetch("/api/zumen-drafts", { cache: "no-store" });
-      if (supabaseRes.ok) {
-        const json = (await supabaseRes.json()) as { drafts?: StoredDraft[] };
-        const remoteDrafts = Array.isArray(json.drafts) ? json.drafts : [];
-        const merged = [
-          ...remoteDrafts,
-          ...localDrafts.filter((draft) => !remoteDrafts.some((r) => r.id === draft.id)),
-        ];
-        const mergedWithFallback = merged.length > 0 ? merged : (() => {
-          const rawSingleDraft = localStorage.getItem("zumenData");
-          if (!rawSingleDraft) return merged;
-          try {
-            const parsed = JSON.parse(rawSingleDraft) as ZumenData & {
-              draftId?: string;
-              draftSavedAt?: string;
-            };
-            const fallbackId =
-              parsed.draftId?.trim() ||
-              `draft-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-            const fallbackSavedAt = parsed.draftSavedAt || new Date().toISOString();
-            if (!parsed.name && !parsed.draftTitle) return merged;
-            return [{ id: fallbackId, savedAt: fallbackSavedAt, payload: parsed }];
-          } catch {
-            return merged;
-          }
-        })();
-
-        setSavedDrafts(mergedWithFallback);
-        localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(mergedWithFallback));
-      } else {
-        if (localDrafts.length > 0) {
-          setSavedDrafts(localDrafts);
-          return;
-        }
-
-        const rawSingleDraft = localStorage.getItem("zumenData");
-        if (!rawSingleDraft) {
-          setSavedDrafts([]);
-          return;
-        }
-
-        try {
-          const parsed = JSON.parse(rawSingleDraft) as ZumenData & {
-            draftId?: string;
-            draftSavedAt?: string;
-          };
-          const fallbackId =
-            parsed.draftId?.trim() ||
-            `draft-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-          const fallbackSavedAt = parsed.draftSavedAt || new Date().toISOString();
-          if (!parsed.name && !parsed.draftTitle) {
-            setSavedDrafts([]);
-            return;
-          }
-          const fallbackDraft: StoredDraft = {
-            id: fallbackId,
-            savedAt: fallbackSavedAt,
-            payload: parsed,
-          };
-          setSavedDrafts([fallbackDraft]);
-          localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify([fallbackDraft]));
-        } catch {
-          setSavedDrafts([]);
-        }
-      }
-
-        const runtimePayload = (window as Window & { __zumenPayload?: ZumenData }).__zumenPayload;
-
-         if (runtimePayload) {
+      const runtimePayload = (window as Window & { __zumenPayload?: ZumenData }).__zumenPayload;
+      if (runtimePayload) {
         setData(runtimePayload);
         return;
       }
-     
+
       const saved = localStorage.getItem("zumenData");
       setData(saved ? (JSON.parse(saved) as ZumenData) : null);
     } catch {
-      setSavedDrafts([]);
       setData(null);
     }
   }, []);
+
+  const loadDrafts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/zumen-drafts", { cache: "no-store" });
+      if (!res.ok) {
+        throw new Error("draft fetch failed");
+      }
+
+      const json = (await res.json()) as { drafts?: StoredDraft[] };
+      const drafts = Array.isArray(json.drafts) ? json.drafts : [];
+
+      setSavedDrafts(drafts);
+
+      if (drafts.length === 0) {
+        setSelectedDraftId(null);
+        setData(null);
+        return;
+      }
+
+      const selected =
+        (draftIdFromQuery ? drafts.find((d) => d.id === draftIdFromQuery) : undefined) ??
+        drafts[0];
+
+      setSelectedDraftId(selected.id);
+      setData(selected.payload);
+    } catch (error) {
+      console.error("loadDrafts error:", error);
+      setSavedDrafts([]);
+      setSelectedDraftId(null);
+      setData(null);
+    }
+  }, [draftIdFromQuery]);
+
   useEffect(() => {
-    void loadDrafts();
-  }, [loadDrafts]);
+    if (isSavedDraftsView) {
+      void loadDrafts();
+    } else {
+      loadPreviewData();
+    }
+  }, [isSavedDraftsView, loadDrafts, loadPreviewData]);
 
   useEffect(() => {
     if (!isSavedDraftsView) return;
@@ -506,23 +469,23 @@ function ZumenPageContent() {
 
     window.addEventListener("focus", reloadDrafts);
     document.addEventListener("visibilitychange", reloadDrafts);
+
     return () => {
       window.removeEventListener("focus", reloadDrafts);
       document.removeEventListener("visibilitychange", reloadDrafts);
     };
   }, [isSavedDraftsView, loadDrafts]);
-    useEffect(() => {
-    if (!isSavedDraftsView || savedDrafts.length === 0 || selectedDraftId) return;
-
-    const firstDraft = savedDrafts[0];
-    setSelectedDraftId(firstDraft.id);
-    setData(firstDraft.payload);
-  }, [isSavedDraftsView, savedDrafts, selectedDraftId]);
 
   useEffect(() => {
     if (!data?.themeColor) return;
     setSelectedTheme(data.themeColor);
   }, [data?.themeColor]);
+
+  useEffect(() => {
+    if (isSavedDraftsView && !selectedTemplate) {
+      setSelectedTemplate("classic");
+    }
+  }, [isSavedDraftsView, selectedTemplate]);
 
   useEffect(() => {
     const updateScale = () => {
@@ -550,34 +513,41 @@ function ZumenPageContent() {
 
   const isLand = propertyType === "土地" || category === "land";
   const isRental = propertyType.includes("賃貸") || category === "rental";
-  
-  const handleDeleteDraft = (draftId: string) => {
-    setSavedDrafts((prevDrafts) => {
-      const nextDrafts = prevDrafts.filter((draft) => draft.id !== draftId);
-      localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(nextDrafts));
-      
+
+  const handleDeleteDraft = async (draftId: string) => {
+    try {
+      await fetch(`/api/zumen-drafts?draftId=${encodeURIComponent(draftId)}`, {
+        method: "DELETE",
+      });
+
+      const nextDrafts = savedDrafts.filter((draft) => draft.id !== draftId);
+      setSavedDrafts(nextDrafts);
+
       if (selectedDraftId === draftId) {
         const nextSelected = nextDrafts[0] ?? null;
         setSelectedDraftId(nextSelected?.id ?? null);
         setData(nextSelected?.payload ?? null);
-      }
 
-      return nextDrafts;
-    });
-    void fetch(`/api/zumen-drafts?draftId=${encodeURIComponent(draftId)}`, {
-      method: "DELETE",
-    });
+        if (nextSelected) {
+          router.push(`/zumen?view=saved&draftId=${encodeURIComponent(nextSelected.id)}`);
+        } else {
+          router.push(`/zumen?view=saved`);
+        }
+      }
+    } catch (error) {
+      console.error("delete draft error:", error);
+    }
   };
-  
+
   const handleSelectDraft = (draft: StoredDraft) => {
     setSelectedDraftId(draft.id);
     setData(draft.payload);
-    
+
     if (isSavedDraftsView) {
-    
-      router.push(`/?draftId=${encodeURIComponent(draft.id)}`);
+      router.push(`/zumen?view=saved&draftId=${encodeURIComponent(draft.id)}`);
     }
   };
+
   const summaryRows = useMemo(() => {
     if (!data) return [];
 
@@ -637,7 +607,7 @@ function ZumenPageContent() {
         { label: "間取り", value: data.mansionDetails.layout || "-" },
         { label: "構造・階数", value: data.mansionDetails.structure || "-" },
         { label: "所在階", value: data.mansionDetails.floor || "-" },
-        ...(selectedTemplate === "chic"
+        ...(activeTemplate === "chic"
           ? [builtAtRow, totalUnitsRow]
           : [
               {
@@ -649,17 +619,21 @@ function ZumenPageContent() {
       ];
     }
 
-     if (isRental && data.rentalDetails) {
+    if (isRental && data.rentalDetails) {
       return [
         {
           label: "賃　料",
-          value: data.rentalDetails.rent ? `${Number(data.rentalDetails.rent).toLocaleString()}円` : "-",
+          value: data.rentalDetails.rent
+            ? `${Number(data.rentalDetails.rent).toLocaleString()}円`
+            : "-",
           label2: "保証金",
           value2: data.rentalDetails.depositGuarantee || "-",
         },
         {
           label: "共益費",
-          value: data.rentalDetails.commonFee ? `${Number(data.rentalDetails.commonFee).toLocaleString()}円` : "-",
+          value: data.rentalDetails.commonFee
+            ? `${Number(data.rentalDetails.commonFee).toLocaleString()}円`
+            : "-",
           label2: "更新料",
           value2: data.rentalDetails.renewalFee || "-",
         },
@@ -671,7 +645,9 @@ function ZumenPageContent() {
         },
         {
           label: "専有面積",
-          value: data.rentalDetails.exclusiveArea ? `${data.rentalDetails.exclusiveArea}㎡` : "-",
+          value: data.rentalDetails.exclusiveArea
+            ? `${data.rentalDetails.exclusiveArea}㎡`
+            : "-",
         },
       ];
     }
@@ -689,12 +665,13 @@ function ZumenPageContent() {
     }
 
     return [{ label: "所在地", value: data.address }];
-  }, [data, isHouse, isLand, isMansion, isRental, selectedTemplate]);
-  
+  }, [data, isHouse, isLand, isMansion, isRental, activeTemplate]);
+
   const managementRows = useMemo(() => {
     if (isRental) {
       return [];
     }
+
     if (isMansion && data?.mansionDetails) {
       return [
         {
@@ -732,22 +709,23 @@ function ZumenPageContent() {
           label2: "容積率",
           value2: data.houseDetails.floorAreaRatio || "-",
         },
-        ...(selectedTemplate === "chic"
+        ...(activeTemplate === "chic"
           ? []
           : [{ label: "駐車場", value: data.houseDetails.parking || "-" }]),
       ];
     }
 
     return [];
-   }, [data, isHouse, isMansion, isRental, selectedTemplate]);
+  }, [data, isHouse, isMansion, isRental, activeTemplate]);
 
   const facilityRows = useMemo(() => {
-     if (isRental) {
+    if (isRental) {
       return [
         { label: "所在地", value: data?.address || "-" },
         { label: "交通", value: `${data?.access || "-"} 徒歩${data?.walk || "-"}分` },
       ];
     }
+
     if (isMansion && data?.mansionDetails) {
       return [
         { label: "ガス", value: data.mansionDetails.gas || "-" },
@@ -788,13 +766,13 @@ function ZumenPageContent() {
       { label: "ガス", value: "-" },
       { label: "現況", value: "-", label2: "引渡し", value2: "-" },
     ];
- }, [data, isHouse, isMansion, isRental]);
+  }, [data, isHouse, isMansion, isRental]);
 
   const remarks = isMansion
     ? data?.mansionDetails?.note
     : isHouse
-    ? data?.houseDetails?.note
-    : "※図面と相違する場合は現況を優先します。";
+      ? data?.houseDetails?.note
+      : "※図面と相違する場合は現況を優先します。";
 
   const popRemarkItems = useMemo(() => {
     if (!data) return ["※図面と相違する場合は現況を優先します。"];
@@ -854,13 +832,11 @@ function ZumenPageContent() {
     (isMansion
       ? data?.mansionDetails?.layout
       : isHouse
-      ? data?.houseDetails?.layout
-      : data?.propertyType) || "4LDK + WIC";
+        ? data?.houseDetails?.layout
+        : data?.propertyType) || "4LDK + WIC";
 
-  const featureRows =
-    data?.featureTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
-  const salesRows =
-    data?.salesTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
+  const featureRows = data?.featureTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
+  const salesRows = data?.salesTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
 
   const inputLifeInfoRows = useMemo(() => {
     return (data?.lifeInformation ?? "")
@@ -875,7 +851,8 @@ function ZumenPageContent() {
 
   const popLifeInfoRows =
     inputLifeInfoRows.length > 0 ? inputLifeInfoRows : DEFAULT_LIFE_INFORMATION_ROWS;
-const formatCheckboxLifeInfoRow = useCallback((row: string) => {
+
+  const formatCheckboxLifeInfoRow = useCallback((row: string) => {
     return row.startsWith("□") ? row : `□${row.replace(/^[・･•●]\s*/, "")}`;
   }, []);
 
@@ -954,7 +931,8 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
       })
     );
   }, []);
- const inlineCloneImages = useCallback(async (root: HTMLElement) => {
+
+  const inlineCloneImages = useCallback(async (root: HTMLElement) => {
     const images = Array.from(root.querySelectorAll("img"));
 
     await Promise.all(
@@ -980,7 +958,7 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
 
           img.setAttribute("src", dataUrl);
         } catch {
-          // Fallback to the original URL when the image cannot be inlined.
+          //
         }
       })
     );
@@ -1040,6 +1018,7 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
         //
       }
     }
+
     await inlineCloneImages(clone);
     await waitForSheetImages(clone);
 
@@ -1086,7 +1065,7 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
         allowTaint: false,
         imageTimeout: 15000,
         logging: false,
-       foreignObjectRendering,
+        foreignObjectRendering,
         removeContainer: true,
         width: SHEET_WIDTH,
         height: SHEET_HEIGHT,
@@ -1095,7 +1074,8 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
         scrollX: 0,
         scrollY: 0,
       });
-       try {
+
+    try {
       let canvas: HTMLCanvasElement;
 
       try {
@@ -1157,10 +1137,7 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
     document.body.removeChild(link);
   }
 
-  async function canvasToImageDataUrl(
-    canvas: HTMLCanvasElement,
-    format: ImageFormat
-  ) {
+  async function canvasToImageDataUrl(canvas: HTMLCanvasElement, format: ImageFormat) {
     const mimeType = format === "jpeg" ? "image/jpeg" : "image/png";
     const quality = format === "jpeg" ? 0.98 : 1;
     const dataUrl = canvas.toDataURL(mimeType, quality);
@@ -1190,9 +1167,7 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
     } catch (error) {
       console.error("Debug canvas preview error:", error);
       setExportError(getExportErrorMessage(error, "image"));
-      setDebugCanvasInfo(
-        error instanceof Error ? error.message : "unknown debug error"
-      );
+      setDebugCanvasInfo(error instanceof Error ? error.message : "unknown debug error");
       setShowDebugPreview(true);
       setDebugCanvasUrl(null);
     } finally {
@@ -1208,7 +1183,7 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
       const canvas = await captureSheet();
       const dataUrl = await canvasToImageDataUrl(canvas, imageFormat);
       const extension = imageFormat === "jpeg" ? "jpg" : "png";
-      downloadDataUrl(dataUrl, `zumen-${selectedTemplate ?? "preview"}.${extension}`);
+      downloadDataUrl(dataUrl, `zumen-${activeTemplate ?? "preview"}.${extension}`);
     } catch (error) {
       console.error("Image export error:", error);
       setExportError(getExportErrorMessage(error, "image"));
@@ -1248,24 +1223,24 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
         imageRatio > pageRatio ? availableWidth : availableHeight * imageRatio;
       const renderHeight =
         imageRatio > pageRatio ? availableWidth / imageRatio : availableHeight;
-       // Center-out placement to keep left/right and top/bottom spacing balanced,
-      // even when floating point rounding happens during PDF rendering.
+
       const offsetX = pageWidth / 2 - renderWidth / 2;
       const offsetY = pageHeight / 2 - renderHeight / 2;
+
       pdf.addImage(jpegDataUrl, "JPEG", offsetX, offsetY, renderWidth, renderHeight);
-      pdf.save(`zumen-${selectedTemplate ?? "preview"}.pdf`);
+      pdf.save(`zumen-${activeTemplate ?? "preview"}.pdf`);
     } catch (error) {
       console.error("PDF export error:", error);
       setExportError(getExportErrorMessage(error, "pdf"));
     } finally {
       setIsExporting(false);
     }
-  }, [captureSheet, selectedTemplate]);
+  }, [captureSheet, activeTemplate]);
 
   useEffect(() => {
     if (!shouldExportPdf || !data || isExporting) return;
 
-    if (!selectedTemplate) {
+    if (!activeTemplate) {
       setSelectedTemplate("classic");
       return;
     }
@@ -1275,38 +1250,616 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
     }, 600);
 
     return () => window.clearTimeout(timer);
-  }, [data, isExporting, saveAsPdf, selectedTemplate, shouldExportPdf]);
+  }, [activeTemplate, data, isExporting, saveAsPdf, shouldExportPdf]);
 
-  if (!data) {
-    if (!isSavedDraftsView) {
-      return (
-        <main className="min-h-screen bg-[#f3f4f6] p-2 md:p-4">
-          <div className="mx-auto flex w-full max-w-[900px] flex-col gap-3">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <h1 className="text-lg font-bold text-zinc-900">図面データが見つかりません</h1>
-              <p className="mt-2 text-sm leading-6 text-zinc-700">
-                入力画面から物件情報を保存してから図面ページを開いてください。
-                既に保存済みのデータがある場合は、保存一覧から選択できます。
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Link
-                  href="/"
-                  className="rounded-md bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-200"
+  const renderSheet = (template: TemplateKey) => {
+    if (!data) return null;
+
+    return (
+      <div
+        id="zumen-export-sheet"
+        ref={sheetRef}
+        className={`border border-black bg-white text-black ${
+          template === "pop" ? "font-semibold" : ""
+        } ${template === "chic" ? "bg-[#fcfbf8]" : ""}`}
+        style={{
+          width: `${EXPORT_SHEET_WIDTH}px`,
+          height: `${EXPORT_SHEET_HEIGHT}px`,
+          margin: `${PAPER_MARGIN_PX}px`,
+          boxSizing: "border-box",
+          overflow: "hidden",
+        }}
+      >
+        {template === "classic" ? (
+          <>
+            <div className="grid grid-cols-[470px_380px_273px] border-b border-black">
+              <div className="border-r border-black p-2">
+                <div
+                  className="mt-2 text-center font-bold leading-tight"
+                  style={{
+                    ...adaptiveTextStyle(data?.name, 24, 38),
+                    maxHeight: PROPERTY_NAME_MAX_HEIGHT,
+                    overflow: "hidden",
+                  }}
                 >
-                  ← 入力画面に戻る
-                </Link>
-                <Link
-                  href="/zumen?view=saved"
-                  className="rounded-md bg-sky-100 px-3 py-1.5 text-sm font-medium text-sky-700 hover:bg-sky-200"
+                  {data.name}
+                </div>
+                <div className="mt-2 text-center text-2xl font-bold text-[#4a2207]">
+                  販売価格 {Number(data.price || 0).toLocaleString()}万円
+                </div>
+                <div className="mt-2 text-center" style={adaptiveTextStyle(data.catchCopy, 11, 15)}>
+                  {data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境"}
+                </div>
+              </div>
+
+              <div className="border-r border-black p-2">
+                <div className="border-b border-black pb-1 text-lg font-bold" style={{ color: theme.brand }}>
+                  ACCESS
+                </div>
+                <div
+                  className="mt-1 font-semibold"
+                  style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 12, 17)}
                 >
-                  保存データを開く
-                </Link>
+                  {data.access} 駅徒歩{data.walk}分
+                </div>
+                <div className="mt-2 border-b border-black pb-1 text-sm font-bold" style={{ color: theme.brand }}>
+                  LIFE INFORMATION
+                </div>
+                <div className="mt-1 text-xs leading-5">
+                  {lifeInfoRows.slice(0, 6).map((row) => (
+                    <div key={row}>{formatCheckboxLifeInfoRow(row)}</div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-2">
+                <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} />
+                <div
+                  className="border-t border-black p-1 text-center"
+                  style={adaptiveTextStyle(`NAVI ${data.address}`, 9, 12)}
+                >
+                  NAVI {data.address}
+                </div>
               </div>
             </div>
-          </div>
-        </main>
-      );
-    }
+
+            {salesRows.length > 0 && (
+              <div className="grid grid-cols-6 border-b border-black text-center text-sm font-semibold text-white">
+                {salesRows.slice(0, 6).map((tag) => (
+                  <div
+                    key={tag}
+                    className="border-r border-black py-2 last:border-r-0"
+                    style={{ backgroundColor: theme.brand }}
+                  >
+                    {tag}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="grid grid-cols-[300px_421px_402px] border-b border-black">
+              <div className="border-r border-black p-2">
+                <div className="flex items-start justify-between" style={{ color: theme.brand }}>
+                  <div className="font-bold" style={adaptiveTextStyle(data.districts, 10, 14)}>
+                    {data.districts || "1区画"}
+                  </div>
+                  <div
+                    className="max-w-[170px] overflow-hidden text-ellipsis whitespace-nowrap font-bold"
+                    title={layoutLabel}
+                    style={adaptiveTextStyle(layoutLabel, 9, 15)}
+                  >
+                    {layoutLabel}
+                  </div>
+                </div>
+
+                <div className="mt-2">
+                  <ImgBox src={data.imgMain} label="メイン写真" h={180} />
+                </div>
+
+                <div className="mt-2 space-y-1 text-xs">
+                  {summaryRows.slice(0, 6).map((row) => (
+                    <div
+                      key={row.label}
+                      className="border border-black px-2 py-1 text-[11px] leading-tight [overflow-wrap:anywhere]"
+                    >
+                      {row.label}: {row.value}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-r border-black p-2">
+                <ImgBox src={data.imgPlan} label="間取り図" h={320} fit="contain" />
+              </div>
+
+              <div className="p-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <ImgBox src={data.imgSub1} label="サブ画像1" h={180} />
+                  <ImgBox src={data.imgSub2} label="サブ画像2" h={180} />
+                </div>
+                <div className="mt-2">
+                  <ImgBox src={data.imgSub3} label="現地案内図" h={170} />
+                </div>
+
+                {featureRows.length > 0 && (
+                  <>
+                    <div className="mt-3 text-lg font-bold" style={{ color: theme.brand }}>
+                      建物備・仕様
+                    </div>
+                    <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
+                      {featureRows.slice(0, 10).map((item) => (
+                        <div
+                          key={item}
+                          className="flex h-12 items-center justify-center border border-zinc-400 px-1"
+                        >
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="h-[52px] border-b border-black px-3 py-1.5 text-[10px] leading-4 overflow-hidden">
+              {remarks || "※図面と相違する場合は現況を優先します。"}
+            </div>
+
+            <div className={`grid ${FOOTER_HEIGHT_CLASS} grid-cols-[1.2fr_330px_190px] items-center px-3 py-1`}>
+              <div>
+                <div className="text-[12px] font-semibold text-[#243b64] [overflow-wrap:anywhere]">
+                  {contact.licenseNo || "-"}
+                </div>
+                <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 22, 42)}>
+                  {contact.companyName}
+                </div>
+                <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
+              </div>
+
+              <div
+                className="flex flex-col items-center justify-center text-center font-serif text-[#a21717]"
+                style={{ letterSpacing: "0.01em" }}
+              >
+                <div
+                  style={{
+                    ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28),
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  TEL {contact.companyPhone}
+                </div>
+
+                <div className="mt-0.5 flex items-center gap-2">
+                  {data.imgQr ? (
+                    <img
+                      src={toExportableImageSrc(data.imgQr)}
+                      alt="QR"
+                      className={`${FOOTER_QR_SIZE_CLASS} bg-white p-[1px] object-contain`}
+                      crossOrigin="anonymous"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div
+                      className={`flex ${FOOTER_QR_SIZE_CLASS} items-center justify-center border border-zinc-300 text-[10px] text-zinc-500`}
+                    >
+                      QR
+                    </div>
+                  )}
+
+                  <div className="text-left text-[11px] leading-tight text-[#243b64]">
+                    <div className="font-semibold">FAX:{contact.companyFax}</div>
+                    <div>{inspectionNote}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="self-start justify-self-end text-right text-[12px] leading-4 [overflow-wrap:anywhere]">
+                <div className="text-[12px] leading-5 [overflow-wrap:anywhere]">
+                  <div>Email: {contact.companyEmail}</div>
+                  <div className="mt-1 flex justify-center leading-tight">
+                    <div className="grid grid-cols-[4.8em_1em_auto] gap-x-1 text-left">
+                      <div className="text-right whitespace-nowrap">取引形態</div>
+                      <div>：</div>
+                      <div>{contact.transactionType || "-"}</div>
+                      <div className="text-right whitespace-nowrap">担当者</div>
+                      <div>：</div>
+                      <div>{contact.staffName || "-"}</div>
+                      <div className="text-right whitespace-nowrap">手数料</div>
+                      <div>：</div>
+                      <div>{contact.fee || "-"}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : template === "pop" ? (
+          <>
+            <div className="grid grid-cols-[470px_330px_323px] border-b border-black">
+              <div
+                className="relative border-r border-black p-2 text-white"
+                style={{ backgroundColor: theme.brand }}
+              >
+                <div
+                  className="text-center font-bold leading-tight"
+                  style={adaptiveTextStyle(
+                    `${data.propertyType || "中古マンション"} ${data.districts || "全10区画"}`,
+                    15,
+                    20
+                  )}
+                >
+                  {data.propertyType || "中古マンション"} {data.districts || "全10区画"}
+                </div>
+
+                <AutoFitText
+                  text={data.name}
+                  minSize={20}
+                  maxSize={40}
+                  className="mt-1.5 text-center font-serif"
+                  style={{ maxHeight: "2.5cm", overflow: "hidden" }}
+                />
+
+                <div
+                  className="mt-1 text-center leading-tight"
+                  style={{
+                    ...adaptiveTextStyle(data.catchCopy, 10, 14),
+                    maxHeight: "34px",
+                    overflow: "hidden",
+                  }}
+                >
+                  {data.catchCopy ||
+                    "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}
+                </div>
+
+                <div className="absolute bottom-2 right-2 text-right">
+                  <div className="font-bold text-[#fff7db]" style={adaptiveTextStyle("販売価格", 11, 15)}>
+                    販売価格
+                  </div>
+                  <div className="mt-0.5 flex items-baseline justify-end gap-1.5 leading-none">
+                    <div
+                      className="font-serif font-bold text-[#ffe9a8]"
+                      style={{
+                        ...adaptiveTextStyle(Number(data.price || 0).toLocaleString(), 24, 34),
+                        letterSpacing: "0.01em",
+                      }}
+                    >
+                      {Number(data.price || 0).toLocaleString()}
+                    </div>
+                    <div className="font-bold text-[#fff7db]" style={adaptiveTextStyle("万円", 12, 18)}>
+                      万円
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-r border-black p-2">
+                <div
+                  className="text-right font-bold"
+                  style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 16, 28)}
+                >
+                  {data.access} 駅徒歩<span style={{ color: theme.brand }}>{data.walk}</span>分
+                </div>
+
+                <div
+                  className="mt-1.5 px-2 py-0.5 text-xs font-bold tracking-widest text-white"
+                  style={{ backgroundColor: theme.brand }}
+                >
+                  LIFE INFORMATION
+                </div>
+
+                <div className="mt-2 text-[12px] leading-5 [overflow-wrap:anywhere]">
+                  {popLifeInfoRows.slice(0, 6).map((row) => (
+                    <div key={row}>{formatCheckboxLifeInfoRow(row)}</div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-2">
+                <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} />
+                <div
+                  className="px-1 py-0.5 text-center font-bold text-white"
+                  style={{
+                    ...adaptiveTextStyle(`NAVI ${data.address} 付近`, 8, 11),
+                    backgroundColor: theme.brand,
+                    minHeight: "18px",
+                  }}
+                >
+                  NAVI {data.address} 付近
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-[380px_420px_323px] border-b border-black">
+              <div className="border-r border-black p-2" style={{ backgroundColor: theme.brand }}>
+                <ImgBox src={data.imgMain} label="メイン画像" h={220} />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <ImgBox src={data.imgSub1} label="サブ1" h={85} />
+                  <ImgBox src={data.imgSub2} label="サブ2" h={85} />
+                </div>
+              </div>
+
+              <div className="border-r border-black p-2">
+                <div>
+                  <div className="font-bold text-[#1f2937]" style={adaptiveTextStyle(layoutLabel, 20, 34)}>
+                    {layoutLabel}
+                  </div>
+                  <div className="text-xs">□専有面積/75㎡(22.68坪)</div>
+                  <div className="text-xs">□バルコニー面積/10㎡(3.02坪)</div>
+                  <div className="mt-2">
+                    <ImgBox src={data.imgPlan} label="間取り" h={205} fit="contain" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-2">
+                <ImgBox src={data.imgSub3} label="拡大図" h={130} />
+
+                {featureRows.length > 0 && (
+                  <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
+                    {featureRows.slice(0, 10).map((item) => (
+                      <div key={item} className="flex h-14 items-center justify-center border border-zinc-400">
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {salesRows.length > 0 && (
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs font-bold text-white">
+                    {salesRows.slice(0, 6).map((item) => (
+                      <div
+                        key={item}
+                        className="border border-[#d2a52b] px-1 py-1.5"
+                        style={{ backgroundColor: theme.brand }}
+                      >
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="h-[120px] w-[29cm] border-b border-black px-3 py-1.5 text-[11px] leading-5 overflow-hidden">
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+                {popRemarkItems.map((item, index) => (
+                  <span key={`${item}-${index}`}>{item}</span>
+                ))}
+              </div>
+            </div>
+
+            <div
+              className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.45fr_390px_200px] items-center border-t border-black px-3 py-1`}
+            >
+              <div>
+                <div className="text-[12px] font-semibold text-[#243b64]">
+                  免許番号：{contact.licenseNo || "-"}
+                </div>
+                <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 22, 42)}>
+                  {contact.companyName}
+                </div>
+                <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
+              </div>
+
+              <div
+                className="flex flex-col items-center justify-center text-center font-serif text-[#a21717]"
+                style={{ letterSpacing: "0.01em" }}
+              >
+                <div
+                  style={{
+                    ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28),
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  TEL {contact.companyPhone}
+                </div>
+
+                <div className="mt-0.5 flex items-center gap-2">
+                  {data.imgQr ? (
+                    <img
+                      src={toExportableImageSrc(data.imgQr)}
+                      alt="QR"
+                      className={`${FOOTER_QR_SIZE_CLASS} object-cover`}
+                      crossOrigin="anonymous"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div
+                      className={`flex ${FOOTER_QR_SIZE_CLASS} items-center justify-center border border-zinc-300 text-[10px] text-zinc-500`}
+                    >
+                      QR
+                    </div>
+                  )}
+
+                  <div className="text-left text-[11px] leading-tight text-[#243b64]">
+                    <div className="font-semibold">FAX:{contact.companyFax}</div>
+                    <div>{inspectionNote}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="self-start justify-self-end text-right text-[12px] leading-4 [overflow-wrap:anywhere]">
+                <div>Email: {contact.companyEmail}</div>
+                <div className="mt-1 flex justify-center leading-tight">
+                  <div className="grid grid-cols-[4.8em_1em_auto] gap-x-1 text-left">
+                    <div className="text-right whitespace-nowrap">取引形態</div>
+                    <div>：</div>
+                    <div>{contact.transactionType || "-"}</div>
+                    <div className="text-right whitespace-nowrap">担当者</div>
+                    <div>：</div>
+                    <div>{contact.staffName || "-"}</div>
+                    <div className="text-right whitespace-nowrap">手数料</div>
+                    <div>：</div>
+                    <div>{contact.fee || "-"}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div
+              className={`grid grid-cols-[140px_1fr_320px] border-b border-black ${
+                template === "chic" ? "bg-[#f7f3ee]" : ""
+              }`}
+            >
+              <div className="relative flex items-center justify-center border-r border-black p-2">
+                <div className="-translate-y-0.5 text-3xl font-extrabold leading-none">
+                  {Number(data.price || 0).toLocaleString()}
+                </div>
+                <div className="absolute bottom-1.5 right-2 text-xs font-bold">万円</div>
+              </div>
+
+              <div className="p-2">
+                <div className="text-[12px] font-bold">物件名</div>
+                <div
+                  className="mt-1 text-lg font-extrabold tracking-[0.2em]"
+                  style={{
+                    maxHeight: PROPERTY_NAME_MAX_HEIGHT,
+                    overflow: "hidden",
+                  }}
+                >
+                  {data.name}
+                </div>
+              </div>
+
+              <div className="border-l border-black p-2">
+                <div className="grid grid-cols-[60px_1fr] items-center">
+                  <div className="text-[12px] font-bold">交通</div>
+                  <div className="text-right text-[12px] font-bold">
+                    {data.access} 徒歩{data.walk}分
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-[260px_1fr_320px]">
+              <div className="border-r border-black p-2">
+                <ImgBox src={data.imgMain} label="外観画像（左上）" h={210} />
+                <div className="mt-2 grid grid-cols-[calc(50%+0.1cm)_calc(50%-0.1cm)] gap-2">
+                  <ImgBox src={data.imgSub1} label="共用（左中）" h={118} />
+                  <ImgBox src={data.imgSub2} label="室内（左中）" h={118} />
+                </div>
+                <div className="mt-2">
+                  <ImgBox src={data.imgSub3} label="ラウンジ等（左下）" h={120} />
+                </div>
+                <div className="mt-3 text-[10px] leading-5">
+                  {lifeInfoRows.slice(0, 6).map((row) => (
+                    <div key={row}>{formatChicLifeInfoRow(row)}</div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-r border-black p-2">
+                <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={360} fit="contain" />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <ImgBox src={data.imgSub2} label="室内（中央下左）" h={168} />
+                  <ImgBox src={data.imgSub3} label="共用（中央下右）" h={168} />
+                </div>
+              </div>
+
+              <div className="p-2">
+                <SectionTitle bgColor={theme.section}>
+                  {isRental ? "賃貸条件（賃貸居住用）" : "物件概要"}
+                </SectionTitle>
+                <InfoTable rows={summaryRows} labelBgColor={theme.label} />
+
+                {managementRows.length > 0 && (
+                  <div className="mt-2">
+                    <SectionTitle bgColor={theme.section}>
+                      {isMansion ? "管理費等" : "制限・施設"}
+                    </SectionTitle>
+                    <InfoTable rows={managementRows} labelBgColor={theme.label} autoValueWidth />
+                  </div>
+                )}
+
+                {facilityRows.length > 0 && (
+                  <div className="mt-2">
+                    <SectionTitle bgColor={theme.section}>
+                      {isRental ? "物件概要" : "設備・引渡"}
+                    </SectionTitle>
+                    <InfoTable rows={facilityRows} labelBgColor={theme.label} autoValueWidth />
+                  </div>
+                )}
+
+                <div className="mt-2">
+                  <SectionTitle bgColor={theme.section}>備考</SectionTitle>
+                  <div
+                    className={`whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px] ${
+                      template === "chic" && isMansion ? "min-h-[3.76cm]" : "min-h-[3.54cm]"
+                    }`}
+                  >
+                    {remarks || "※図面と相違する場合は現況を優先します。"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-[210px_1fr] border-t border-black">
+              <div className="px-3 py-2 text-white" style={{ backgroundColor: theme.brand }}>
+                <div
+                  className={`${
+                    template === "chic" ? "text-[22px]" : "text-2xl"
+                  } font-extrabold leading-tight tracking-widest`}
+                >
+                  POWERWAY HOUSE
+                </div>
+                <div className="mt-0.5 text-[11px]">不動産　販売・賃貸・管理</div>
+              </div>
+
+              <div className="grid grid-cols-[1fr_88px_320px]">
+                <div className="px-2 py-1 text-[10px] leading-4">
+                  <div className="grid grid-cols-[1fr_auto] gap-2">
+                    <div className="font-semibold">{contact.licenseNo}</div>
+                    <div className="font-semibold">
+                      TEL：{contact.companyPhone}　FAX：{contact.companyFax}
+                    </div>
+                  </div>
+
+                  <div className="text-[21px] font-extrabold leading-tight">{contact.companyName}</div>
+
+                  <div className="truncate text-[10px]">{contact.companyAddress}</div>
+                </div>
+
+                <div className="flex items-center justify-center border-l border-black px-1 py-1">
+                  {data.imgQr ? (
+                    <img
+                      src={toExportableImageSrc(data.imgQr)}
+                      alt="QR"
+                      className="h-20 w-20 object-cover"
+                      crossOrigin="anonymous"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="text-[10px] text-zinc-500">QR</div>
+                  )}
+                </div>
+
+                <div className="border-l border-black text-[10px]">
+                  <div className="grid grid-cols-[1fr_1fr] items-start border-b border-black px-2 py-1">
+                    <div>
+                      <div className="font-semibold">{inspectionNote}</div>
+                    </div>
+                    <div className="text-right">
+                      <div>取引形態：{contact.transactionType}</div>
+                      <div className="mt-0.5">担当者：{contact.staffName}</div>
+                      <div className="mt-0.5">手数料：{contact.fee}</div>
+                    </div>
+                  </div>
+                  <div className="px-2 py-1 text-right text-[9px]">
+                    図面と相違する場合は現況を優先します。
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  if (!data) {
+    if (!isSavedDraftsView) return null;
 
     return (
       <main className="min-h-screen bg-[#f3f4f6] p-2 md:p-4">
@@ -1336,8 +1889,12 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
                         >
                           <span className="min-w-6 font-semibold">{index + 1}.</span>
                           <span>
-                            <span className="block font-semibold">{draft.payload.draftTitle || draft.payload.name || "(物件名未入力)"}</span>
-                            <span className="text-xs text-zinc-600">{draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}</span>
+                            <span className="block font-semibold">
+                              {draft.payload.draftTitle || draft.payload.name || "(物件名未入力)"}
+                            </span>
+                            <span className="text-xs text-zinc-600">
+                              {draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}
+                            </span>
                           </span>
                         </button>
                         <button
@@ -1368,14 +1925,14 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
     <main className="min-h-screen bg-[#f3f4f6] p-2 md:p-4">
       <div className="mx-auto w-full max-w-[1500px]">
         <div className="mb-3 flex items-center justify-between">
-         {isSavedDraftsView ? (
+          {isSavedDraftsView ? (
             <Link
               href="/"
               className="rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700"
             >
               ← 入力画面に戻る
             </Link>
-          ) : selectedTemplate ? (
+          ) : activeTemplate ? (
             <button
               type="button"
               onClick={() => setSelectedTemplate(null)}
@@ -1392,7 +1949,7 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
             </Link>
           )}
 
-           {!isSavedDraftsView && selectedTemplate && (
+          {!isSavedDraftsView && activeTemplate && (
             <div className="flex items-center gap-3">
               <div className="text-sm font-semibold">デザインカラー選択</div>
 
@@ -1468,9 +2025,7 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
         {!isSavedDraftsView && showDebugPreview && (
           <div className="mb-4 rounded-xl border border-sky-300 bg-sky-50 p-3">
             <div className="mb-2 flex items-center justify-between">
-              <div className="text-sm font-semibold text-sky-900">
-                Debug Canvas Preview
-              </div>
+              <div className="text-sm font-semibold text-sky-900">Debug Canvas Preview</div>
               <button
                 type="button"
                 onClick={() => setShowDebugPreview(false)}
@@ -1501,49 +2056,84 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
         )}
 
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4">
-           {isSavedDraftsView ? (
-            savedDrafts.length > 0 ? (
-              <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
-                <div className="mb-2 text-sm font-semibold text-sky-900">図面作成済（保存データ）</div>
-                <ol className="space-y-2">
-                  {savedDrafts.map((draft, index) => (
-                    <li key={draft.id}>
-                      <div className="flex items-stretch gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleSelectDraft(draft)}
-                          className={`flex flex-1 items-start gap-2 rounded-md border px-3 py-2 text-left text-sm transition ${
-                            selectedDraftId === draft.id
-                              ? "border-sky-300 bg-sky-100 text-sky-900"
-                              : "border-sky-200 bg-white text-sky-800 hover:bg-sky-100"
-                          }`}
-                          aria-label={`保存データ ${index + 1} を表示`}
-                        >
-                          <span className="min-w-6 font-semibold">{index + 1}.</span>
-                          <span>
-                            <span className="block font-semibold">{draft.payload.draftTitle || draft.payload.name || draft.id || "(物件名未入力)"}</span>
-                            <span className="text-xs text-zinc-600">{draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}</span>
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteDraft(draft.id)}
-                          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
-                          aria-label={`保存データ ${index + 1} を削除`}
-                        >
-                          削除
-                        </button>
+          {isSavedDraftsView ? (
+            <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+              <div>
+                {savedDrafts.length > 0 ? (
+                  <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
+                    <div className="mb-2 text-sm font-semibold text-sky-900">
+                      図面作成済（保存データ）
+                    </div>
+                    <ol className="space-y-2">
+                      {savedDrafts.map((draft, index) => (
+                        <li key={draft.id}>
+                          <div className="flex items-stretch gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSelectDraft(draft)}
+                              className={`flex flex-1 items-start gap-2 rounded-md border px-3 py-2 text-left text-sm transition ${
+                                selectedDraftId === draft.id
+                                  ? "border-sky-300 bg-sky-100 text-sky-900"
+                                  : "border-sky-200 bg-white text-sky-800 hover:bg-sky-100"
+                              }`}
+                              aria-label={`保存データ ${index + 1} を表示`}
+                            >
+                              <span className="min-w-6 font-semibold">{index + 1}.</span>
+                              <span>
+                                <span className="block font-semibold">
+                                  {draft.payload.draftTitle ||
+                                    draft.payload.name ||
+                                    "(物件名未入力)"}
+                                </span>
+                                <span className="text-xs text-zinc-600">
+                                  {draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}
+                                </span>
+                              </span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteDraft(draft.id)}
+                              className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                            >
+                              削除
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">
+                    保存済みの図面データはありません。
+                  </div>
+                )}
+              </div>
+
+              <div>
+                {data ? (
+                  <div ref={previewRef} className="overflow-x-auto overflow-y-visible">
+                    <div className="mx-auto" style={{ width: `${SHEET_WIDTH * sheetScale}px` }}>
+                      <div
+                        style={{
+                          width: `${SHEET_WIDTH}px`,
+                          height: `${SHEET_HEIGHT}px`,
+                          transform: `scale(${sheetScale})`,
+                          transformOrigin: "top left",
+                        }}
+                      >
+                        {renderSheet(activeTemplate ?? "classic")}
                       </div>
-                    </li>
-                  ))}
-                </ol>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">
+                    左側から保存データを選択してください。
+                  </div>
+                )}
               </div>
-          ) : (
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">
-                保存済みの図面データはありません。
-              </div>
-            )
-          ) : !selectedTemplate ? (
+            </div>
+          ) : !activeTemplate ? (
             <div className="grid gap-4 md:grid-cols-3">
               {TEMPLATE_OPTIONS.map((template) => (
                 <div key={template.key} className="rounded-xl border border-zinc-200 p-4">
@@ -1575,612 +2165,7 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
                     transformOrigin: "top left",
                   }}
                 >
-                  <div
-                    id="zumen-export-sheet"
-                    ref={sheetRef}
-                    className={`border border-black bg-white text-black ${
-                      selectedTemplate === "pop" ? "font-semibold" : ""
-                    } ${selectedTemplate === "chic" ? "bg-[#fcfbf8]" : ""}`}
-                    style={{
-                      width: `${EXPORT_SHEET_WIDTH}px`,
-                      height: `${EXPORT_SHEET_HEIGHT}px`,
-                      margin: `${PAPER_MARGIN_PX}px`,
-                      boxSizing: "border-box",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {selectedTemplate === "classic" ? (
-                      <>
-                        <div className="grid grid-cols-[470px_380px_273px] border-b border-black">
-                          <div className="border-r border-black p-2">
-                            <div
-                              className="mt-2 text-center font-bold leading-tight"
-                              style={{
-                               ...adaptiveTextStyle(data?.name, 24, 38),
-                                maxHeight: PROPERTY_NAME_MAX_HEIGHT,
-                                overflow: "hidden",
-                              }}
-                            >
-                              {data.name}
-                            </div>
-                            <div className="mt-2 text-center text-2xl font-bold text-[#4a2207]">
-                              販売価格 {Number(data.price || 0).toLocaleString()}万円
-                            </div>
-                            <div className="mt-2 text-center" style={adaptiveTextStyle(data.catchCopy, 11, 15)}>
-                              {data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境"}
-                            </div>
-                          </div>
-
-                          <div className="border-r border-black p-2">
-                            <div className="border-b border-black pb-1 text-lg font-bold" style={{ color: theme.brand }}>
-                              ACCESS
-                            </div>
-                            <div
-                              className="mt-1 font-semibold"
-                              style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 12, 17)}
-                            >
-                              {data.access} 駅徒歩{data.walk}分
-                            </div>
-                            <div className="mt-2 border-b border-black pb-1 text-sm font-bold" style={{ color: theme.brand }}>
-                              LIFE INFORMATION
-                            </div>
-                            <div className="mt-1 text-xs leading-5">
-                              {lifeInfoRows.slice(0, 6).map((row) => (
-                                <div key={row}>{formatCheckboxLifeInfoRow(row)}</div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="p-2">
-                            <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} />
-                            <div
-                              className="border-t border-black p-1 text-center"
-                              style={adaptiveTextStyle(`NAVI ${data.address}`, 9, 12)}
-                            >
-                              NAVI {data.address}
-                            </div>
-                          </div>
-                        </div>
-
-                        {salesRows.length > 0 && (
-                          <div className="grid grid-cols-6 border-b border-black text-center text-sm font-semibold text-white">
-                            {salesRows.slice(0, 6).map((tag) => (
-                              <div
-                                key={tag}
-                                className="border-r border-black py-2 last:border-r-0"
-                                style={{ backgroundColor: theme.brand }}
-                              >
-                                {tag}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="grid grid-cols-[300px_421px_402px] border-b border-black">
-                          <div className="border-r border-black p-2">
-                            <div className="flex items-start justify-between" style={{ color: theme.brand }}>
-                              <div className="font-bold" style={adaptiveTextStyle(data.districts, 10, 14)}>
-                                {data.districts || "1区画"}
-                              </div>
-                              <div
-                                className="max-w-[170px] overflow-hidden text-ellipsis whitespace-nowrap font-bold"
-                                title={layoutLabel}
-                                style={adaptiveTextStyle(layoutLabel, 9, 15)}
-                              >
-                                {layoutLabel}
-                              </div>
-                            </div>
-
-                            <div className="mt-2">
-                              <ImgBox src={data.imgMain} label="メイン写真" h={180} />
-                            </div>
-
-                            <div className="mt-2 space-y-1 text-xs">
-                              {summaryRows.slice(0, 6).map((row) => (
-                                <div
-                                  key={row.label}
-                                  className="border border-black px-2 py-1 text-[11px] leading-tight [overflow-wrap:anywhere]"
-                                >
-                                  {row.label}: {row.value}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="border-r border-black p-2">
-                            <ImgBox src={data.imgPlan} label="間取り図" h={320} fit="contain" />
-                          </div>
-
-                          <div className="p-2">
-                            <div className="grid grid-cols-2 gap-2">
-                              <ImgBox src={data.imgSub1} label="サブ画像1" h={180} />
-                              <ImgBox src={data.imgSub2} label="サブ画像2" h={180} />
-                            </div>
-                            <div className="mt-2">
-                              <ImgBox src={data.imgSub3} label="現地案内図" h={170} />
-                            </div>
-
-                            {featureRows.length > 0 && (
-                              <>
-                                <div className="mt-3 text-lg font-bold" style={{ color: theme.brand }}>
-                                  建物備・仕様
-                                </div>
-                                <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
-                                  {featureRows.slice(0, 10).map((item) => (
-                                    <div
-                                      key={item}
-                                      className="flex h-12 items-center justify-center border border-zinc-400 px-1"
-                                    >
-                                      {item}
-                                    </div>
-                                  ))}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="h-[52px] border-b border-black px-3 py-1.5 text-[10px] leading-4 overflow-hidden">
-                          {remarks || "※図面と相違する場合は現況を優先します。"}
-                        </div>
-
-                        <div className={`grid ${FOOTER_HEIGHT_CLASS} grid-cols-[1.2fr_330px_190px] items-center px-3 py-1`}>
-                          <div>
-                            <div className="text-[12px] font-semibold text-[#243b64] [overflow-wrap:anywhere]">
-                              {contact.licenseNo || "-"}
-                            </div>
-                            <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 22, 42)}>
-                              {contact.companyName}
-                            </div>
-                            <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
-                          </div>
-
-                          <div
-                            className="flex flex-col items-center justify-center text-center font-serif text-[#a21717]"
-                            style={{ letterSpacing: "0.01em" }}
-                          >
-                            <div
-                              style={{
-                                ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28),
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              TEL {contact.companyPhone}
-                            </div>
-
-                            <div className="mt-0.5 flex items-center gap-2">
-                              {data.imgQr ? (
-                                <img
-                                  src={toExportableImageSrc(data.imgQr)}
-                                  alt="QR"
-                                  className={`${FOOTER_QR_SIZE_CLASS} bg-white p-[1px] object-contain`}
-                                  crossOrigin="anonymous"
-                                  referrerPolicy="no-referrer"
-                                />
-                              ) : (
-                                <div
-                                  className={`flex ${FOOTER_QR_SIZE_CLASS} items-center justify-center border border-zinc-300 text-[10px] text-zinc-500`}
-                                >
-                                  QR
-                                </div>
-                              )}
-
-                              <div className="text-left text-[11px] leading-tight text-[#243b64]">
-                                <div className="font-semibold">FAX:{contact.companyFax}</div>
-                                <div>{inspectionNote}</div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="self-start justify-self-end text-right text-[12px] leading-4 [overflow-wrap:anywhere]">
-                            <div className="text-[12px] leading-5 [overflow-wrap:anywhere]">
-                              <div>Email: {contact.companyEmail}</div>
-                              <div className="mt-1 flex justify-center leading-tight">
-                                <div className="grid grid-cols-[4.8em_1em_auto] gap-x-1 text-left">
-                                  <div className="text-right whitespace-nowrap">取引形態</div>
-                                  <div>：</div>
-                                  <div>{contact.transactionType || "-"}</div>
-                                  <div className="text-right whitespace-nowrap">担当者</div>
-                                  <div>：</div>
-                                  <div>{contact.staffName || "-"}</div>
-                                  <div className="text-right whitespace-nowrap">手数料</div>
-                                  <div>：</div>
-                                  <div>{contact.fee || "-"}</div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    ) : selectedTemplate === "pop" ? (
-                      <>
-                        <div className="grid grid-cols-[470px_330px_323px] border-b border-black">
-                          <div
-                            className="relative border-r border-black p-2 text-white"
-                            style={{ backgroundColor: theme.brand }}
-                          >
-                            <div
-                              className="text-center font-bold leading-tight"
-                              style={adaptiveTextStyle(
-                                `${data.propertyType || "中古マンション"} ${data.districts || "全10区画"}`,
-                                15,
-                                20
-                              )}
-                            >
-                              {data.propertyType || "中古マンション"} {data.districts || "全10区画"}
-                            </div>
-
-                            <AutoFitText
-                              text={data.name}
-                              minSize={20}
-                              maxSize={40}
-                              className="mt-1.5 text-center font-serif"
-                              style={{ maxHeight: "2.5cm", overflow: "hidden" }}
-                            />
-
-                            <div
-                              className="mt-1 text-center leading-tight"
-                              style={{
-                                ...adaptiveTextStyle(data.catchCopy, 10, 14),
-                                maxHeight: "34px",
-                                overflow: "hidden",
-                              }}
-                            >
-                              {data.catchCopy ||
-                                "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}
-                            </div>
-
-                            <div className="absolute bottom-2 right-2 text-right">
-                              <div className="font-bold text-[#fff7db]" style={adaptiveTextStyle("販売価格", 11, 15)}>
-                                販売価格
-                              </div>
-                              <div className="mt-0.5 flex items-baseline justify-end gap-1.5 leading-none">
-                                <div
-                                  className="font-serif font-bold text-[#ffe9a8]"
-                                  style={{
-                                    ...adaptiveTextStyle(
-                                      Number(data.price || 0).toLocaleString(),
-                                      24,
-                                      34
-                                    ),
-                                    letterSpacing: "0.01em",
-                                  }}
-                                >
-                                  {Number(data.price || 0).toLocaleString()}
-                                </div>
-                                <div className="font-bold text-[#fff7db]" style={adaptiveTextStyle("万円", 12, 18)}>
-                                  万円
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="border-r border-black p-2">
-                            <div
-                              className="text-right font-bold"
-                              style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 16, 28)}
-                            >
-                              {data.access} 駅徒歩<span style={{ color: theme.brand }}>{data.walk}</span>分
-                            </div>
-
-                            <div
-                              className="mt-1.5 px-2 py-0.5 text-xs font-bold tracking-widest text-white"
-                              style={{ backgroundColor: theme.brand }}
-                            >
-                              LIFE INFORMATION
-                            </div>
-
-                            <div className="mt-2 text-[12px] leading-5 [overflow-wrap:anywhere]">
-                              {popLifeInfoRows.slice(0, 6).map((row) => (
-                                <div key={row}>{formatCheckboxLifeInfoRow(row)}</div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="p-2">
-                            <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} />
-                            <div
-                              className="px-1 py-0.5 text-center font-bold text-white"
-                              style={{
-                                ...adaptiveTextStyle(`NAVI ${data.address} 付近`, 8, 11),
-                                backgroundColor: theme.brand,
-                                minHeight: "18px",
-                              }}
-                            >
-                              NAVI {data.address} 付近
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-[380px_420px_323px] border-b border-black">
-                          <div className="border-r border-black p-2" style={{ backgroundColor: theme.brand }}>
-                            <ImgBox src={data.imgMain} label="メイン画像" h={220} />
-                            <div className="mt-2 grid grid-cols-2 gap-2">
-                              <ImgBox src={data.imgSub1} label="サブ1" h={85} />
-                              <ImgBox src={data.imgSub2} label="サブ2" h={85} />
-                            </div>
-                          </div>
-
-                          <div className="border-r border-black p-2">
-                            <div>
-                              <div className="font-bold text-[#1f2937]" style={adaptiveTextStyle(layoutLabel, 20, 34)}>
-                                {layoutLabel}
-                              </div>
-                              <div className="text-xs">□専有面積/75㎡(22.68坪)</div>
-                              <div className="text-xs">□バルコニー面積/10㎡(3.02坪)</div>
-                              <div className="mt-2">
-                                <ImgBox src={data.imgPlan} label="間取り" h={205} fit="contain" />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="p-2">
-                            <ImgBox src={data.imgSub3} label="拡大図" h={130} />
-
-                            {featureRows.length > 0 && (
-                              <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
-                                {featureRows.slice(0, 10).map((item) => (
-                                  <div key={item} className="flex h-14 items-center justify-center border border-zinc-400">
-                                    {item}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {salesRows.length > 0 && (
-                              <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs font-bold text-white">
-                                {salesRows.slice(0, 6).map((item) => (
-                                  <div
-                                    key={item}
-                                    className="border border-[#d2a52b] px-1 py-1.5"
-                                    style={{ backgroundColor: theme.brand }}
-                                  >
-                                    {item}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="h-[120px] w-[29cm] border-b border-black px-3 py-1.5 text-[11px] leading-5 overflow-hidden">
-                          <div className="flex flex-wrap gap-x-3 gap-y-1">
-                            {popRemarkItems.map((item, index) => (
-                              <span key={`${item}-${index}`}>{item}</span>
-                            ))}
-                          </div>
-                        </div>
-
-                       <div
-                          className={`grid ${FOOTER_HEIGHT_CLASS} w-[29cm] grid-cols-[1.45fr_390px_200px] items-center border-t border-black px-3 py-1`}
-                        >
-                          <div>
-                            <div className="text-[12px] font-semibold text-[#243b64]">
-                              免許番号：{contact.licenseNo || "-"}
-                            </div>
-                            <div className="font-serif text-[#243b64]" style={adaptiveTextStyle(contact.companyName, 22, 42)}>
-                              {contact.companyName}
-                            </div>
-                            <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
-                          </div>
-
-                          <div
-                            className="flex flex-col items-center justify-center text-center font-serif text-[#a21717]"
-                            style={{ letterSpacing: "0.01em" }}
-                          >
-                            <div
-                              style={{
-                                ...adaptiveTextStyle(`TEL ${contact.companyPhone}`, 20, 28),
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              TEL {contact.companyPhone}
-                            </div>
-
-                            <div className="mt-0.5 flex items-center gap-2">
-                              {data.imgQr ? (
-                                <img
-                                  src={toExportableImageSrc(data.imgQr)}
-                                  alt="QR"
-                                  className={`${FOOTER_QR_SIZE_CLASS} object-cover`}
-                                  crossOrigin="anonymous"
-                                  referrerPolicy="no-referrer"
-                                />
-                              ) : (
-                                <div
-                                  className={`flex ${FOOTER_QR_SIZE_CLASS} items-center justify-center border border-zinc-300 text-[10px] text-zinc-500`}
-                                >
-                                  QR
-                                </div>
-                              )}
-
-                              <div className="text-left text-[11px] leading-tight text-[#243b64]">
-                                <div className="font-semibold">FAX:{contact.companyFax}</div>
-                                <div>{inspectionNote}</div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="self-start justify-self-end text-right text-[12px] leading-4 [overflow-wrap:anywhere]">
-                            <div>Email: {contact.companyEmail}</div>
-                            <div className="mt-1 flex justify-center leading-tight">
-                              <div className="grid grid-cols-[4.8em_1em_auto] gap-x-1 text-left">
-                                <div className="text-right whitespace-nowrap">取引形態</div>
-                                <div>：</div>
-                                <div>{contact.transactionType || "-"}</div>
-                                <div className="text-right whitespace-nowrap">担当者</div>
-                                <div>：</div>
-                                <div>{contact.staffName || "-"}</div>
-                                <div className="text-right whitespace-nowrap">手数料</div>
-                                <div>：</div>
-                                <div>{contact.fee || "-"}</div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div
-                          className={`grid grid-cols-[140px_1fr_320px] border-b border-black ${
-                            selectedTemplate === "chic" ? "bg-[#f7f3ee]" : ""
-                          }`}
-                        >
-                          <div className="relative flex items-center justify-center border-r border-black p-2">
-                            <div className="-translate-y-0.5 text-3xl font-extrabold leading-none">
-                              {Number(data.price || 0).toLocaleString()}
-                            </div>
-                            <div className="absolute bottom-1.5 right-2 text-xs font-bold">万円</div>
-                          </div>
-
-                          <div className="p-2">
-                            <div className="text-[12px] font-bold">物件名</div>
-                            <div
-                              className="mt-1 text-lg font-extrabold tracking-[0.2em]"
-                              style={{
-                                maxHeight: PROPERTY_NAME_MAX_HEIGHT,
-                                overflow: "hidden",
-                              }}
-                            >
-                              {data.name}
-                            </div>
-                          </div>
-
-                          <div className="border-l border-black p-2">
-                            <div className="grid grid-cols-[60px_1fr] items-center">
-                              <div className="text-[12px] font-bold">交通</div>
-                              <div className="text-right text-[12px] font-bold">
-                                {data.access} 徒歩{data.walk}分
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-[260px_1fr_320px]">
-                          <div className="border-r border-black p-2">
-                            <ImgBox src={data.imgMain} label="外観画像（左上）" h={210} />
-                            <div className="mt-2 grid grid-cols-[calc(50%+0.1cm)_calc(50%-0.1cm)] gap-2">
-                              <ImgBox src={data.imgSub1} label="共用（左中）" h={118} />
-                              <ImgBox src={data.imgSub2} label="室内（左中）" h={118} />
-                            </div>
-                            <div className="mt-2">
-                              <ImgBox src={data.imgSub3} label="ラウンジ等（左下）" h={120} />
-                            </div>
-                            <div className="mt-3 text-[10px] leading-5">
-                              {lifeInfoRows.slice(0, 6).map((row) => (
-                                <div key={row}>{formatChicLifeInfoRow(row)}</div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="border-r border-black p-2">
-                            <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={360} fit="contain" />
-                            <div className="mt-2 grid grid-cols-2 gap-2">
-                              <ImgBox src={data.imgSub2} label="室内（中央下左）" h={168} />
-                              <ImgBox src={data.imgSub3} label="共用（中央下右）" h={168} />
-                            </div>
-                          </div>
-
-                          <div className="p-2">
-                            <SectionTitle bgColor={theme.section}>{isRental ? "賃貸条件（賃貸居住用）" : "物件概要"}</SectionTitle>
-                            <InfoTable rows={summaryRows} labelBgColor={theme.label} />
-
-                            {managementRows.length > 0 && (
-                              <div className="mt-2">
-                                <SectionTitle bgColor={theme.section}>
-                                  {isMansion ? "管理費等" : "制限・施設"}
-                                </SectionTitle>
-                                <InfoTable rows={managementRows} labelBgColor={theme.label} autoValueWidth />
-                              </div>
-                            )}
-                              {facilityRows.length > 0 && (
-                              <div className="mt-2">
-                                <SectionTitle bgColor={theme.section}>{isRental ? "物件概要" : "設備・引渡"}</SectionTitle>
-                                <InfoTable rows={facilityRows} labelBgColor={theme.label} autoValueWidth />
-                              </div>
-                            )}
-                            <div className="mt-2">
-                              <SectionTitle bgColor={theme.section}>設備・引渡</SectionTitle>
-                              <InfoTable rows={facilityRows} labelBgColor={theme.label} autoValueWidth />
-                            </div>
-
-                            <div className="mt-2">
-                              <SectionTitle bgColor={theme.section}>備考</SectionTitle>
-                              <div
-                                className={`whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px] ${
-                                  selectedTemplate === "chic" && isMansion
-                                    ? "min-h-[3.76cm]"
-                                    : "min-h-[3.54cm]"
-                                }`}
-                              >
-                                {remarks || "※図面と相違する場合は現況を優先します。"}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-[210px_1fr] border-t border-black">
-                          <div className="px-3 py-2 text-white" style={{ backgroundColor: theme.brand }}>
-                            <div
-                              className={`${
-                                selectedTemplate === "chic" ? "text-[22px]" : "text-2xl"
-                              } font-extrabold leading-tight tracking-widest`}
-                            >
-                              POWERWAY HOUSE
-                            </div>
-                            <div className="mt-0.5 text-[11px]">不動産　販売・賃貸・管理</div>
-                          </div>
-
-                          <div className="grid grid-cols-[1fr_88px_320px]">
-                            <div className="px-2 py-1 text-[10px] leading-4">
-                              <div className="grid grid-cols-[1fr_auto] gap-2">
-                                <div className="font-semibold">{contact.licenseNo}</div>
-                                <div className="font-semibold">
-                                  TEL：{contact.companyPhone}　FAX：{contact.companyFax}
-                                </div>
-                              </div>
-
-                              <div className="text-[21px] font-extrabold leading-tight">
-                                {contact.companyName}
-                              </div>
-
-                              <div className="truncate text-[10px]">{contact.companyAddress}</div>
-                            </div>
-
-                            <div className="flex items-center justify-center border-l border-black px-1 py-1">
-                              {data.imgQr ? (
-                                <img
-                                  src={toExportableImageSrc(data.imgQr)}
-                                  alt="QR"
-                                  className="h-20 w-20 object-cover"
-                                  crossOrigin="anonymous"
-                                  referrerPolicy="no-referrer"
-                                />
-                              ) : (
-                                <div className="text-[10px] text-zinc-500">QR</div>
-                              )}
-                            </div>
-
-                            <div className="border-l border-black text-[10px]">
-                              <div className="grid grid-cols-[1fr_1fr] items-start border-b border-black px-2 py-1">
-                                <div>
-                                  <div className="font-semibold">{inspectionNote}</div>
-                                </div>
-                                <div className="text-right">
-                                  <div>取引形態：{contact.transactionType}</div>
-                                  <div className="mt-0.5">担当者：{contact.staffName}</div>
-                                  <div className="mt-0.5">手数料：{contact.fee}</div>
-                                </div>
-                              </div>
-                              <div className="px-2 py-1 text-right text-[9px]">
-                                図面と相違する場合は現況を優先します。
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  {renderSheet(activeTemplate)}
                 </div>
               </div>
             </div>
