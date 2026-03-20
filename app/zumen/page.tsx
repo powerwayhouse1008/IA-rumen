@@ -1503,7 +1503,7 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
                             <div
                               className="mt-2 text-center font-bold leading-tight"
                               style={{
-                                ...adaptiveTextStyle(data.name, 24, 38),
+                               ...adaptiveTextStyle(data?.name, 24, 38),
                                 maxHeight: PROPERTY_NAME_MAX_HEIGHT,
                                 overflow: "hidden",
                               }}
