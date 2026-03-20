@@ -841,10 +841,12 @@ useEffect(() => {
       payload: { ...draftPayload, draftId: collectionResult.draftId },
     });
     setSavedAt(draftSavedAt);
-    if (collectionResult.localSaved && supabaseSaved) {
+    if (supabaseSaved) {
       setSaveMessageTone("success");
-    if (result.localSaved) {
+    if (result.localSaved && collectionResult.localSaved) {
         setSaveMessage("名前付き保存が完了しました（図面作成済（保存データ）に反映・Supabase同期済み）。");
+      } else if (!collectionResult.localSaved) {
+        setSaveMessage("名前付き保存が完了しました（Supabaseには反映済み、端末内の保存領域不足のためローカル保存はスキップされました）。");
       } else {
         setSaveMessage("名前付き保存が完了しました（図面作成済（保存データ）・Supabaseには反映済み、下書きキャッシュのみ未保存）。");
       }
