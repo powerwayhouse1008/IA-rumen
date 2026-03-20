@@ -57,6 +57,108 @@ function getHeaders(key: string) {
     "Content-Type": "application/json",
   };
 }
+function isMissingColumnError(message: string, column: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes("column") && normalized.includes(column.toLowerCase());
+}
+
+async function fetchDraftRows(
+  supabaseUrl: string,
+  supabaseKey: string,
+  tableName: string,
+  draftId?: string,
+) {
+  const snakeSelect = "id,saved_at,payload";
+  const camelSelect = "id,savedAt,payload";
+
+  const snakeQuery = draftId
+    ? `${supabaseUrl}/rest/v1/${tableName}?id=eq.${encodeURIComponent(draftId)}&select=${snakeSelect}&limit=1`
+    : `${supabaseUrl}/rest/v1/${tableName}?select=${snakeSelect}&order=saved_at.desc`;
+  const snakeRes = await fetch(snakeQuery, {
+    headers: getHeaders(supabaseKey),
+    cache: "no-store",
+  });
+  if (snakeRes.ok) {
+    return {
+      ok: true as const,
+      rows: (await snakeRes.json()) as Array<{ id: string; saved_at?: string; payload: unknown }>,
+    };
+  }
+
+  const snakeError = await snakeRes.text();
+  if (!isMissingColumnError(snakeError, "saved_at")) {
+    return {
+      ok: false as const,
+      status: snakeRes.status,
+      error: snakeError,
+    };
+  }
+
+  const camelQuery = draftId
+    ? `${supabaseUrl}/rest/v1/${tableName}?id=eq.${encodeURIComponent(draftId)}&select=${camelSelect}&limit=1`
+    : `${supabaseUrl}/rest/v1/${tableName}?select=${camelSelect}&order=savedAt.desc`;
+  const camelRes = await fetch(camelQuery, {
+    headers: getHeaders(supabaseKey),
+    cache: "no-store",
+  });
+  if (!camelRes.ok) {
+    return {
+      ok: false as const,
+      status: camelRes.status,
+      error: await camelRes.text(),
+    };
+  }
+
+  return {
+    ok: true as const,
+    rows: (await camelRes.json()) as Array<{ id: string; savedAt?: string; payload: unknown }>,
+  };
+}
+
+async function upsertDraftRow(
+  supabaseUrl: string,
+  supabaseKey: string,
+  tableName: string,
+  row: { id: string; saved_at: string; payload: DraftPayload },
+) {
+  const endpoint = `${supabaseUrl}/rest/v1/${tableName}?on_conflict=id`;
+  const baseHeaders = {
+    ...getHeaders(supabaseKey),
+    Prefer: "resolution=merge-duplicates,return=representation",
+  };
+
+  const snakeRes = await fetch(endpoint, {
+    method: "POST",
+    headers: baseHeaders,
+    body: JSON.stringify(row),
+  });
+  if (snakeRes.ok) return { ok: true as const };
+
+  const snakeError = await snakeRes.text();
+  if (!isMissingColumnError(snakeError, "saved_at")) {
+    return {
+      ok: false as const,
+      status: snakeRes.status,
+      error: snakeError,
+    };
+  }
+
+  const { saved_at, ...rest } = row;
+  const camelRes = await fetch(endpoint, {
+    method: "POST",
+    headers: baseHeaders,
+    body: JSON.stringify({ ...rest, savedAt: saved_at }),
+  });
+  if (!camelRes.ok) {
+    return {
+      ok: false as const,
+      status: camelRes.status,
+      error: await camelRes.text(),
+    };
+  }
+
+  return { ok: true as const };
+}
 
 export async function GET(req: NextRequest) {
   const { supabaseUrl, supabaseKey, tableName } = getSupabaseConfig();
@@ -65,21 +167,18 @@ export async function GET(req: NextRequest) {
   }
 
   const draftId = req.nextUrl.searchParams.get("draftId")?.trim();
-  const select = "id,saved_at,payload";
-  const query = draftId
-    ? `${supabaseUrl}/rest/v1/${tableName}?id=eq.${encodeURIComponent(draftId)}&select=${select}&limit=1`
-    : `${supabaseUrl}/rest/v1/${tableName}?select=${select}&order=saved_at.desc`;
-
-  const res = await fetch(query, { headers: getHeaders(supabaseKey), cache: "no-store" });
-  if (!res.ok) {
-    return Response.json({ error: await res.text() }, { status: res.status });
+  const result = await fetchDraftRows(supabaseUrl, supabaseKey, tableName, draftId);
+  if (!result.ok) {
+    return Response.json({ error: result.error }, { status: result.status });
   }
 
-  const rows = (await res.json()) as Array<{ id: string; saved_at: string; payload: DraftPayload }>;
-  const drafts: StoredDraft[] = rows.map((row) => ({
+   const drafts: StoredDraft[] = result.rows.map((row) => ({
     id: row.id,
-    savedAt: row.saved_at,
-    payload: isDraftPayload(row.payload) ? row.payload : {},
+   savedAt:
+      ("saved_at" in row && typeof row.saved_at === "string" && row.saved_at) ||
+      ("savedAt" in row && typeof row.savedAt === "string" && row.savedAt) ||
+      new Date().toISOString(),
+    payload: normalizeDraftPayload(row.payload),
   }));
   return Response.json({ drafts });
 }
@@ -102,17 +201,9 @@ export async function POST(req: NextRequest) {
     payload: body.payload,
   };
 
-  const res = await fetch(`${supabaseUrl}/rest/v1/${tableName}?on_conflict=id`, {
-    method: "POST",
-    headers: {
-      ...getHeaders(supabaseKey),
-      Prefer: "resolution=merge-duplicates,return=representation",
-    },
-    body: JSON.stringify(row),
-  });
-
-  if (!res.ok) {
-    return Response.json({ error: await res.text() }, { status: res.status });
+ const result = await upsertDraftRow(supabaseUrl, supabaseKey, tableName, row);
+  if (!result.ok) {
+    return Response.json({ error: result.error }, { status: result.status });
   }
 
   return Response.json({ ok: true });
