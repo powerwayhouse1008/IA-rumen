@@ -1212,7 +1212,7 @@ const formatCheckboxLifeInfoRow = useCallback((row: string) => {
     return () => window.clearTimeout(timer);
   }, [data, isExporting, saveAsPdf, selectedTemplate, shouldExportPdf]);
 
-  if (!data) return null;
+  if (!data && !isSavedDraftsView) return null;
 
   return (
     <main className="min-h-screen bg-[#f3f4f6] p-2 md:p-4">
