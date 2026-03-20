@@ -894,7 +894,9 @@ useEffect(() => {
     setSavedAt(draftSavedAt);
     const hasDraftListSaved = collectionResult.localSaved || supabaseSaved;
     if (hasDraftListSaved) {
-      setSaveMessageTone("success");
+      setSaveMessageTone(
+        supabaseSyncStatus === "failed" && collectionResult.localSaved ? "warning" : "success"
+      );
     if (collectionResult.localSaved && supabaseSaved) {
         if (result.localSaved) {
          setSaveMessage(
@@ -910,10 +912,10 @@ useEffect(() => {
           collectionResult.strippedImages || result.strippedImages
             ? supabaseSyncStatus === "skipped"
               ? "名前付き保存が完了しました（端末保存時に容量制限のため画像データを除外しました。Supabase未設定のためローカル保存のみ実施しました）。"
-              : "名前付き保存が完了しました（端末保存時に容量制限のため画像データを除外しました。Supabase同期は失敗しました）。"
+              : "名前付き保存は端末で完了しました（端末保存時に容量制限のため画像データを除外しました。Supabase同期は失敗しました）。"
             : supabaseSyncStatus === "skipped"
               ? "名前付き保存が完了しました（この端末には保存済み。Supabase未設定のためローカル保存のみ実施しました）。"
-              : "名前付き保存が完了しました（この端末には保存済み、Supabase同期は失敗しました）。"
+              : "名前付き保存は端末で完了しました（この端末には保存済み、Supabase同期は失敗しました）。"
         );
        } else if (supabaseSaved) {
         setSaveMessage("名前付き保存が完了しました（Supabaseには反映済み、端末内の保存領域不足のためローカル保存はスキップされました）。");
