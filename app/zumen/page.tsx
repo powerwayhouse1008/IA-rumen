@@ -261,6 +261,23 @@ type StoredDraft = {
 };
 
 const ZUMEN_DRAFTS_STORAGE_KEY = "zumenDrafts";
+
+function loadStoredDraftsFromLocal(): StoredDraft[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = localStorage.getItem(ZUMEN_DRAFTS_STORAGE_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw) as StoredDraft[];
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter((item) => item?.id && item?.payload);
+  } catch {
+    return [];
+  }
+}
+
 const A4_RATIO = Math.SQRT2;
 const SHEET_HEIGHT = 794;
 const SHEET_WIDTH = Math.round(SHEET_HEIGHT * A4_RATIO);
@@ -421,14 +438,8 @@ function ZumenPageContent() {
   }, []);
 
   const loadDrafts = useCallback(async () => {
-    try {
-      const res = await fetch("/api/zumen-drafts", { cache: "no-store" });
-      if (!res.ok) {
-        throw new Error("draft fetch failed");
-      }
-
-      const json = (await res.json()) as { drafts?: StoredDraft[] };
-      const drafts = Array.isArray(json.drafts) ? json.drafts : [];
+    const applyDrafts = (incomingDrafts: StoredDraft[]) => {
+      const drafts = Array.isArray(incomingDrafts) ? incomingDrafts : [];
 
       setSavedDrafts(drafts);
 
@@ -444,11 +455,22 @@ function ZumenPageContent() {
 
       setSelectedDraftId(selected.id);
       setData(selected.payload);
+       };
+
+    try {
+      const res = await fetch("/api/zumen-drafts", { cache: "no-store" });
+      if (!res.ok) {
+        throw new Error("draft fetch failed");
+      }
+
+      const json = (await res.json()) as { drafts?: StoredDraft[] };
+      const remoteDrafts = Array.isArray(json.drafts) ? json.drafts : [];
+      const localDrafts = loadStoredDraftsFromLocal();
+      const mergedDrafts = [...remoteDrafts, ...localDrafts.filter((local) => !remoteDrafts.some((remote) => remote.id === local.id))];
+      applyDrafts(mergedDrafts);
     } catch (error) {
       console.error("loadDrafts error:", error);
-      setSavedDrafts([]);
-      setSelectedDraftId(null);
-      setData(null);
+      applyDrafts(loadStoredDraftsFromLocal());
     }
   }, [draftIdFromQuery]);
 
