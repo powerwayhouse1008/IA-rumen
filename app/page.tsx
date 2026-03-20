@@ -501,16 +501,23 @@ async function loadDraftFromSupabase(draftId: string): Promise<StoredDraft | nul
   }
 }
 
-async function syncDraftToSupabase(draft: StoredDraft): Promise<boolean> {
+type SupabaseSyncStatus = "success" | "skipped" | "failed";
+
+async function syncDraftToSupabase(draft: StoredDraft): Promise<SupabaseSyncStatus> {
   try {
     const res = await fetch("/api/zumen-drafts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(draft),
     });
-    return res.ok;
+    if (res.ok) return "success";
+    const json = (await res.json().catch(() => null)) as { error?: string } | null;
+    if (json?.error?.includes("Supabase environment variables are not configured")) {
+      return "skipped";
+    }
+    return "failed";
   } catch {
-    return false;
+    return "failed";
   }
 }
 
@@ -878,11 +885,12 @@ useEffect(() => {
     if (collectionResult.draftId) {
       setActiveDraftId(collectionResult.draftId);
     }
-     const supabaseSaved = await syncDraftToSupabase({
+     const supabaseSyncStatus = await syncDraftToSupabase({
       id: collectionResult.draftId,
       savedAt: draftSavedAtIso,
       payload: { ...draftPayload, draftId: collectionResult.draftId },
     });
+    const supabaseSaved = supabaseSyncStatus === "success";
     setSavedAt(draftSavedAt);
     const hasDraftListSaved = collectionResult.localSaved || supabaseSaved;
     if (hasDraftListSaved) {
@@ -900,8 +908,12 @@ useEffect(() => {
       } else if (collectionResult.localSaved) {
          setSaveMessage(
           collectionResult.strippedImages || result.strippedImages
-            ? "名前付き保存が完了しました（端末保存時に容量制限のため画像データを除外しました。Supabase同期はスキップまたは失敗しました）。"
-            : "名前付き保存が完了しました（この端末には保存済み、Supabase同期はスキップまたは失敗しました）。"
+            ? supabaseSyncStatus === "skipped"
+              ? "名前付き保存が完了しました（端末保存時に容量制限のため画像データを除外しました。Supabase未設定のためローカル保存のみ実施しました）。"
+              : "名前付き保存が完了しました（端末保存時に容量制限のため画像データを除外しました。Supabase同期は失敗しました）。"
+            : supabaseSyncStatus === "skipped"
+              ? "名前付き保存が完了しました（この端末には保存済み。Supabase未設定のためローカル保存のみ実施しました）。"
+              : "名前付き保存が完了しました（この端末には保存済み、Supabase同期は失敗しました）。"
         );
        } else if (supabaseSaved) {
         setSaveMessage("名前付き保存が完了しました（Supabaseには反映済み、端末内の保存領域不足のためローカル保存はスキップされました）。");
