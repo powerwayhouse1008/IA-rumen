@@ -8,6 +8,10 @@ type StoredDraft = {
   payload: DraftPayload;
 };
 
+function isDraftPayload(value: unknown): value is DraftPayload {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function getEnvOrEmpty(name: string) {
   return process.env[name]?.trim() ?? "";
 }
@@ -61,7 +65,7 @@ export async function GET(req: NextRequest) {
   const drafts: StoredDraft[] = rows.map((row) => ({
     id: row.id,
     savedAt: row.saved_at,
-    payload: row.payload,
+    payload: isDraftPayload(row.payload) ? row.payload : {},
   }));
   return Response.json({ drafts });
 }
