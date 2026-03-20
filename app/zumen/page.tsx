@@ -466,7 +466,28 @@ function ZumenPageContent() {
       const json = (await res.json()) as { drafts?: StoredDraft[] };
       const remoteDrafts = Array.isArray(json.drafts) ? json.drafts : [];
       const localDrafts = loadStoredDraftsFromLocal();
-      const mergedDrafts = [...remoteDrafts, ...localDrafts.filter((local) => !remoteDrafts.some((remote) => remote.id === local.id))];
+       const mergedById = new Map<string, StoredDraft>();
+      [...remoteDrafts, ...localDrafts].forEach((draft) => {
+        if (!draft?.id || !draft?.payload) return;
+
+        const existing = mergedById.get(draft.id);
+        if (!existing) {
+          mergedById.set(draft.id, draft);
+          return;
+        }
+
+        const existingTime = Date.parse(existing.savedAt || existing.payload.draftSavedAt || "");
+        const nextTime = Date.parse(draft.savedAt || draft.payload.draftSavedAt || "");
+        if ((Number.isFinite(nextTime) ? nextTime : 0) >= (Number.isFinite(existingTime) ? existingTime : 0)) {
+          mergedById.set(draft.id, draft);
+        }
+      });
+
+      const mergedDrafts = Array.from(mergedById.values()).sort((a, b) => {
+        const aTime = Date.parse(a.savedAt || a.payload.draftSavedAt || "");
+        const bTime = Date.parse(b.savedAt || b.payload.draftSavedAt || "");
+        return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+      });
       applyDrafts(mergedDrafts);
     } catch (error) {
       console.error("loadDrafts error:", error);
