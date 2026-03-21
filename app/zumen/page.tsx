@@ -587,7 +587,18 @@ function ZumenPageContent() {
     setData(draft.payload);
 
     if (isSavedDraftsView) {
-      router.push(`/zumen?view=saved&draftId=${encodeURIComponent(draft.id)}`);
+       try {
+        const payloadForInput = {
+          ...draft.payload,
+          draftId: draft.id,
+          draftSavedAt: draft.savedAt || draft.payload.draftSavedAt,
+        };
+        localStorage.setItem("zumenData", JSON.stringify(payloadForInput));
+      } catch (error) {
+        console.error("failed to cache selected draft for input screen:", error);
+      }
+
+      router.push(`/?draftId=${encodeURIComponent(draft.id)}`);
     }
   };
 
@@ -1928,7 +1939,7 @@ function ZumenPageContent() {
                           type="button"
                           onClick={() => handleSelectDraft(draft)}
                           className="flex flex-1 items-start gap-2 rounded-md border border-sky-200 bg-white px-3 py-2 text-left text-sm text-sky-800 transition hover:bg-sky-100"
-                          aria-label={`保存データ ${index + 1} を表示`}
+                         aria-label={`保存データ ${index + 1} を入力画面で編集`}
                         >
                           <span className="min-w-6 font-semibold">{index + 1}.</span>
                           <span>
