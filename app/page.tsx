@@ -1001,7 +1001,6 @@ useEffect(() => {
     const hasDraftListSaved = collectionResult.localSaved || supabaseSaved;
     if (hasDraftListSaved) {
      setSaveMessageTone("success");
-      );
     if (collectionResult.localSaved && supabaseSaved) {
         if (result.localSaved) {
          setSaveMessage(
