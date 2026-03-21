@@ -588,6 +588,7 @@ async function syncDraftToSupabase(draft: StoredDraft): Promise<SupabaseSyncStat
     const json = (await res.json().catch(() => null)) as unknown;
     const primaryError = extractErrorMessage(json);
     if (isSupabaseConfigMissingError(primaryError)) {
+    return "skipped";
     }
     
     const fallback = createStorageSafePayload(draft.payload as DraftPayload);
