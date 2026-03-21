@@ -2130,7 +2130,7 @@ function ZumenPageContent() {
                                   ? "border-sky-300 bg-sky-100 text-sky-900"
                                   : "border-sky-200 bg-white text-sky-800 hover:bg-sky-100"
                               }`}
-                              aria-label={`保存データ ${index + 1} を表示`}
+                               aria-label={`保存データ ${index + 1} を入力画面で編集`}
                             >
                               <span className="min-w-6 font-semibold">{index + 1}.</span>
                               <span>
