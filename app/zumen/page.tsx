@@ -277,6 +277,19 @@ function loadStoredDraftsFromLocal(): StoredDraft[] {
     return [];
   }
 }
+function saveStoredDraftsToLocal(drafts: StoredDraft[]) {
+  if (typeof window === "undefined") return;
+
+  try {
+    if (drafts.length === 0) {
+      localStorage.removeItem(ZUMEN_DRAFTS_STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
+  } catch (error) {
+    console.error("saveStoredDraftsToLocal error:", error);
+  }
+}
 
 const A4_RATIO = Math.SQRT2;
 const SHEET_HEIGHT = 794;
@@ -488,6 +501,7 @@ function ZumenPageContent() {
         const bTime = Date.parse(b.savedAt || b.payload.draftSavedAt || "");
         return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
       });
+      saveStoredDraftsToLocal(mergedDrafts);
       applyDrafts(mergedDrafts);
     } catch (error) {
       console.error("loadDrafts error:", error);
@@ -565,7 +579,7 @@ function ZumenPageContent() {
 
       const nextDrafts = savedDrafts.filter((draft) => draft.id !== draftId);
       setSavedDrafts(nextDrafts);
-
+      saveStoredDraftsToLocal(nextDrafts);
       if (selectedDraftId === draftId) {
         const nextSelected = nextDrafts[0] ?? null;
         setSelectedDraftId(nextSelected?.id ?? null);
@@ -585,21 +599,19 @@ function ZumenPageContent() {
   const handleSelectDraft = (draft: StoredDraft) => {
     setSelectedDraftId(draft.id);
     setData(draft.payload);
-
-    if (isSavedDraftsView) {
-       try {
-        const payloadForInput = {
-          ...draft.payload,
-          draftId: draft.id,
-          draftSavedAt: draft.savedAt || draft.payload.draftSavedAt,
-        };
-        localStorage.setItem("zumenData", JSON.stringify(payloadForInput));
-      } catch (error) {
-        console.error("failed to cache selected draft for input screen:", error);
-      }
-
-      router.push(`/?draftId=${encodeURIComponent(draft.id)}`);
+   };
+    const handleEditDraft = (draft: StoredDraft) => {
+    try {
+      const payloadForInput = {
+        ...draft.payload,
+        draftId: draft.id,
+        draftSavedAt: draft.savedAt || draft.payload.draftSavedAt,
+      };
+      localStorage.setItem("zumenData", JSON.stringify(payloadForInput));
+    } catch (error) {
+      console.error("failed to cache selected draft for input screen:", error);
     }
+     router.push(`/?draftId=${encodeURIComponent(draft.id)}`);
   };
 
   const summaryRows = useMemo(() => {
@@ -1939,7 +1951,7 @@ function ZumenPageContent() {
                           type="button"
                           onClick={() => handleSelectDraft(draft)}
                           className="flex flex-1 items-start gap-2 rounded-md border border-sky-200 bg-white px-3 py-2 text-left text-sm text-sky-800 transition hover:bg-sky-100"
-                         aria-label={`保存データ ${index + 1} を入力画面で編集`}
+                         aria-label={`保存データ ${index + 1} をプレビュー選択`}
                         >
                           <span className="min-w-6 font-semibold">{index + 1}.</span>
                           <span>
@@ -1950,6 +1962,14 @@ function ZumenPageContent() {
                               {draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}
                             </span>
                           </span>
+                        </button>
+                         <button
+                          type="button"
+                          onClick={() => handleEditDraft(draft)}
+                          className="rounded-md border border-sky-300 bg-sky-100 px-3 py-2 text-xs font-semibold text-sky-800 hover:bg-sky-200"
+                          aria-label={`保存データ ${index + 1} を入力画面で編集`}
+                        >
+                          編集
                         </button>
                         <button
                           type="button"
@@ -2130,7 +2150,7 @@ function ZumenPageContent() {
                                   ? "border-sky-300 bg-sky-100 text-sky-900"
                                   : "border-sky-200 bg-white text-sky-800 hover:bg-sky-100"
                               }`}
-                               aria-label={`保存データ ${index + 1} を入力画面で編集`}
+                               aria-label={`保存データ ${index + 1} をプレビュー選択`}
                             >
                               <span className="min-w-6 font-semibold">{index + 1}.</span>
                               <span>
@@ -2143,6 +2163,15 @@ function ZumenPageContent() {
                                   {draft.savedAt || draft.payload.draftSavedAt || "保存日時なし"}
                                 </span>
                               </span>
+                               </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleEditDraft(draft)}
+                              className="rounded-md border border-sky-300 bg-sky-100 px-3 py-2 text-xs font-semibold text-sky-800 hover:bg-sky-200"
+                              aria-label={`保存データ ${index + 1} を入力画面で編集`}
+                            >
+                              編集
                             </button>
 
                             <button
