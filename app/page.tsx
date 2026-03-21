@@ -274,6 +274,14 @@ const INITIAL_HOUSE_DETAILS = {
 ●駐車場 / 有（継承不可、月額10,000円）
 ※空き状況は管理会社へ要確認`,
 };
+
+function createEmptyFields<T extends Record<string, string>>(template: T): T {
+  return Object.keys(template).reduce((acc, key) => {
+    acc[key as keyof T] = "";
+    return acc;
+  }, {} as T);
+}
+
 function loadStoredDrafts(): StoredDraft[] {
   if (typeof window === "undefined") return [];
 
@@ -656,6 +664,82 @@ export default function Page() {
     managerName: initialDraft?.adminQr?.managerName ?? initialDraft?.contactInfo?.staffName ?? "",
     managerEmail: initialDraft?.adminQr?.managerEmail ?? initialDraft?.contactInfo?.companyEmail ?? "",
   });
+  
+  function resetToNewDraft() {
+    const clearedData: ZumenData = {
+      price: "",
+      name: "",
+      access: "",
+      walk: "",
+      address: "",
+      lifeInformation: "",
+      catchCopy: "",
+      districts: "",
+      salesTags: [],
+      featureTags: [],
+      imgMain: "",
+      imgPlan: "",
+      imgSub1: "",
+      imgSub2: "",
+      imgSub3: "",
+      imgQr: "",
+      imgMap: "",
+      draftTitle: "",
+      themeColor,
+      contactInfo,
+    };
+    const clearedAdminQrForm: AdminQrForm = {
+      ...DEFAULT_ADMIN_QR_FORM,
+      managerName: contactInfo.staffName,
+      managerEmail: contactInfo.companyEmail,
+    };
+
+    setSelectedCategory(DEFAULT_CATEGORY);
+    setPropertyType("");
+    setData(clearedData);
+    setCatchCopy("");
+    setDistricts("");
+    setSalesTags([]);
+    setFeatureTags([]);
+    setManagerNo("");
+    setPublishDate("");
+    setExpireDate("");
+    setSavedAt("");
+    setActiveDraftId(undefined);
+    setDraftTitle("");
+    setHouseDetails(createEmptyFields(INITIAL_HOUSE_DETAILS));
+    setMansionDetails(createEmptyFields(INITIAL_MANSION_DETAILS));
+    setRentalDetails(createEmptyFields(INITIAL_RENTAL_DETAILS));
+    setAdminQrForm(clearedAdminQrForm);
+    setSaveMessage("");
+    setSaveMessageTone("success");
+
+    const payload: DraftPayload = {
+      ...clearedData,
+      category: DEFAULT_CATEGORY,
+      propertyType: "",
+      houseDetails: createEmptyFields(INITIAL_HOUSE_DETAILS),
+      mansionDetails: createEmptyFields(INITIAL_MANSION_DETAILS),
+      rentalDetails: createEmptyFields(INITIAL_RENTAL_DETAILS),
+      contactInfo,
+      themeColor,
+      managerNo: "",
+      publishDate: "",
+      expireDate: "",
+      adminQr: clearedAdminQrForm,
+      draftTitle: "",
+      draftSavedAt: "",
+    };
+    savePayloadToStorage(payload);
+    router.push("/");
+  }
+
+  function onCreateNew() {
+    const proceed = window.confirm("現在の入力内容をクリアして新規作成を開始します。よろしいですか？");
+    if (!proceed) return;
+    resetToNewDraft();
+  }
+
 useEffect(() => {
     const draftIdParam = new URLSearchParams(window.location.search).get("draftId")?.trim();
     if (!draftIdParam || initialDraft?.draftId === draftIdParam) return;
@@ -972,9 +1056,22 @@ useEffect(() => {
   async function onSaveDraft() {
     const payload = (await buildPayload()) as DraftPayload;
     const defaultDraftTitle = draftTitle.trim() || payload.name || "無題の保存データ";
-   const inputDraftTitle = window.prompt("保存名を入力してください（図面作成済に保存されます）", defaultDraftTitle);
+    const inputDraftTitle = window.prompt("保存名を入力してください（図面作成済に保存されます）", defaultDraftTitle);
     if (inputDraftTitle === null) return;
     const normalizedDraftTitle = inputDraftTitle.trim() || defaultDraftTitle;
+    const normalizedTitleForCompare = normalizedDraftTitle.toLocaleLowerCase();
+    const hasDuplicatedTitle = loadStoredDrafts().some((draft) => {
+      if (draft.id === activeDraftId) return false;
+      return (draft.payload?.draftTitle ?? "").trim().toLocaleLowerCase() === normalizedTitleForCompare;
+    });
+    if (hasDuplicatedTitle) {
+      setSaveMessageTone("error");
+      setSaveMessage("同じ保存名は使用できません。別の保存名を入力してください。");
+      setTimeout(() => {
+        setSaveMessage("");
+      }, 3200);
+      return;
+    }
     setDraftTitle(normalizedDraftTitle);
     const now = new Date();
     const draftSavedAt = now.toLocaleString("ja-JP");
@@ -1102,6 +1199,13 @@ useEffect(() => {
                   className="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white"
                 >
                   作成図面済
+                </button>
+                 <button
+                  type="button"
+                  onClick={onCreateNew}
+                  className="rounded-md bg-cyan-600 px-4 py-2 text-sm font-semibold text-white"
+                >
+                  新規作成
                 </button>
                 <a
                   href="https://qr.powerway.house/admin"
