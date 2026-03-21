@@ -277,7 +277,7 @@ const INITIAL_HOUSE_DETAILS = {
 
 function createEmptyFields<T extends Record<string, string>>(template: T): T {
   return Object.keys(template).reduce((acc, key) => {
-    acc[key as keyof T] = "";
+    acc[key as keyof T] = "" as T[keyof T];
     return acc;
   }, {} as T);
 }
