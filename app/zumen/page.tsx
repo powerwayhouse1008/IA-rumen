@@ -1843,8 +1843,7 @@ function ZumenPageContent() {
                   <ImgBox src={data.imgSub1} label="共用（左中）" h={118} />
                   <ImgBox src={data.imgSub2} label="室内（左中）" h={118} />
                 </div>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <ImgBox src={data.imgSub3} label="ラウンジ等（左下左）" h={120} />
+               <div className="mt-2">
                   <ImgBox src={data.imgSub6} label="追加画像（左下右）" h={120} />
                 </div>
                 <div className="mt-3 text-[10px] leading-5">
