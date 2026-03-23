@@ -1167,7 +1167,6 @@ useEffect(() => {
     key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgSub4" | "imgSub5" | "imgMap">;
     label: string;
   }> = [
-    { key: "imgMain", label: "外（外観）" },
     { key: "imgMain", label: "全体区画図 or 住宅写真" },
     { key: "imgMap", label: "現地MAP（住所から自動生成）" },
    { key: "imgPlan", label: "間取り図" },
