@@ -141,6 +141,7 @@ type RentalDetails = {
   keyMoney: string;
   securityDeposit: string;
   exclusiveArea: string;
+  note: string;
 };
 
 type ZumenData = {
@@ -869,6 +870,8 @@ function ZumenPageContent() {
 
   const remarks = isMansion
     ? data?.mansionDetails?.note
+    : isRental
+      ? data?.rentalDetails?.note
     : isHouse
       ? data?.houseDetails?.note
       : "※図面と相違する場合は現況を優先します。";
