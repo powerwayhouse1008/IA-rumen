@@ -778,7 +778,7 @@ function ZumenPageContent() {
             : "-",
         },
         {
-          label: "ネット使用料",
+          label: "その他使用料",
           value: data.mansionDetails.internetFee
             ? `${data.mansionDetails.internetFee}円`
             : "-",
