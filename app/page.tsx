@@ -1481,7 +1481,7 @@ useEffect(() => {
                   <div className="md:col-span-2"><FieldLabel>管理形態</FieldLabel><Input value={mansionDetails.managementStyle} onChange={(e) => updateMansion("managementStyle", e.target.value)} /></div>
                   <div><FieldLabel>管理費 (円)</FieldLabel><Input value={mansionDetails.managementFee} onChange={(e) => updateMansion("managementFee", e.target.value)} /></div>
                   <div><FieldLabel>修繕積立金 (円)</FieldLabel><Input value={mansionDetails.reserveFund} onChange={(e) => updateMansion("reserveFund", e.target.value)} /></div>
-                  <div><FieldLabel>インターネット使用料 (円)</FieldLabel><Input value={mansionDetails.internetFee} onChange={(e) => updateMansion("internetFee", e.target.value)} /></div>
+                  <div><FieldLabel>その他使用料 (円)</FieldLabel><Input value={mansionDetails.internetFee} onChange={(e) => updateMansion("internetFee", e.target.value)} /></div>
                   <div><FieldLabel>合計 (円)</FieldLabel><Input value={mansionDetails.monthlyTotal} onChange={(e) => updateMansion("monthlyTotal", e.target.value)} /></div>
                   <div><FieldLabel>ガス</FieldLabel><Input value={mansionDetails.gas} onChange={(e) => updateMansion("gas", e.target.value)} /></div>
                   <div><FieldLabel>エレベーター</FieldLabel><Input value={mansionDetails.elevator} onChange={(e) => updateMansion("elevator", e.target.value)} /></div>
