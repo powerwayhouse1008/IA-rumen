@@ -1041,24 +1041,90 @@ useEffect(() => {
     });
     router.push(`/address-map?${query.toString()}`);
   }
-   async function onTemporarySave() {
-    const payload = (await buildPayload()) as DraftPayload;
-    const result = savePayloadToStorage(payload);
-    const temporarySavedAt = new Date().toLocaleString("ja-JP");
-    setSavedAt(temporarySavedAt);
-
-    if (result.localSaved) {
-      setSaveMessageTone(result.strippedImages ? "warning" : "success");
-      setSaveMessage(
-        result.strippedImages
-          ? "一時保存しました（保存容量の制限により画像データを除外しました）。"
-          : "一時保存しました（この端末の一時メモリのみ）。"
-      );
-    } else {
-      setSaveMessageTone("error");
-      setSaveMessage("一時保存に失敗しました。ブラウザ容量をご確認ください。");
+  async function onTemporarySave() {
+    const existingDrafts = loadStoredDrafts();
+    let targetDraftId = activeDraftId;
+    let targetDraftTitle = draftTitle.trim();
+    if (!targetDraftTitle) {
+      const defaultDraftTitle = payload.name?.trim() || "無題の保存データ";
+      const inputDraftTitle = window.prompt("保存名を入力してください", defaultDraftTitle);
+      if (inputDraftTitle === null) return;
+      targetDraftTitle = inputDraftTitle.trim();
+      if (!targetDraftTitle) {
+        setSaveMessageTone("error");
+        setSaveMessage("保存名を入力してください。");
+        setTimeout(() => {
+          setSaveMessage("");
+        }, 3200);
+        return;
+      }
     }
 
+    if (!targetDraftId) {
+      const matchedDraft = existingDrafts.find(
+        (draft) => (draft.payload?.draftTitle ?? "").trim().toLocaleLowerCase() === targetDraftTitle.toLocaleLowerCase()
+      );
+      if (matchedDraft) {
+        targetDraftId = matchedDraft.id;
+      }
+    }
+
+    setDraftTitle(targetDraftTitle);
+    const now = new Date();
+    const draftSavedAt = now.toLocaleString("ja-JP");
+    const draftSavedAtIso = now.toISOString();
+    const draftPayload = {
+      ...payload,
+      draftTitle: targetDraftTitle,
+      draftSavedAt,
+      draftId: targetDraftId,
+    };
+    const result = savePayloadToStorage(draftPayload);
+    const collectionResult = saveDraftToCollection(draftPayload, targetDraftId);
+    if (collectionResult.draftId) {
+      setActiveDraftId(collectionResult.draftId);
+    }
+    const supabaseSyncStatus = await syncDraftToSupabase({
+      id: collectionResult.draftId,
+      savedAt: draftSavedAtIso,
+      payload: { ...draftPayload, draftId: collectionResult.draftId },
+    });
+    const supabaseSaved = supabaseSyncStatus === "success" || supabaseSyncStatus === "success_stripped";
+    const supabaseStrippedImages = supabaseSyncStatus === "success_stripped";
+    setSavedAt(draftSavedAt);
+    const hasDraftListSaved = collectionResult.localSaved || supabaseSaved;
+    if (hasDraftListSaved) {
+      setSaveMessageTone("success");
+      if (collectionResult.localSaved && supabaseSaved) {
+        if (result.localSaved) {
+          setSaveMessage(
+            result.strippedImages || collectionResult.strippedImages || supabaseStrippedImages
+              ? "保存しました（反映・Supabase同期済み。容量制限により一部画像データを除外しました）。"
+              : "保存しました（図面作成済（保存データ）に反映・Supabase同期済み）。"
+          );
+        } else {
+          setSaveMessage("保存しました（図面作成済（保存データ）・Supabaseには反映済み、下書きキャッシュのみ未保存）。");
+        }
+      } else if (collectionResult.localSaved) {
+        setSaveMessage(
+          collectionResult.strippedImages || result.strippedImages
+            ? supabaseSyncStatus === "skipped"
+              ? "保存しました（端末保存時に容量制限のため画像データを除外しました。Supabase未設定のためローカル保存のみ実施しました）。"
+              : "保存しました（端末保存時に容量制限のため画像データを除外しました。Supabase同期は保留されました）。"
+            : supabaseSyncStatus === "skipped"
+              ? "保存しました（この端末には保存済み。Supabase未設定のためローカル保存のみ実施しました）。"
+              : "保存しました（この端末には保存済み。Supabase同期は保留されました）。"
+        );
+      } else if (supabaseSaved) {
+        setSaveMessage("保存しました（Supabaseには反映済み、端末内の保存領域不足のためローカル保存はスキップされました）。");
+      } else if (result.localSaved) {
+        setSaveMessageTone("warning");
+        setSaveMessage("保存は未完了です（下書きキャッシュのみ保存）。この状態では「作成図面済」に表示されません。ブラウザ容量または通信状態をご確認ください。");
+      }
+    } else {
+      setSaveMessageTone("error");
+      setSaveMessage("保存に失敗しました。ブラウザ容量または通信状態をご確認ください。");
+    }
     setTimeout(() => {
       setSaveMessage("");
     }, 3200);
@@ -1071,11 +1137,104 @@ useEffect(() => {
     if (inputDraftTitle === null) return;
     const normalizedDraftTitle = inputDraftTitle.trim() || defaultDraftTitle;
     const normalizedTitleForCompare = normalizedDraftTitle.toLocaleLowerCase();
-    const hasDuplicatedTitle = loadStoredDrafts().some((draft) => {
-      if (draft.id === activeDraftId) return false;
-      return (draft.payload?.draftTitle ?? "").trim().toLocaleLowerCase() === normalizedTitleForCompare;
-    });
-    if (hasDuplicatedTitle) {
+   const existingDrafts = loadStoredDrafts();
+    const editingCurrentDraft = existingDrafts.find((draft) => draft.id === activeDraftId);
+    const isSameAsCurrentDraftTitle =
+      !!editingCurrentDraft &&
+      (editingCurrentDraft.payload?.draftTitle ?? "").trim().toLocaleLowerCase() === normalizedTitleForCompare;
+    const hasDuplicatedTitle = existingDrafts.some(
+      (draft) => (draft.payload?.draftTitle ?? "").trim().toLocaleLowerCase() === normalizedTitleForCompare
+    );
+    if (isSameAsCurrentDraftTitle) {
+      const allowOverwrite = window.confirm(
+        "現在の保存名と同じです。上書き保存しますか？\n「キャンセル」を選ぶと別名保存になります。"
+      );
+      if (!allowOverwrite) {
+        const renamed = window.prompt("別の保存名を入力してください", `${normalizedDraftTitle} copy`);
+        if (renamed === null) return;
+        const nextTitle = renamed.trim();
+        if (!nextTitle) {
+          setSaveMessageTone("error");
+          setSaveMessage("保存名を入力してください。");
+          setTimeout(() => {
+            setSaveMessage("");
+          }, 3200);
+          return;
+        }
+        const nextTitleCompare = nextTitle.toLocaleLowerCase();
+        const duplicateRenamed = existingDrafts.some(
+          (draft) => (draft.payload?.draftTitle ?? "").trim().toLocaleLowerCase() === nextTitleCompare
+        );
+        if (duplicateRenamed) {
+          setSaveMessageTone("error");
+          setSaveMessage("同じ保存名は使用できません。別の保存名を入力してください。");
+          setTimeout(() => {
+            setSaveMessage("");
+          }, 3200);
+          return;
+        }
+        setDraftTitle(nextTitle);
+        const now = new Date();
+        const draftSavedAt = now.toLocaleString("ja-JP");
+        const draftSavedAtIso = now.toISOString();
+        const draftPayload = {
+          ...payload,
+          draftTitle: nextTitle,
+          draftSavedAt,
+          draftId: undefined,
+        };
+        const result = savePayloadToStorage(draftPayload);
+        const collectionResult = saveDraftToCollection(draftPayload, undefined);
+        if (collectionResult.draftId) {
+          setActiveDraftId(collectionResult.draftId);
+        }
+        const supabaseSyncStatus = await syncDraftToSupabase({
+          id: collectionResult.draftId,
+          savedAt: draftSavedAtIso,
+          payload: { ...draftPayload, draftId: collectionResult.draftId },
+        });
+        const supabaseSaved = supabaseSyncStatus === "success" || supabaseSyncStatus === "success_stripped";
+        const supabaseStrippedImages = supabaseSyncStatus === "success_stripped";
+        setSavedAt(draftSavedAt);
+        const hasDraftListSaved = collectionResult.localSaved || supabaseSaved;
+        if (hasDraftListSaved) {
+          setSaveMessageTone("success");
+          if (collectionResult.localSaved && supabaseSaved) {
+            if (result.localSaved) {
+              setSaveMessage(
+                result.strippedImages || collectionResult.strippedImages || supabaseStrippedImages
+                  ? "名前付き保存が完了しました（反映・Supabase同期済み。容量制限により一部画像データを除外しました）。"
+                  : "名前付き保存が完了しました（図面作成済（保存データ）に反映・Supabase同期済み）。"
+              );
+            } else {
+              setSaveMessage("名前付き保存が完了しました（図面作成済（保存データ）・Supabaseには反映済み、下書きキャッシュのみ未保存）。");
+            }
+          } else if (collectionResult.localSaved) {
+            setSaveMessage(
+              collectionResult.strippedImages || result.strippedImages
+                ? supabaseSyncStatus === "skipped"
+                  ? "名前付き保存が完了しました（端末保存時に容量制限のため画像データを除外しました。Supabase未設定のためローカル保存のみ実施しました）。"
+                  : "名前付き保存が完了しました（端末保存時に容量制限のため画像データを除外しました。Supabase同期は保留されました）。"
+                : supabaseSyncStatus === "skipped"
+                  ? "名前付き保存が完了しました（この端末には保存済み。Supabase未設定のためローカル保存のみ実施しました）。"
+                  : "名前付き保存が完了しました（この端末には保存済み。Supabase同期は保留されました）。"
+            );
+          } else if (supabaseSaved) {
+            setSaveMessage("名前付き保存が完了しました（Supabaseには反映済み、端末内の保存領域不足のためローカル保存はスキップされました）。");
+          } else if (result.localSaved) {
+            setSaveMessageTone("warning");
+            setSaveMessage("名前付き保存は未完了です（下書きキャッシュのみ保存）。この状態では「作成図面済」に表示されません。ブラウザ容量または通信状態をご確認ください。");
+          }
+        } else {
+          setSaveMessageTone("error");
+          setSaveMessage("名前付き保存に失敗しました。ブラウザ容量または通信状態をご確認ください。");
+        }
+        setTimeout(() => {
+          setSaveMessage("");
+        }, 3200);
+        return;
+      }
+    } else if (hasDuplicatedTitle) {
       setSaveMessageTone("error");
       setSaveMessage("同じ保存名は使用できません。別の保存名を入力してください。");
       setTimeout(() => {
@@ -1091,10 +1250,10 @@ useEffect(() => {
       ...payload,
       draftTitle: normalizedDraftTitle,
       draftSavedAt,
-      draftId: activeDraftId,
+      draftId: isSameAsCurrentDraftTitle ? activeDraftId : undefined,
     };
    const result = savePayloadToStorage(draftPayload);
-    const collectionResult = saveDraftToCollection(draftPayload, activeDraftId);
+    const collectionResult = saveDraftToCollection(draftPayload, isSameAsCurrentDraftTitle ? activeDraftId : undefined);
     if (collectionResult.draftId) {
       setActiveDraftId(collectionResult.draftId);
     }
@@ -1231,7 +1390,7 @@ useEffect(() => {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-               <button type="button" onClick={onTemporarySave} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">一時保存（メモリのみ）</button>
+               <button type="button" onClick={onTemporarySave} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">保存</button>
               <button type="button" onClick={onSaveDraft} className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white">名前を付けて保存</button>
               <button type="button" onClick={onGenerate} disabled={!canGo} className="rounded-md bg-rose-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">次のステップ</button>
             </div>
