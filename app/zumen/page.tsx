@@ -1821,8 +1821,16 @@ function ZumenPageContent() {
               <div className="border-r border-black p-2">
                 <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={360} fit="contain" />
                 <div className="mt-2 grid grid-cols-2 gap-2">
-                   <ImgBox src={data.imgSub4} label="リビング（中央下左）" h={168} />
-                  <ImgBox src={data.imgSub5} label="キッチン（中央下右）" h={168} />
+                   <ImgBox
+                    src={data.imgSub4}
+                    label="リビング（中央下左）"
+                    h={template === "chic" ? 244 : 168}
+                  />
+                  <ImgBox
+                    src={data.imgSub5}
+                    label="キッチン（中央下右）"
+                    h={template === "chic" ? 244 : 168}
+                  />
                 </div>
               </div>
 
