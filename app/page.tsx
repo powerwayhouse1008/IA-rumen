@@ -248,6 +248,7 @@ const INITIAL_RENTAL_DETAILS = {
   keyMoney: "1ヶ月",
   securityDeposit: "1ヶ月",
   exclusiveArea: "18.31",
+  note: "",
 };
 
 const INITIAL_HOUSE_DETAILS = {
@@ -1662,6 +1663,7 @@ useEffect(() => {
                   <div><FieldLabel>礼　金</FieldLabel><Input value={rentalDetails.keyMoney} onChange={(e) => updateRental("keyMoney", e.target.value)} /></div>
                   <div><FieldLabel>敷　金</FieldLabel><Input value={rentalDetails.securityDeposit} onChange={(e) => updateRental("securityDeposit", e.target.value)} /></div>
                   <div><FieldLabel>専有面積 (㎡)</FieldLabel><Input value={rentalDetails.exclusiveArea} onChange={(e) => updateRental("exclusiveArea", e.target.value)} /></div>
+                  <div className="md:col-span-2"><FieldLabel>備考</FieldLabel><Textarea rows={3} value={rentalDetails.note} onChange={(e) => updateRental("note", e.target.value)} /></div>
                 </div>
               </div>
             )}
