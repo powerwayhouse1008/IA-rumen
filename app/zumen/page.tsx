@@ -1864,8 +1864,8 @@ function ZumenPageContent() {
                     className={`whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px] ${
                       template === "chic"
                         ? isMansion
-                          ? "min-h-[6.2cm]"
-                          : "min-h-[7.14cm]"
+                          ? "min-h-[6.21cm]"
+                          : "min-h-[7.15cm]"
                         : "min-h-[3.54cm]"
                     }`}
                   >
