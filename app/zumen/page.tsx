@@ -650,6 +650,29 @@ function ZumenPageContent() {
         label: "築年月",
         value: data.mansionDetails.builtAt || "-",
       };
+       const chicAdditionalRows =
+        activeTemplate === "chic"
+          ? [
+              {
+                label: "敷地面積",
+                value: data.mansionDetails.landArea
+                  ? `${data.mansionDetails.landArea}㎡`
+                  : "-",
+              },
+              {
+                label: "用途地域",
+                value: data.mansionDetails.zoning || "-",
+              },
+              {
+                label: "分譲会社",
+                value: data.mansionDetails.developer || "-",
+              },
+              {
+                label: "施工会社",
+                value: data.mansionDetails.constructor || "-",
+              },
+            ]
+          : [];
       const totalUnitsRow = {
         label: "総戸数",
         value: data.mansionDetails.totalUnits
@@ -676,7 +699,7 @@ function ZumenPageContent() {
         { label: "構造・階数", value: data.mansionDetails.structure || "-" },
         { label: "所在階", value: data.mansionDetails.floor || "-" },
         ...(activeTemplate === "chic"
-          ? [builtAtRow, totalUnitsRow]
+          ? [builtAtRow, ...chicAdditionalRows, totalUnitsRow]
           : [
               {
                 ...builtAtRow,
@@ -764,6 +787,14 @@ function ZumenPageContent() {
           label: "管理会社",
           value: data.mansionDetails.managementCompany || "-",
         },
+        ...(activeTemplate === "chic"
+          ? [
+              {
+                label: "管理形態",
+                value: data.mansionDetails.managementStyle || "-",
+              },
+            ]
+          : []),
       ];
     }
 
@@ -1864,7 +1895,7 @@ function ZumenPageContent() {
                     className={`whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px] ${
                       template === "chic"
                         ? isMansion
-                          ? "min-h-[6.35cm]"
+                          ? "min-h-[4.35cm]"
                           : "min-h-[7.29cm]"
                         : "min-h-[3.54cm]"
                     }`}
