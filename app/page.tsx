@@ -21,6 +21,7 @@ type ZumenData = {
   imgSub3?: string;
   imgSub4?: string;
   imgSub5?: string;
+  imgSub6?: string;
   imgQr?: string;
   imgMap?: string;
   draftTitle?: string;
@@ -432,8 +433,8 @@ async function uploadImageToSupabase(file: File): Promise<string> {
 
 const STORAGE_IMAGE_KEYS: Array<keyof Pick<
   DraftPayload,
-    "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgSub4" | "imgSub5" | "imgQr" | "imgMap"
->> = ["imgMain", "imgPlan", "imgSub1", "imgSub2", "imgSub3", "imgSub4", "imgSub5", "imgQr", "imgMap"];
+     "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgSub4" | "imgSub5" | "imgSub6" | "imgQr" | "imgMap"
+>> = ["imgMain", "imgPlan", "imgSub1", "imgSub2", "imgSub3", "imgSub4", "imgSub5", "imgSub6", "imgQr", "imgMap"];
 function createStorageSafePayload(payload: DraftPayload): { payload: DraftPayload; strippedImages: boolean } {
   let strippedImages = false;
   const stripDataUrlDeep = (value: unknown): unknown => {
@@ -686,6 +687,7 @@ export default function Page() {
       imgSub3: "",
       imgSub4: "",
       imgSub5: "",
+      imgSub6: "",
       imgQr: "",
       imgMap: "",
       draftTitle: "",
@@ -845,7 +847,7 @@ useEffect(() => {
   async function onPick(
      key: keyof Pick<
       ZumenData,
-      "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgSub4" | "imgSub5" | "imgQr" | "imgMap"
+      "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgSub4" | "imgSub5" | "imgSub6" | "imgQr" | "imgMap"
     >,
     file?: File
   ) {
@@ -865,7 +867,7 @@ useEffect(() => {
   function removeImage(
     key: keyof Pick<
       ZumenData,
-      "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgSub4" | "imgSub5" | "imgQr" | "imgMap"
+       "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgSub4" | "imgSub5" | "imgSub6" | "imgQr" | "imgMap"
     >
   ) {
     update(key, undefined);
@@ -1325,7 +1327,7 @@ useEffect(() => {
   }
 
  const uploadItems: Array<{
-    key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgSub4" | "imgSub5" | "imgMap">;
+     key: keyof Pick<ZumenData, "imgMain" | "imgPlan" | "imgSub1" | "imgSub2" | "imgSub3" | "imgSub4" | "imgSub5" | "imgSub6" | "imgMap">;
     label: string;
   }> = [
     { key: "imgMain", label: "全体区画図 or 住宅写真" },
@@ -1336,6 +1338,7 @@ useEffect(() => {
     { key: "imgSub3", label: "追加画像（左下）" },
     { key: "imgSub4", label: "リビング（中央下）" },
     { key: "imgSub5", label: "キッチン（中央下）" },
+    { key: "imgSub6", label: "追加画像（Chic専用）" },
   ];
 　　function goToSavedZumen() {
     router.push("/zumen?view=saved");
