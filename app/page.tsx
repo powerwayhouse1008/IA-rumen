@@ -1045,8 +1045,9 @@ useEffect(() => {
     const existingDrafts = loadStoredDrafts();
     let targetDraftId = activeDraftId;
     let targetDraftTitle = draftTitle.trim();
+    const payload = (await buildPayload()) as DraftPayload;
     if (!targetDraftTitle) {
-      const defaultDraftTitle = payload.name?.trim() || "無題の保存データ";
+      const defaultDraftTitle = data.name?.trim() || "無題の保存データ";
       const inputDraftTitle = window.prompt("保存名を入力してください", defaultDraftTitle);
       if (inputDraftTitle === null) return;
       targetDraftTitle = inputDraftTitle.trim();
