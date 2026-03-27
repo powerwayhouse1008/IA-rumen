@@ -7,6 +7,8 @@ type ZumenData = {
   price: string;
   name: string;
   access: string;
+  access2?: string;
+  access3?: string;
   walk: string;
   address: string;
   lifeInformation?: string;
