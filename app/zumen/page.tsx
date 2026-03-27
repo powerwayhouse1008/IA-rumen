@@ -1939,8 +1939,8 @@ function ZumenPageContent() {
                     className={`whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px] ${
                       template === "chic"
                         ? isMansion
-                          ? "min-h-[4.05cm]"
-                          : "min-h-[7.29cm]"
+                          ? "min-h-[2.05cm]"
+                          : "min-h-[4.29cm]"
                         : "min-h-[3.54cm]"
                     }`}
                     style={template === "chic" ? { fontSize: `${chicRemarksFontSize}px`, lineHeight: 1.4 } : undefined}
