@@ -579,12 +579,10 @@ function ZumenPageContent() {
   const transportLines = useMemo(() => {
     if (!data) return ["-"];
 
-    const fallbackWalk = data.walk?.trim();
+   
     const normalizeLine = (raw?: string) => {
       const value = raw?.trim();
       if (!value) return null;
-      if (/徒歩|駅歩/.test(value)) return value;
-      if (fallbackWalk) return `${value} 徒歩${fallbackWalk}分`;
       return value;
     };
 
