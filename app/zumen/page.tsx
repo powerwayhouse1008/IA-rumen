@@ -1665,7 +1665,7 @@ function ZumenPageContent() {
               <div className="border-r border-black p-2">
                 <div
                   className="whitespace-pre-line text-right font-bold leading-tight"
-                  style={adaptiveTextStyle(transportMultilineText, 16, 28)}
+                  style={adaptiveTextStyle(transportMultilineText, 14, 26)}
                 >
                    {transportMultilineText}
                 </div>
