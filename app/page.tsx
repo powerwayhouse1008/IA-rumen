@@ -1509,12 +1509,6 @@ useEffect(() => {
                       value={data.access3 ?? ""}
                       onChange={(e) => update("access3", e.target.value)}
                     />
-                    <Input
-                      placeholder="駅徒歩（数字）"
-                      value={data.walk}
-                      onChange={(e) => update("walk", e.target.value)}
-                    />
-                    <div />
                   </div>
                 </div>
                 <div>
