@@ -1428,9 +1428,6 @@ function ZumenPageContent() {
               </div>
 
               <div className="border-r border-black p-2">
-                <div className="border-b border-black pb-1 text-lg font-bold" style={{ color: theme.brand }}>
-                  ACCESS
-                </div>
                 <div
                    className="mt-1 whitespace-pre-line font-semibold leading-tight"
                   style={adaptiveTextStyle(transportMultilineText, 12, 17)}
