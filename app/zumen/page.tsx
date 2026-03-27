@@ -1903,14 +1903,19 @@ function ZumenPageContent() {
                 <SectionTitle bgColor={theme.section}>
                   {isRental ? "賃貸条件（賃貸居住用）" : "物件概要"}
                 </SectionTitle>
-                <InfoTable rows={summaryRows} labelBgColor={theme.label} />
+                <InfoTable rows={summaryRows} labelBgColor={theme.label} compact={template === "chic"} />
 
                 {managementRows.length > 0 && (
                   <div className="mt-2">
                     <SectionTitle bgColor={theme.section}>
                       {isMansion ? "管理費等" : "制限・施設"}
                     </SectionTitle>
-                    <InfoTable rows={managementRows} labelBgColor={theme.label} autoValueWidth />
+                    <InfoTable
+                      rows={managementRows}
+                      labelBgColor={theme.label}
+                      autoValueWidth
+                      compact={template === "chic"}
+                    />
                   </div>
                 )}
 
@@ -1919,7 +1924,12 @@ function ZumenPageContent() {
                     <SectionTitle bgColor={theme.section}>
                       {isRental ? "物件概要" : "設備・引渡"}
                     </SectionTitle>
-                    <InfoTable rows={facilityRows} labelBgColor={theme.label} autoValueWidth />
+                    <InfoTable
+                      rows={facilityRows}
+                      labelBgColor={theme.label}
+                      autoValueWidth
+                      compact={template === "chic"}
+                    />
                   </div>
                 )}
 
