@@ -876,7 +876,17 @@ function ZumenPageContent() {
     : isHouse
       ? data?.houseDetails?.note
       : "※図面と相違する場合は現況を優先します。";
+     const displayRemarks = remarks || "※図面と相違する場合は現況を優先します。";
+  const chicRemarksFontSize = useMemo(() => {
+    const normalized = displayRemarks.replace(/\s+/g, "");
+    const length = normalized.length;
 
+    if (length <= 180) return 10;
+    if (length <= 260) return 9;
+    if (length <= 340) return 8;
+    if (length <= 430) return 7;
+    return 6;
+  }, [displayRemarks]);
   const popRemarkItems = useMemo(() => {
     if (!data) return ["※図面と相違する場合は現況を優先します。"];
 
@@ -1505,7 +1515,7 @@ function ZumenPageContent() {
             </div>
 
             <div className="h-[52px] border-b border-black px-3 py-1.5 text-[10px] leading-4 overflow-hidden">
-              {remarks || "※図面と相違する場合は現況を優先します。"}
+              {displayRemarks}
             </div>
 
             <div className={`grid ${FOOTER_HEIGHT_CLASS} grid-cols-[1.2fr_330px_190px] items-center px-3 py-1`}>
@@ -1903,8 +1913,9 @@ function ZumenPageContent() {
                           : "min-h-[7.29cm]"
                         : "min-h-[3.54cm]"
                     }`}
+                    style={template === "chic" ? { fontSize: `${chicRemarksFontSize}px`, lineHeight: 1.4 } : undefined}
                   >
-                    {remarks || "※図面と相違する場合は現況を優先します。"}
+                    {displayRemarks}
                   </div>
                 </div>
               </div>
