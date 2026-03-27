@@ -675,6 +675,8 @@ export default function Page() {
       access: "",
       walk: "",
       address: "",
+      access2: "",
+      access3: "",
       lifeInformation: "",
       catchCopy: "",
       districts: "",
@@ -1489,10 +1491,27 @@ useEffect(() => {
                 </div>
                 <div>
                   <FieldLabel required>路線 / 駅 / 駅徒歩（メイン掲載）</FieldLabel>
-                  <Input value={data.access} onChange={(e) => update("access", e.target.value)} />
-                  <div className="mt-2 grid grid-cols-[1fr_80px_40px] gap-2">
-                    <Input placeholder="徒歩" value={data.walk} onChange={(e) => update("walk", e.target.value)} />
-                    <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-center text-sm">分</div>
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="路線 / 駅 / 駅徒歩（メイン）"
+                      value={data.access}
+                      onChange={(e) => update("access", e.target.value)}
+                    />
+                    <Input
+                      placeholder="路線 / 駅 / 駅徒歩（追加1）"
+                      value={data.access2 ?? ""}
+                      onChange={(e) => update("access2", e.target.value)}
+                    />
+                    <Input
+                      placeholder="路線 / 駅 / 駅徒歩（追加2）"
+                      value={data.access3 ?? ""}
+                      onChange={(e) => update("access3", e.target.value)}
+                    />
+                    <Input
+                      placeholder="駅徒歩（数字）"
+                      value={data.walk}
+                      onChange={(e) => update("walk", e.target.value)}
+                    />
                     <div />
                   </div>
                 </div>
