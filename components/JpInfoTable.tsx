@@ -8,9 +8,19 @@ type Row = {
   label2?: string;
   value2?: string;
 };
-function AutoShrinkCellText({ value }: { value: string }) {
+function AutoShrinkCellText({
+  value,
+  maxFontSize = 11,
+  minFontSize = 6,
+  className = "",
+}: {
+  value: string;
+  maxFontSize?: number;
+  minFontSize?: number;
+  className?: string;
+}) {
   const textRef = useRef<HTMLSpanElement>(null);
-  const [fontSize, setFontSize] = useState(11);
+  const [fontSize, setFontSize] = useState(maxFontSize);
 
   useLayoutEffect(() => {
     const textEl = textRef.current;
@@ -19,14 +29,14 @@ function AutoShrinkCellText({ value }: { value: string }) {
     const parentEl = textEl.parentElement;
     if (!parentEl) return;
 
-    const maxFontSize = 11;
-    const minFontSize = 7;
-
     const fitText = () => {
       let nextFontSize = maxFontSize;
       textEl.style.fontSize = `${nextFontSize}px`;
 
-      while (textEl.scrollWidth > parentEl.clientWidth && nextFontSize > minFontSize) {
+      while (
+        (textEl.scrollWidth > parentEl.clientWidth || textEl.scrollHeight > parentEl.clientHeight) &&
+        nextFontSize > minFontSize
+      ) {
         nextFontSize -= 0.5;
         textEl.style.fontSize = `${nextFontSize}px`;
       }
@@ -42,12 +52,12 @@ function AutoShrinkCellText({ value }: { value: string }) {
 
     observer.observe(parentEl);
     return () => observer.disconnect();
-  }, [value]);
+  }, [value, maxFontSize, minFontSize]);
 
   return (
     <span
       ref={textRef}
-      className="block whitespace-nowrap leading-tight"
+      className={`block whitespace-nowrap leading-tight ${className}`.trim()}
       style={{ fontSize: `${fontSize}px` }}
     >
       {value}
@@ -77,8 +87,11 @@ export function InfoTable({
   const doubleColumnTemplate = autoValueWidth
     ? `${labelWidth} minmax(0, 1fr) ${labelWidth} minmax(0, 1fr)`
     : `${labelWidth} 1fr ${labelWidth} 1fr`;
-  const valueCellClass = "min-w-0 border-r border-black px-2 py-0 overflow-hidden";
-  const lastValueCellClass = "min-w-0 px-2 py-0 overflow-hidden";
+   const baseCellClass = "flex h-[22px] min-w-0 items-center overflow-hidden px-2 py-0";
+  const labelCellClass = `${baseCellClass} border-r border-black`;
+  const valueCellClass = `${baseCellClass} border-r border-black`;
+  const lastValueCellClass = baseCellClass;
+
 
   return (
    <div className="w-full border border-black border-t-0 text-[11px]">
@@ -91,19 +104,19 @@ export function InfoTable({
               style={{ gridTemplateColumns: doubleColumnTemplate }}
             >
               <div
-                className="whitespace-nowrap border-r border-black px-2 py-0 font-bold"
+                 className={labelCellClass}
                 style={{ backgroundColor: labelBgColor }}
               >
-                {r.label}
+                <AutoShrinkCellText value={r.label} className="font-bold" />
               </div>
               <div className={valueCellClass}>
                 <AutoShrinkCellText value={r.value} />
               </div>
               <div
-                className="whitespace-nowrap border-r border-black px-2 py-0 font-bold"
+                className={labelCellClass}
                 style={{ backgroundColor: labelBgColor }}
               >
-                {r.label2}
+                 <AutoShrinkCellText value={r.label2} className="font-bold" />
               </div>
              <div className={lastValueCellClass}>
                 <AutoShrinkCellText value={r.value2 ?? "-"} />
@@ -119,10 +132,10 @@ export function InfoTable({
             style={{ gridTemplateColumns: singleColumnTemplate }}
           >
             <div
-              className="whitespace-nowrap border-r border-black px-2 py-0 font-bold"
+              className={labelCellClass}
               style={{ backgroundColor: labelBgColor }}
             >
-              {r.label}
+              <AutoShrinkCellText value={r.label} className="font-bold" />
             </div>
            <div className={lastValueCellClass}>
               <AutoShrinkCellText value={r.value} />
