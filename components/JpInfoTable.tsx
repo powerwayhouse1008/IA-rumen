@@ -77,17 +77,19 @@ export function InfoTable({
   rows,
   labelBgColor = "#fde7dd",
   autoValueWidth = false,
+  compact = false,
 }: {
   rows: Row[];
   labelBgColor?: string;
   autoValueWidth?: boolean;
+  compact?: boolean;
 }) {
   const labelWidth = "95px"; // keep sections full-width while making colored label cells slightly narrower
   const singleColumnTemplate = autoValueWidth ? `${labelWidth} minmax(0, 1fr)` : `${labelWidth} 1fr`;
   const doubleColumnTemplate = autoValueWidth
     ? `${labelWidth} minmax(0, 1fr) ${labelWidth} minmax(0, 1fr)`
     : `${labelWidth} 1fr ${labelWidth} 1fr`;
-   const baseCellClass = "flex h-[22px] min-w-0 items-center overflow-hidden px-2 py-0";
+  const baseCellClass = `flex ${compact ? "h-[20px]" : "h-[22px]"} min-w-0 items-center overflow-hidden px-2 py-0`;
   const labelCellClass = `${baseCellClass} border-r border-black`;
   const valueCellClass = `${baseCellClass} border-r border-black`;
   const lastValueCellClass = baseCellClass;
