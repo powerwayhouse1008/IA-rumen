@@ -148,6 +148,8 @@ type ZumenData = {
   price: string;
   name: string;
   access: string;
+  access2?: string;
+  access3?: string;
   walk: string;
   address: string;
   lifeInformation?: string;
@@ -574,7 +576,26 @@ function ZumenPageContent() {
 
   const isLand = propertyType === "土地" || category === "land";
   const isRental = propertyType.includes("賃貸") || category === "rental";
+  const transportLines = useMemo(() => {
+    if (!data) return ["-"];
 
+    const fallbackWalk = data.walk?.trim();
+    const normalizeLine = (raw?: string) => {
+      const value = raw?.trim();
+      if (!value) return null;
+      if (/徒歩|駅歩/.test(value)) return value;
+      if (fallbackWalk) return `${value} 徒歩${fallbackWalk}分`;
+      return value;
+    };
+
+    const lines = [data.access, data.access2, data.access3]
+      .map((line) => normalizeLine(line))
+      .filter((line): line is string => Boolean(line));
+
+    return lines.length > 0 ? lines : ["-"];
+  }, [data]);
+  const transportInlineText = useMemo(() => transportLines.join(" / "), [transportLines]);
+  const transportMultilineText = useMemo(() => transportLines.join("\n"), [transportLines]);
   const handleDeleteDraft = async (draftId: string) => {
     try {
       await fetch(`/api/zumen-drafts?draftId=${encodeURIComponent(draftId)}`, {
@@ -749,7 +770,7 @@ function ZumenPageContent() {
       return [
         { label: "所在地", value: data.address },
         { label: "物件種別", value: data.propertyType || "土地" },
-        { label: "交通", value: `${data.access} 徒歩${data.walk}分` },
+        { label: "交通", value: transportInlineText },
         {
           label: "価格",
           value: `${Number(data.price || 0).toLocaleString()}万円`,
@@ -758,7 +779,8 @@ function ZumenPageContent() {
     }
 
     return [{ label: "所在地", value: data.address }];
-  }, [data, isHouse, isLand, isMansion, isRental, activeTemplate]);
+   }, [data, isHouse, isLand, isMansion, isRental, activeTemplate, transportInlineText]);
+
 
   const managementRows = useMemo(() => {
     if (isRental) {
@@ -823,7 +845,7 @@ function ZumenPageContent() {
     if (isRental) {
       return [
         { label: "所在地", value: data?.address || "-" },
-        { label: "交通", value: `${data?.access || "-"} 徒歩${data?.walk || "-"}分` },
+         { label: "交通", value: transportInlineText },
       ];
     }
 
@@ -867,7 +889,7 @@ function ZumenPageContent() {
       { label: "ガス", value: "-" },
       { label: "現況", value: "-", label2: "引渡し", value2: "-" },
     ];
-  }, [data, isHouse, isMansion, isRental]);
+   }, [data, isHouse, isMansion, isRental, transportInlineText]);
 
   const remarks = isMansion
     ? data?.mansionDetails?.note
@@ -893,7 +915,7 @@ function ZumenPageContent() {
     const basicRows = [
       `●物件名：${data.name || "-"}`,
       `●所在地：${data.address || "-"}`,
-      `●交通：${data.access || "-"} 徒歩${data.walk || "-"}分`,
+       `●交通：${transportInlineText}`,
       `●価格：${data.price ? `${Number(data.price).toLocaleString()}万円` : "-"}`,
       `●物件種別：${data.propertyType || "-"}`,
     ];
@@ -939,7 +961,7 @@ function ZumenPageContent() {
     }
 
     return [...basicRows, remarks || ""].filter(Boolean);
-  }, [data, isHouse, isMansion, remarks]);
+  }, [data, isHouse, isMansion, remarks, transportInlineText]);
 
   const layoutLabel =
     (isMansion
@@ -1410,10 +1432,10 @@ function ZumenPageContent() {
                   ACCESS
                 </div>
                 <div
-                  className="mt-1 font-semibold"
-                  style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 12, 17)}
+                   className="mt-1 whitespace-pre-line font-semibold leading-tight"
+                  style={adaptiveTextStyle(transportMultilineText, 12, 17)}
                 >
-                  {data.access} 駅徒歩{data.walk}分
+                  {transportMultilineText}
                 </div>
                 <div className="mt-2 border-b border-black pb-1 text-sm font-bold" style={{ color: theme.brand }}>
                   LIFE INFORMATION
@@ -1647,10 +1669,10 @@ function ZumenPageContent() {
 
               <div className="border-r border-black p-2">
                 <div
-                  className="text-right font-bold"
-                  style={adaptiveTextStyle(`${data.access} 駅徒歩${data.walk}分`, 16, 28)}
+                  className="whitespace-pre-line text-right font-bold leading-tight"
+                  style={adaptiveTextStyle(transportMultilineText, 16, 28)}
                 >
-                  {data.access} 駅徒歩<span style={{ color: theme.brand }}>{data.walk}</span>分
+                   {transportMultilineText}
                 </div>
 
                 <div
@@ -1839,8 +1861,11 @@ function ZumenPageContent() {
               <div className="border-l border-black p-2">
                 <div className="grid grid-cols-[60px_1fr] items-center">
                   <div className="text-[12px] font-bold">交通</div>
-                  <div className="text-right text-[12px] font-bold">
-                    {data.access} 徒歩{data.walk}分
+                  <div
+                    className="text-right text-[12px] font-bold whitespace-pre-line leading-tight"
+                    style={adaptiveTextStyle(transportMultilineText, 10, 12)}
+                  >
+                    {transportMultilineText}
                   </div>
                 </div>
               </div>
