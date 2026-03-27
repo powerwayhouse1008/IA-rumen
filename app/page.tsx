@@ -1338,7 +1338,6 @@ useEffect(() => {
     { key: "imgSub3", label: "追加画像（左下）" },
     { key: "imgSub4", label: "リビング（中央下）" },
     { key: "imgSub5", label: "キッチン（中央下）" },
-    { key: "imgSub6", label: "追加画像（Chic専用）" },
   ];
 　　function goToSavedZumen() {
     router.push("/zumen?view=saved");
