@@ -634,7 +634,7 @@ function ZumenPageContent() {
     } catch (error) {
       console.error("failed to cache selected draft for input screen:", error);
     }
-     router.push(`/?draftId=${encodeURIComponent(draft.id)}`);
+      router.push(`/create?draftId=${encodeURIComponent(draft.id)}`);
   };
 
   const summaryRows = useMemo(() => {
