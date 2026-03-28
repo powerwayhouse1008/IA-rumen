@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -1373,7 +1374,9 @@ useEffect(() => {
         <section>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <Image src="/powerway-house-logo.svg" alt="Powerway House logo" width={56} height={56} className="h-14 w-14 rounded-xl" priority />
+             <Link href="/" aria-label="トップページへ戻る">
+                <Image src="/powerway-house-logo.svg" alt="Powerway House logo" width={56} height={56} className="h-14 w-14 rounded-xl" priority />
+              </Link>
                <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
