@@ -305,7 +305,50 @@ function loadStoredDrafts(): StoredDraft[] {
 
 function loadDraftPayload(): DraftPayload | null {
   if (typeof window === "undefined") return null;
-const searchParams = new URLSearchParams(window.location.search);
+const createNewPayloadWithContact = (source: DraftPayload | null): DraftPayload => ({
+    price: "",
+    name: "",
+    access: "",
+    access2: "",
+    access3: "",
+    walk: "",
+    address: "",
+    lifeInformation: "",
+    catchCopy: "",
+    districts: "",
+    salesTags: [],
+    featureTags: [],
+    imgMain: "",
+    imgPlan: "",
+    imgSub1: "",
+    imgSub2: "",
+    imgSub3: "",
+    imgSub4: "",
+    imgSub5: "",
+    imgSub6: "",
+    imgQr: "",
+    imgMap: "",
+    draftTitle: "",
+    category: DEFAULT_CATEGORY,
+    propertyType: "",
+    houseDetails: createEmptyFields(INITIAL_HOUSE_DETAILS),
+    mansionDetails: createEmptyFields(INITIAL_MANSION_DETAILS),
+    rentalDetails: createEmptyFields(INITIAL_RENTAL_DETAILS),
+    managerNo: "",
+    publishDate: "",
+    expireDate: "",
+    contactInfo: source?.contactInfo ?? DEFAULT_CONTACT_INFO,
+    themeColor: "sunset-red",
+    adminQr: {
+      ...DEFAULT_ADMIN_QR_FORM,
+      managerName: source?.contactInfo?.staffName ?? DEFAULT_CONTACT_INFO.staffName,
+      managerEmail: source?.contactInfo?.companyEmail ?? DEFAULT_CONTACT_INFO.companyEmail,
+    },
+    draftSavedAt: "",
+  });
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const shouldCreateNew = searchParams.get("new") === "1";
   const draftId = searchParams.get("draftId")?.trim();
   if (draftId) {
     const found = loadStoredDrafts().find((item) => item.id === draftId);
@@ -315,14 +358,23 @@ const searchParams = new URLSearchParams(window.location.search);
   }
 
   const runtimePayload = (window as Window & { __zumenPayload?: DraftPayload }).__zumenPayload;
-  if (runtimePayload) return runtimePayload;
+  if (runtimePayload) {
+    if (shouldCreateNew) return createNewPayloadWithContact(runtimePayload);
+    return runtimePayload;
+  }
 
   const saved = localStorage.getItem("zumenData");
-  if (!saved) return null;
+  if (!saved) {
+    if (shouldCreateNew) return createNewPayloadWithContact(null);
+    return null;
+  }
 
   try {
-    return JSON.parse(saved) as DraftPayload;
+   const parsed = JSON.parse(saved) as DraftPayload;
+    if (shouldCreateNew) return createNewPayloadWithContact(parsed);
+    return parsed;
   } catch {
+     if (shouldCreateNew) return createNewPayloadWithContact(null);
     return null;
   }
 }
