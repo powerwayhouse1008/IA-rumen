@@ -103,7 +103,7 @@ export default function AddressMapPage() {
     };
 
     localStorage.setItem("zumenData", JSON.stringify(payload));
-    router.push("/");
+    router.push("/create");
   }
 
   return (
@@ -129,7 +129,7 @@ export default function AddressMapPage() {
           </button>
           <button
             type="button"
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/create")}
             className="rounded-md bg-zinc-500 px-4 py-2 text-sm font-semibold text-white"
           >
             戻る
