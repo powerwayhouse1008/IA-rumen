@@ -252,12 +252,15 @@ const INITIAL_RENTAL_DETAILS = {
   keyMoney: "1ヶ月",
   securityDeposit: "1ヶ月",
   exclusiveArea: "18.31",
-  note: "",
+  layout: "",
+  structure: "",
   builtAt: "",
   buildingEquipment: "",
   indoorEquipment: "",
   currentStatus: "",
   handover: "",
+  note: "",
+  
 };
 
 const INITIAL_HOUSE_DETAILS = {
@@ -1740,12 +1743,15 @@ useEffect(() => {
                   <div><FieldLabel>礼　金</FieldLabel><Input value={rentalDetails.keyMoney} onChange={(e) => updateRental("keyMoney", e.target.value)} /></div>
                   <div><FieldLabel>敷　金</FieldLabel><Input value={rentalDetails.securityDeposit} onChange={(e) => updateRental("securityDeposit", e.target.value)} /></div>
                   <div><FieldLabel>専有面積 (㎡)</FieldLabel><Input value={rentalDetails.exclusiveArea} onChange={(e) => updateRental("exclusiveArea", e.target.value)} /></div>
-                  <div className="md:col-span-2"><FieldLabel>備考</FieldLabel><Textarea rows={3} value={rentalDetails.note} onChange={(e) => updateRental("note", e.target.value)} /></div>
+                  <div><FieldLabel>間取り</FieldLabel><Input value={rentalDetails.layout} onChange={(e) => updateRental("layout", e.target.value)} /></div>
+                  <div><FieldLabel>建物構造</FieldLabel><Input value={rentalDetails.structure} onChange={(e) => updateRental("structure", e.target.value)} /></div>
                   <div><FieldLabel>築年月</FieldLabel><Input value={rentalDetails.builtAt} onChange={(e) => updateRental("builtAt", e.target.value)} /></div>
                   <div><FieldLabel>建物設備</FieldLabel><Input value={rentalDetails.buildingEquipment} onChange={(e) => updateRental("buildingEquipment", e.target.value)} /></div>
                   <div><FieldLabel>室内設備</FieldLabel><Input value={rentalDetails.indoorEquipment} onChange={(e) => updateRental("indoorEquipment", e.target.value)} /></div>
                   <div><FieldLabel>現　況</FieldLabel><Input value={rentalDetails.currentStatus} onChange={(e) => updateRental("currentStatus", e.target.value)} /></div>
                   <div><FieldLabel>引渡し</FieldLabel><Input value={rentalDetails.handover} onChange={(e) => updateRental("handover", e.target.value)} /></div>
+                  <div className="md:col-span-2"><FieldLabel>備考</FieldLabel><Textarea rows={3} value={rentalDetails.note} onChange={(e) => updateRental("note", e.target.value)} /></div>
+                  
                 </div>
               </div>
             )}
