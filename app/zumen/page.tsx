@@ -877,7 +877,6 @@ function ZumenPageContent() {
           label2: "引渡し",
           value2: data?.rentalDetails?.handover || "-",
         },
-        },
       ];
     }
 
