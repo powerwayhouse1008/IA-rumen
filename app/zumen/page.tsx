@@ -142,6 +142,11 @@ type RentalDetails = {
   securityDeposit: string;
   exclusiveArea: string;
   note: string;
+  builtAt: string;
+  buildingEquipment: string;
+  indoorEquipment: string;
+  currentStatus: string;
+  handover: string;
 };
 
 type ZumenData = {
@@ -843,7 +848,25 @@ function ZumenPageContent() {
     if (isRental) {
       return [
         { label: "所在地", value: data?.address || "-" },
-         { label: "交通", value: transportInlineText },
+          { label: "交通", value: transportInlineText },
+        {
+          label: "築年月",
+          value: data?.rentalDetails?.builtAt || "-",
+        },
+        {
+          label: "建物設備",
+          value: data?.rentalDetails?.buildingEquipment || "-",
+        },
+        {
+          label: "室内設備",
+          value: data?.rentalDetails?.indoorEquipment || "-",
+        },
+        {
+          label: "現　況",
+          value: data?.rentalDetails?.currentStatus || "-",
+          label2: "引渡し",
+          value2: data?.rentalDetails?.handover || "-",
+        },
       ];
     }
 
