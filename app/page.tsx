@@ -16,7 +16,7 @@ const controls = [
     ],
   },
   {
-    href: "/create",
+    href: "/create?new=1",
     label: "新規作成",
     badge: "New Listing",
     className:
