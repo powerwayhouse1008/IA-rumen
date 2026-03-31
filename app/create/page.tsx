@@ -357,6 +357,14 @@ const createNewPayloadWithContact = (source: DraftPayload | null): DraftPayload 
 
   const searchParams = new URLSearchParams(window.location.search);
   const shouldCreateNew = searchParams.get("new") === "1";
+  const persistCleanPayload = (payload: DraftPayload) => {
+    if (!shouldCreateNew) return;
+    try {
+      localStorage.setItem("zumenData", JSON.stringify(payload));
+    } catch {
+      // ignore localStorage write failures on initial clear
+    }
+  };
   const draftId = searchParams.get("draftId")?.trim();
   if (draftId) {
     const found = loadStoredDrafts().find((item) => item.id === draftId);
@@ -367,22 +375,38 @@ const createNewPayloadWithContact = (source: DraftPayload | null): DraftPayload 
 
   const runtimePayload = (window as Window & { __zumenPayload?: DraftPayload }).__zumenPayload;
   if (runtimePayload) {
-    if (shouldCreateNew) return createNewPayloadWithContact(runtimePayload);
+    if (shouldCreateNew) {
+      const cleanPayload = createNewPayloadWithContact(runtimePayload);
+      persistCleanPayload(cleanPayload);
+      return cleanPayload;
+    }
     return runtimePayload;
   }
 
   const saved = localStorage.getItem("zumenData");
   if (!saved) {
-    if (shouldCreateNew) return createNewPayloadWithContact(null);
+if (shouldCreateNew) {
+      const cleanPayload = createNewPayloadWithContact(null);
+      persistCleanPayload(cleanPayload);
+      return cleanPayload;
+    }
     return null;
   }
 
   try {
    const parsed = JSON.parse(saved) as DraftPayload;
-    if (shouldCreateNew) return createNewPayloadWithContact(parsed);
+    if (shouldCreateNew) {
+      const cleanPayload = createNewPayloadWithContact(parsed);
+      persistCleanPayload(cleanPayload);
+      return cleanPayload;
+    }
     return parsed;
   } catch {
-     if (shouldCreateNew) return createNewPayloadWithContact(null);
+     if (shouldCreateNew) {
+      const cleanPayload = createNewPayloadWithContact(null);
+      persistCleanPayload(cleanPayload);
+      return cleanPayload;
+    }
     return null;
   }
 }
