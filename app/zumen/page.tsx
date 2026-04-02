@@ -985,7 +985,7 @@ function ZumenPageContent() {
         `●バルコニー面積：${mansion.balconyArea ? `${mansion.balconyArea}㎡` : "-"}`,
         `●間取り：${mansion.layout || "-"}`,
         `●構造：${mansion.structure || "-"}`,
-        `●所在階：${mansion.floor || "-"}`,
+         ...(activeTemplate === "chic" ? [] : [`●所在階：${mansion.floor || "-"}`]),
         `●築年月：${mansion.builtAt || "-"}`,
         `●管理費 / 修繕積立金：${mansion.managementFee || "-"}円 / ${mansion.reserveFund || "-"}円`,
         `●現況 / 引渡し：${mansion.currentStatus || "-"} / ${mansion.handover || "-"}`,
@@ -994,7 +994,7 @@ function ZumenPageContent() {
     }
 
     return [...basicRows, remarks || ""].filter(Boolean);
-  }, [data, isHouse, isMansion, remarks, transportInlineText]);
+  }, [activeTemplate, data, isHouse, isMansion, remarks, transportInlineText]);
 
   const layoutLabel =
     (isMansion
