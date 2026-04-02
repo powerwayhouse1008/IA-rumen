@@ -725,7 +725,9 @@ function ZumenPageContent() {
         },
         { label: "間取り", value: data.mansionDetails.layout || "-" },
         { label: "構造・階数", value: data.mansionDetails.structure || "-" },
-        { label: "所在階", value: data.mansionDetails.floor || "-" },
+        ...(activeTemplate === "chic"
+          ? []
+          : [{ label: "所在階", value: data.mansionDetails.floor || "-" }]),
         ...(activeTemplate === "chic"
           ? [builtAtRow, ...chicAdditionalRows, totalUnitsRow]
           : [
