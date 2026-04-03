@@ -1919,7 +1919,19 @@ function ZumenPageContent() {
               </div>
 
               <div className="border-r border-black p-2">
-                <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={360} fit="contain" />
+                <div
+                  className="mb-2 text-center text-[12px] font-semibold leading-tight"
+                  style={{
+                    minHeight: "2.4em",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}
+                </div>
+                <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={320} fit="contain" />
                 <div className="mt-2 grid grid-cols-2 gap-2">
                    <ImgBox
                     src={data.imgSub4}
