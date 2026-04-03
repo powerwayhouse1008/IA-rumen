@@ -2014,7 +2014,7 @@ function ZumenPageContent() {
                     className={`whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px] ${
                       template === "chic"
                         ? isMansion
-                          ? "min-h-[4.05cm]"
+                          ? "min-h-[3.75cm]"
                           : "min-h-[6.29cm]"
                         : "min-h-[3.54cm]"
                     }`}
