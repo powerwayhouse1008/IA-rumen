@@ -1938,7 +1938,13 @@ function ZumenPageContent() {
                 <SectionTitle bgColor={theme.section}>
                   {isRental ? "賃貸条件（賃貸居住用）" : "物件概要"}
                 </SectionTitle>
-                <InfoTable rows={summaryRows} labelBgColor={theme.label} compact={template === "chic"} />
+                <InfoTable
+                  rows={summaryRows}
+                  labelBgColor={theme.label}
+                  compact={template === "chic"}
+                  compactForChic={template === "chic"}
+                />
+
 
                 {managementRows.length > 0 && (
                   <div className="mt-2">
@@ -1950,6 +1956,7 @@ function ZumenPageContent() {
                       labelBgColor={theme.label}
                       autoValueWidth
                       compact={template === "chic"}
+                      compactForChic={template === "chic"}
                     />
                   </div>
                 )}
@@ -1964,6 +1971,7 @@ function ZumenPageContent() {
                       labelBgColor={theme.label}
                       autoValueWidth
                       compact={template === "chic"}
+                      compactForChic={template === "chic"}
                     />
                   </div>
                 )}
