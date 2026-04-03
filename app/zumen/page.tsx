@@ -932,9 +932,10 @@ function ZumenPageContent() {
       ? data?.houseDetails?.note
       : "※図面と相違する場合は現況を優先します。";
      const displayRemarks = remarks || "※図面と相違する場合は現況を優先します。";
-  const chicRemarksFontSize = useMemo(() => {
-    const normalized = displayRemarks.replace(/\s+/g, "");
-    const length = normalized.length;
+     const chicRemarksRef = useRef<HTMLDivElement | null>(null);
+     const chicRemarksBaseFontSize = useMemo(() => {
+     const normalized = displayRemarks.replace(/\s+/g, "");
+     const length = normalized.length;
 
     if (length <= 180) return 10;
     if (length <= 260) return 9;
@@ -942,6 +943,24 @@ function ZumenPageContent() {
     if (length <= 430) return 7;
     return 6;
   }, [displayRemarks]);
+  const [chicRemarksFontSize, setChicRemarksFontSize] = useState(chicRemarksBaseFontSize);
+
+  useLayoutEffect(() => {
+    if (activeTemplate !== "chic") return;
+    const element = chicRemarksRef.current;
+    if (!element) return;
+
+    let nextFontSize = chicRemarksBaseFontSize;
+    element.style.fontSize = `${nextFontSize}px`;
+    element.style.lineHeight = "1.4";
+
+    while (element.scrollHeight > element.clientHeight && nextFontSize > 4) {
+      nextFontSize -= 0.5;
+      element.style.fontSize = `${nextFontSize}px`;
+    }
+
+    setChicRemarksFontSize(nextFontSize);
+  }, [activeTemplate, chicRemarksBaseFontSize, displayRemarks, isMansion]);
   const popRemarkItems = useMemo(() => {
     if (!data) return ["※図面と相違する場合は現況を優先します。"];
 
@@ -1991,11 +2010,12 @@ function ZumenPageContent() {
                 <div className="mt-2">
                   <SectionTitle bgColor={theme.section}>備考</SectionTitle>
                   <div
+                    ref={template === "chic" ? chicRemarksRef : undefined}
                     className={`whitespace-pre-wrap border border-black border-t-0 p-2 text-[10px] ${
                       template === "chic"
                         ? isMansion
                           ? "min-h-[2.05cm]"
-                          : "min-h-[4.29cm]"
+                          : "min-h-[6.29cm]"
                         : "min-h-[3.54cm]"
                     }`}
                     style={template === "chic" ? { fontSize: `${chicRemarksFontSize}px`, lineHeight: 1.4 } : undefined}
