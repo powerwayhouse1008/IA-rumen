@@ -78,25 +78,31 @@ export function InfoTable({
   labelBgColor = "#fde7dd",
   autoValueWidth = false,
   compact = false,
+  compactForChic = false,
 }: {
   rows: Row[];
   labelBgColor?: string;
   autoValueWidth?: boolean;
   compact?: boolean;
+  compactForChic?: boolean;
 }) {
-  const labelWidth = "95px"; // keep sections full-width while making colored label cells slightly narrower
+  const labelWidth = compactForChic ? "82px" : "95px"; // keep sections full-width while making colored label cells slightly narrower
   const singleColumnTemplate = autoValueWidth ? `${labelWidth} minmax(0, 1fr)` : `${labelWidth} 1fr`;
   const doubleColumnTemplate = autoValueWidth
     ? `${labelWidth} minmax(0, 1fr) ${labelWidth} minmax(0, 1fr)`
     : `${labelWidth} 1fr ${labelWidth} 1fr`;
-  const baseCellClass = `flex ${compact ? "h-[20px]" : "h-[22px]"} min-w-0 items-center overflow-hidden px-2 py-0`;
+  const baseCellClass = `flex ${compactForChic ? "h-[18px]" : compact ? "h-[20px]" : "h-[22px]"} min-w-0 items-center overflow-hidden ${
+    compactForChic ? "px-1.5" : "px-2"
+  } py-0`;
   const labelCellClass = `${baseCellClass} border-r border-black`;
   const valueCellClass = `${baseCellClass} border-r border-black`;
   const lastValueCellClass = baseCellClass;
+  const tableTextClass = compactForChic ? "text-[10px]" : "text-[11px]";
+  const cellMaxFontSize = compactForChic ? 10 : 11;
 
 
   return (
-   <div className="w-full border border-black border-t-0 text-[11px]">
+   <div className={`w-full border border-black border-t-0 ${tableTextClass}`}>
       {rows.map((r, i) => {
         if (r.label2) {
           return (
@@ -109,19 +115,19 @@ export function InfoTable({
                  className={labelCellClass}
                 style={{ backgroundColor: labelBgColor }}
               >
-                <AutoShrinkCellText value={r.label} className="font-bold" />
+                <AutoShrinkCellText value={r.label} maxFontSize={cellMaxFontSize} className="font-bold" />
               </div>
               <div className={valueCellClass}>
-                <AutoShrinkCellText value={r.value} />
+                 <AutoShrinkCellText value={r.value} maxFontSize={cellMaxFontSize} />
               </div>
               <div
                 className={labelCellClass}
                 style={{ backgroundColor: labelBgColor }}
               >
-                 <AutoShrinkCellText value={r.label2} className="font-bold" />
+                 <AutoShrinkCellText value={r.label2} maxFontSize={cellMaxFontSize} className="font-bold" />
               </div>
              <div className={lastValueCellClass}>
-                <AutoShrinkCellText value={r.value2 ?? "-"} />
+                <AutoShrinkCellText value={r.value2 ?? "-"} maxFontSize={cellMaxFontSize} />
               </div>
             </div>
           );
