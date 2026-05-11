@@ -40,7 +40,7 @@ To enable automatic sync when pressing `Create + QR`, set these env vars:
 
 - `SUPABASE_URL` (or `NEXT_PUBLIC_SUPABASE_URL`)
 - `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_ANON_KEY` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
-- optional `SUPABASE_QR_TABLE` (default: `qr_properties`)
+- optional `SUPABASE_QR_TABLE` (default: `properties`)
 
 To also mirror the same payload to a second Vercel app (page 2), set:
 
@@ -53,8 +53,8 @@ When `MIRROR_SYNC_URL` is configured, pressing `Create + QR` will sync both:
 
 Expected table columns:
 
-- `uuid` (uuid, primary key)
-- `property_code` (text)
+`id` (text/uuid, primary key)
+- `property_code` (text, unique)
 - `building_name` (text)
 - `address` (text)
 - `view_method` (text)
