@@ -30,17 +30,12 @@ function getEnvOrEmpty(name: string) {
   return errorText.match(/Could not find the '([^']+)' column of '[^']+'/i)?.[1];
 }
 
-function resolvePrimaryKeyCandidates(initialPrimaryKey: string) {
-  const candidates = [initialPrimaryKey, "property_id", "uuid", "id"];
-  return [...new Set(candidates.filter(Boolean))];
-}
-
-function buildRow(payload: Partial<SyncPayload>, primaryKey: string) {
+function buildRow(payload: Partial<SyncPayload>) {
   const normalizedStatus = payload.status ?? payload.available ?? "";
   const normalizedFormUrl = payload.formUrl ?? payload.inquiryUrl ?? "";
 
   return {
-    [primaryKey]: payload.propertyId,
+     id: payload.propertyId,
     property_code: payload.propertyCode,
     building_name: payload.buildingName ?? "",
     address: payload.address ?? "",
@@ -61,8 +56,7 @@ function buildRow(payload: Partial<SyncPayload>, primaryKey: string) {
     getEnvOrEmpty("SUPABASE_SERVICE_ROLE_KEY") ||
     getEnvOrEmpty("SUPABASE_ANON_KEY") ||
     getEnvOrEmpty("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  const configuredTableName = getEnvOrEmpty("SUPABASE_QR_TABLE") || "qr_properties";
-  const configuredPrimaryKey = getEnvOrEmpty("SUPABASE_QR_PRIMARY_KEY") || "uuid";
+  const configuredTableName = getEnvOrEmpty("SUPABASE_QR_TABLE") || "properties";
  if (!supabaseUrl || !supabaseKey) {
     throw new Error(
       "Supabase env missing. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or anon key)."
@@ -76,49 +70,25 @@ function buildRow(payload: Partial<SyncPayload>, primaryKey: string) {
     Prefer: "resolution=merge-duplicates,return=representation",
   };
 
-  let currentTable = configuredTableName;
-  const primaryKeyCandidates = resolvePrimaryKeyCandidates(configuredPrimaryKey);
-
-  let lastStatus = 0;
-  let lastErrorText = "";
-  const attemptErrors: string[] = [];
-
-  for (const primaryKey of primaryKeyCandidates) {
-    const row = buildRow(payload, primaryKey);
-    const restUrl = `${supabaseUrl}/rest/v1/${currentTable}?on_conflict=${primaryKey}`;
-    const res = await fetch(restUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(row),
-    });
-
-    if (res.ok) {
-      return res.json();
-    }
-
-    lastStatus = res.status;
-    lastErrorText = await res.text();
-    attemptErrors.push(`${currentTable}.${primaryKey}: ${lastStatus} ${lastErrorText}`);
-
-    const suggestedTable = parseSuggestedTable(lastErrorText);
-    if (suggestedTable && suggestedTable !== currentTable) {
-      currentTable = suggestedTable;
-      continue;
-    }
-
-    const missingColumn = parseMissingColumn(lastErrorText);
-    if (missingColumn && missingColumn === primaryKey) {
-      continue;
-    }
-
-    break;
-
-
+  const row = buildRow(payload);
+  const restUrl = `${supabaseUrl}/rest/v1/${configuredTableName}?on_conflict=property_code`;
+  const res = await fetch(restUrl, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(row),
+  });
+    if (!res.ok) {
+    const errText = await res.text();
+    const suggestedTable = parseSuggestedTable(errText);
+    const missingColumn = parseMissingColumn(errText);
+    throw new Error(
+      `Supabase upsert failed on ${configuredTableName} (on_conflict=property_code): ${res.status} ${errText}${
+        suggestedTable ? ` | suggested table: ${suggestedTable}` : ""
+      }${missingColumn ? ` | missing column: ${missingColumn}` : ""}`
+    );
   }
 
-  throw new Error(
-    `Supabase upsert failed after retries: ${attemptErrors.join(" | ") || `${lastStatus} ${lastErrorText}`}`
-  );
+   return res.json();
 }
 
 async function syncToMirrorVercel(payload: Partial<SyncPayload>) {
