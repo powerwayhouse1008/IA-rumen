@@ -150,6 +150,40 @@ type RentalDetails = {
   handover: string;
   note: string;
 };
+type ImageSlotKey =
+  | "imgMain"
+  | "imgPlan"
+  | "imgSub1"
+  | "imgSub2"
+  | "imgSub3"
+  | "imgSub4"
+  | "imgSub5"
+  | "imgSub6"
+  | "imgMap";
+
+type ImageTransform = {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+};
+
+const IMAGE_SLOT_LABELS: Record<ImageSlotKey, string> = {
+  imgMain: "メイン画像",
+  imgPlan: "間取り",
+  imgSub1: "サブ1",
+  imgSub2: "サブ2",
+  imgSub3: "サブ3",
+  imgSub4: "サブ4",
+  imgSub5: "サブ5",
+  imgSub6: "サブ6",
+  imgMap: "MAP",
+};
+
+const DEFAULT_IMAGE_TRANSFORM: ImageTransform = {
+  scale: 1,
+  offsetX: 0,
+  offsetY: 0,
+};
 
 type ZumenData = {
   price: string;
@@ -227,12 +261,14 @@ function ImgBox({
   fit = "cover",
   h,
   showCenterLogo = false,
+  transform = DEFAULT_IMAGE_TRANSFORM,
 }: {
   src?: string;
   label: string;
   fit?: "cover" | "contain";
   h: number;
   showCenterLogo?: boolean;
+  transform?: ImageTransform;
 }) {
   return (
     <div
@@ -244,8 +280,11 @@ function ImgBox({
           <img
             src={toExportableImageSrc(src)}
             alt={label}
-            className="h-full w-full"
-            style={{ objectFit: fit }}
+            className="h-full w-full origin-center"
+            style={{
+              objectFit: fit,
+              transform: `translate(${transform.offsetX}px, ${transform.offsetY}px) scale(${transform.scale})`,
+            }}
             crossOrigin="anonymous"
             referrerPolicy="no-referrer"
           />
@@ -439,6 +478,17 @@ function ZumenPageContent() {
   const [isExporting, setIsExporting] = useState(false);
   const [imageFormat, setImageFormat] = useState<ImageFormat>("png");
   const [exportError, setExportError] = useState<string | null>(null);
+  const [imageTransforms, setImageTransforms] = useState<Record<ImageSlotKey, ImageTransform>>({
+    imgMain: { ...DEFAULT_IMAGE_TRANSFORM },
+    imgPlan: { ...DEFAULT_IMAGE_TRANSFORM },
+    imgSub1: { ...DEFAULT_IMAGE_TRANSFORM },
+    imgSub2: { ...DEFAULT_IMAGE_TRANSFORM },
+    imgSub3: { ...DEFAULT_IMAGE_TRANSFORM },
+    imgSub4: { ...DEFAULT_IMAGE_TRANSFORM },
+    imgSub5: { ...DEFAULT_IMAGE_TRANSFORM },
+    imgSub6: { ...DEFAULT_IMAGE_TRANSFORM },
+    imgMap: { ...DEFAULT_IMAGE_TRANSFORM },
+  });
 
   const [debugCanvasUrl, setDebugCanvasUrl] = useState<string | null>(null);
   const [debugCanvasInfo, setDebugCanvasInfo] = useState<string>("");
@@ -1423,6 +1473,32 @@ function ZumenPageContent() {
       setIsExporting(false);
     }
   }, [captureSheet, activeTemplate]);
+const updateImageTransform = useCallback(
+    (slot: ImageSlotKey, field: keyof ImageTransform, value: number) => {
+      setImageTransforms((prev) => ({
+        ...prev,
+        [slot]: {
+          ...prev[slot],
+          [field]: value,
+        },
+      }));
+    },
+    []
+  );
+
+  const resetImageTransforms = useCallback(() => {
+    setImageTransforms({
+      imgMain: { ...DEFAULT_IMAGE_TRANSFORM },
+      imgPlan: { ...DEFAULT_IMAGE_TRANSFORM },
+      imgSub1: { ...DEFAULT_IMAGE_TRANSFORM },
+      imgSub2: { ...DEFAULT_IMAGE_TRANSFORM },
+      imgSub3: { ...DEFAULT_IMAGE_TRANSFORM },
+      imgSub4: { ...DEFAULT_IMAGE_TRANSFORM },
+      imgSub5: { ...DEFAULT_IMAGE_TRANSFORM },
+      imgSub6: { ...DEFAULT_IMAGE_TRANSFORM },
+      imgMap: { ...DEFAULT_IMAGE_TRANSFORM },
+    });
+  }, []);
 
   useEffect(() => {
     if (!shouldExportPdf || !data || isExporting) return;
@@ -1497,7 +1573,7 @@ function ZumenPageContent() {
               </div>
 
               <div className="p-2">
-                <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} />
+                <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} transform={imageTransforms.imgMap} />
                 <div
                   className="border-t border-black p-1 text-center"
                   style={adaptiveTextStyle(`NAVI ${data.address}`, 9, 12)}
@@ -1537,7 +1613,7 @@ function ZumenPageContent() {
                 </div>
 
                 <div className="mt-2">
-                  <ImgBox src={data.imgMain} label="メイン写真" h={180} />
+                   <ImgBox src={data.imgMain} label="メイン写真" h={180} transform={imageTransforms.imgMain} />
                 </div>
 
                 <div className="mt-2 space-y-1 text-xs">
@@ -1553,16 +1629,16 @@ function ZumenPageContent() {
               </div>
 
               <div className="border-r border-black p-2">
-                <ImgBox src={data.imgPlan} label="間取り図" h={320} fit="contain" />
+               <ImgBox src={data.imgPlan} label="間取り図" h={320} fit="contain" transform={imageTransforms.imgPlan} />
               </div>
 
               <div className="p-2">
                 <div className="grid grid-cols-2 gap-2">
-                  <ImgBox src={data.imgSub1} label="サブ画像1" h={180} />
-                  <ImgBox src={data.imgSub2} label="サブ画像2" h={180} />
+                 <ImgBox src={data.imgSub1} label="サブ画像1" h={180} transform={imageTransforms.imgSub1} />
+                  <ImgBox src={data.imgSub2} label="サブ画像2" h={180} transform={imageTransforms.imgSub2} />
                 </div>
                 <div className="mt-2">
-                  <ImgBox src={data.imgSub3} label="現地案内図" h={170} />
+                 <ImgBox src={data.imgSub3} label="現地案内図" h={170} transform={imageTransforms.imgSub3} />
                 </div>
 
                 {featureRows.length > 0 && (
@@ -1739,7 +1815,7 @@ function ZumenPageContent() {
               </div>
 
               <div className="p-2">
-                <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} />
+               <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} transform={imageTransforms.imgMap} />
                 <div
                   className="px-1 py-0.5 text-center font-bold text-white"
                   style={{
@@ -1922,13 +1998,13 @@ function ZumenPageContent() {
 
             <div className="grid grid-cols-[260px_1fr_320px]">
               <div className="border-r border-black p-2">
-                <ImgBox src={data.imgMain} label="外観画像（左上）" h={210} />
+                <ImgBox src={data.imgMain} label="外観画像（左上）" h={210} transform={imageTransforms.imgMain} />
                 <div className="mt-2 grid grid-cols-[calc(50%+0.1cm)_calc(50%-0.1cm)] gap-2">
-                  <ImgBox src={data.imgSub1} label="共用（左中）" h={118} />
-                  <ImgBox src={data.imgSub2} label="室内（左中）" h={118} />
+                  <ImgBox src={data.imgSub1} label="共用（左中）" h={118} transform={imageTransforms.imgSub1} />
+                  <ImgBox src={data.imgSub2} label="室内（左中）" h={118} transform={imageTransforms.imgSub2} />
                 </div>
                <div className="mt-2">
-                  <ImgBox src={data.imgSub3} label="追加画像（左下）" h={120} />
+                  <ImgBox src={data.imgSub3} label="追加画像（左下）" h={120} transform={imageTransforms.imgSub3} />
                 </div>
                 <div className="mt-3 text-[10px] leading-5">
                   {lifeInfoRows.slice(0, 6).map((row) => (
@@ -1950,15 +2026,17 @@ function ZumenPageContent() {
                 >
                   {data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}
                 </div>
-                <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={320} fit="contain" />
+                <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={320} fit="contain" transform={imageTransforms.imgPlan} />
                 <div className="mt-2 grid grid-cols-2 gap-2">
                    <ImgBox
                     src={data.imgSub4}
+                     transform={imageTransforms.imgSub4}
                     label="リビング（中央下左）"
                     h={template === "chic" ? 244 : 168}
                   />
                   <ImgBox
                     src={data.imgSub5}
+                     transform={imageTransforms.imgSub5}
                     label="キッチン（中央下右）"
                     h={template === "chic" ? 244 : 168}
                   />
@@ -2258,6 +2336,33 @@ function ZumenPageContent() {
         {!isSavedDraftsView && exportError && (
           <div className="mb-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
             {exportError}
+          </div>
+        )}
+ {!isSavedDraftsView && activeTemplate && (
+          <div className="mb-3 rounded-xl border border-zinc-200 bg-white p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-sm font-semibold">画像の位置・サイズ調整</div>
+              <button type="button" onClick={resetImageTransforms} className="rounded-md border border-zinc-300 px-3 py-1 text-xs">リセット</button>
+            </div>
+            <div className="grid gap-2 md:grid-cols-3">
+              {(Object.keys(IMAGE_SLOT_LABELS) as ImageSlotKey[]).map((slot) => {
+                const t = imageTransforms[slot];
+                return (
+                  <div key={slot} className="rounded border border-zinc-200 p-2 text-xs">
+                    <div className="mb-1 font-semibold">{IMAGE_SLOT_LABELS[slot]}</div>
+                    <label className="block">拡大率 {t.scale.toFixed(2)}
+                      <input type="range" min={0.6} max={2.2} step={0.05} value={t.scale} onChange={(e)=>updateImageTransform(slot,"scale",Number(e.target.value))} className="w-full"/>
+                    </label>
+                    <label className="block">X {t.offsetX}px
+                      <input type="range" min={-180} max={180} step={1} value={t.offsetX} onChange={(e)=>updateImageTransform(slot,"offsetX",Number(e.target.value))} className="w-full"/>
+                    </label>
+                    <label className="block">Y {t.offsetY}px
+                      <input type="range" min={-180} max={180} step={1} value={t.offsetY} onChange={(e)=>updateImageTransform(slot,"offsetY",Number(e.target.value))} className="w-full"/>
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
