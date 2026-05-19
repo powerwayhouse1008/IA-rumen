@@ -196,6 +196,36 @@ const DEFAULT_IMAGE_MIN_SCALES: Record<ImageSlotKey, number> = {
   imgSub6: 1,
   imgMap: 1,
 };
+const createDefaultImageTransforms = (): Record<ImageSlotKey, ImageTransform> => ({
+  imgMain: { ...DEFAULT_IMAGE_TRANSFORM },
+  imgPlan: { ...DEFAULT_IMAGE_TRANSFORM },
+  imgSub1: { ...DEFAULT_IMAGE_TRANSFORM },
+  imgSub2: { ...DEFAULT_IMAGE_TRANSFORM },
+  imgSub3: { ...DEFAULT_IMAGE_TRANSFORM },
+  imgSub4: { ...DEFAULT_IMAGE_TRANSFORM },
+  imgSub5: { ...DEFAULT_IMAGE_TRANSFORM },
+  imgSub6: { ...DEFAULT_IMAGE_TRANSFORM },
+  imgMap: { ...DEFAULT_IMAGE_TRANSFORM },
+});
+
+const normalizeImageTransforms = (
+  source?: Partial<Record<ImageSlotKey, Partial<ImageTransform>>>
+): Record<ImageSlotKey, ImageTransform> => {
+  const defaults = createDefaultImageTransforms();
+  if (!source) return defaults;
+  (Object.keys(defaults) as ImageSlotKey[]).forEach((slot) => {
+    const v = source[slot];
+    if (!v) return;
+    defaults[slot] = {
+      scale: typeof v.scale === "number" && Number.isFinite(v.scale) ? v.scale : defaults[slot].scale,
+      offsetX:
+        typeof v.offsetX === "number" && Number.isFinite(v.offsetX) ? v.offsetX : defaults[slot].offsetX,
+      offsetY:
+        typeof v.offsetY === "number" && Number.isFinite(v.offsetY) ? v.offsetY : defaults[slot].offsetY,
+    };
+  });
+  return defaults;
+};
 
 type ZumenData = {
   price: string;
@@ -228,6 +258,7 @@ type ZumenData = {
   draftTitle?: string;
   draftId?: string;
   draftSavedAt?: string;
+  imageTransforms?: Partial<Record<ImageSlotKey, Partial<ImageTransform>>>;
   themeColor?: ThemeColorKey;
   contactInfo?: {
     companyName: string;
@@ -507,17 +538,9 @@ function ZumenPageContent() {
   const [isExporting, setIsExporting] = useState(false);
   const [imageFormat, setImageFormat] = useState<ImageFormat>("png");
   const [exportError, setExportError] = useState<string | null>(null);
-  const [imageTransforms, setImageTransforms] = useState<Record<ImageSlotKey, ImageTransform>>({
-    imgMain: { ...DEFAULT_IMAGE_TRANSFORM },
-    imgPlan: { ...DEFAULT_IMAGE_TRANSFORM },
-    imgSub1: { ...DEFAULT_IMAGE_TRANSFORM },
-    imgSub2: { ...DEFAULT_IMAGE_TRANSFORM },
-    imgSub3: { ...DEFAULT_IMAGE_TRANSFORM },
-    imgSub4: { ...DEFAULT_IMAGE_TRANSFORM },
-    imgSub5: { ...DEFAULT_IMAGE_TRANSFORM },
-    imgSub6: { ...DEFAULT_IMAGE_TRANSFORM },
-    imgMap: { ...DEFAULT_IMAGE_TRANSFORM },
-  });
+   const [imageTransforms, setImageTransforms] = useState<Record<ImageSlotKey, ImageTransform>>(
+    createDefaultImageTransforms
+  );
   const [imageMinScales, setImageMinScales] = useState<Record<ImageSlotKey, number>>(DEFAULT_IMAGE_MIN_SCALES);
 
   const [debugCanvasUrl, setDebugCanvasUrl] = useState<string | null>(null);
@@ -630,6 +653,11 @@ function ZumenPageContent() {
     if (!data?.themeColor) return;
     setSelectedTheme(data.themeColor);
   }, [data?.themeColor]);
+   
+ useEffect(() => {
+    setImageTransforms(normalizeImageTransforms(data?.imageTransforms));
+    setImageMinScales(DEFAULT_IMAGE_MIN_SCALES);
+  }, [data]);
 
   useEffect(() => {
     if (isSavedDraftsView && !selectedTemplate) {
@@ -1522,19 +1550,38 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
   }, []);
 
   const resetImageTransforms = useCallback(() => {
-    setImageTransforms({
-      imgMain: { ...DEFAULT_IMAGE_TRANSFORM },
-      imgPlan: { ...DEFAULT_IMAGE_TRANSFORM },
-      imgSub1: { ...DEFAULT_IMAGE_TRANSFORM },
-      imgSub2: { ...DEFAULT_IMAGE_TRANSFORM },
-      imgSub3: { ...DEFAULT_IMAGE_TRANSFORM },
-      imgSub4: { ...DEFAULT_IMAGE_TRANSFORM },
-      imgSub5: { ...DEFAULT_IMAGE_TRANSFORM },
-      imgSub6: { ...DEFAULT_IMAGE_TRANSFORM },
-      imgMap: { ...DEFAULT_IMAGE_TRANSFORM },
-    });
+    setImageTransforms(createDefaultImageTransforms());
     setImageMinScales(DEFAULT_IMAGE_MIN_SCALES);
   }, []);
+ useEffect(() => {
+    if (!data) return;
+    if (JSON.stringify(data.imageTransforms ?? {}) === JSON.stringify(imageTransforms)) return;
+
+    const payloadWithTransforms: ZumenData = { ...data, imageTransforms };
+    setData(payloadWithTransforms);
+
+    try {
+      localStorage.setItem("zumenData", JSON.stringify(payloadWithTransforms));
+    } catch (error) {
+      console.error("failed to persist preview payload:", error);
+    }
+
+    if (!selectedDraftId) return;
+    const target = savedDrafts.find((draft) => draft.id === selectedDraftId);
+    if (!target) return;
+
+    const updatedDraft: StoredDraft = { ...target, payload: payloadWithTransforms };
+    const nextDrafts = savedDrafts.map((draft) => (draft.id === selectedDraftId ? updatedDraft : draft));
+    setSavedDrafts(nextDrafts);
+    saveStoredDraftsToLocal(nextDrafts);
+    void fetch("/api/zumen-drafts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedDraft),
+    }).catch((error) => {
+      console.error("failed to sync image transforms:", error);
+    });
+  }, [imageTransforms, data, selectedDraftId, savedDrafts]);
 
   useEffect(() => {
     if (!shouldExportPdf || !data || isExporting) return;
