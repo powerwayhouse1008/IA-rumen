@@ -282,7 +282,7 @@ function ImgBox({
             alt={label}
            className="h-full w-full origin-center"
             style={{
-              objectFit: fit
+               className="max-h-none max-w-none origin-center"
               transform: `translate(${transform.offsetX}px, ${transform.offsetY}px) scale(${transform.scale})`,
             }}
             crossOrigin="anonymous"
