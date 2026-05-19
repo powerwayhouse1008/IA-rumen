@@ -280,9 +280,10 @@ function ImgBox({
           <img
             src={toExportableImageSrc(src)}
             alt={label}
-            className="h-full w-full origin-center"
+            className="max-h-none max-w-none origin-center"
             style={{
-              objectFit: fit,
+             objectFit: "none",
+              objectPosition: fit === "contain" ? "center" : "center",
               transform: `translate(${transform.offsetX}px, ${transform.offsetY}px) scale(${transform.scale})`,
             }}
             crossOrigin="anonymous"
