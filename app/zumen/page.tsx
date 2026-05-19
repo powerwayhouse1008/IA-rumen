@@ -185,6 +185,18 @@ const DEFAULT_IMAGE_TRANSFORM: ImageTransform = {
   offsetY: 0,
 };
 
+const DEFAULT_IMAGE_MIN_SCALES: Record<ImageSlotKey, number> = {
+  imgMain: 1,
+  imgPlan: 1,
+  imgSub1: 1,
+  imgSub2: 1,
+  imgSub3: 1,
+  imgSub4: 1,
+  imgSub5: 1,
+  imgSub6: 1,
+  imgMap: 1,
+};
+
 type ZumenData = {
   price: string;
   name: string;
@@ -262,6 +274,7 @@ function ImgBox({
   h,
   showCenterLogo = false,
   transform = DEFAULT_IMAGE_TRANSFORM,
+  onMinScaleChange,
 }: {
   src?: string;
   label: string;
@@ -269,7 +282,22 @@ function ImgBox({
   h: number;
   showCenterLogo?: boolean;
   transform?: ImageTransform;
+  onMinScaleChange?: (value: number) => void;
 }) {
+   const handleImageLoad = useCallback(
+    (event: { currentTarget: HTMLImageElement }) => {
+      if (!onMinScaleChange) return;
+      const img = event.currentTarget;
+      const frame = img.parentElement;
+      if (!frame) return;
+      const longestImageEdge = Math.max(img.naturalWidth || 1, img.naturalHeight || 1);
+      const longestFrameEdge = Math.max(frame.clientWidth || 1, frame.clientHeight || 1);
+      const computedMinScale = Math.max(0.1, Number((longestFrameEdge / longestImageEdge).toFixed(2)));
+      onMinScaleChange(computedMinScale);
+    },
+    [onMinScaleChange],
+  );
+
   return (
     <div
       className="relative flex items-center justify-center overflow-hidden border border-black bg-zinc-50"
@@ -280,10 +308,12 @@ function ImgBox({
           <img
             src={toExportableImageSrc(src)}
             alt={label}
-             className="h-full w-full origin-center"
+            className="h-full w-full origin-center"
             style={{
+              objectFit: fit,
               transform: `translate(${transform.offsetX}px, ${transform.offsetY}px) scale(${transform.scale})`,
             }}
+            onLoad={handleImageLoad}
             crossOrigin="anonymous"
             referrerPolicy="no-referrer"
           />
@@ -488,6 +518,7 @@ function ZumenPageContent() {
     imgSub6: { ...DEFAULT_IMAGE_TRANSFORM },
     imgMap: { ...DEFAULT_IMAGE_TRANSFORM },
   });
+  const [imageMinScales, setImageMinScales] = useState<Record<ImageSlotKey, number>>(DEFAULT_IMAGE_MIN_SCALES);
 
   const [debugCanvasUrl, setDebugCanvasUrl] = useState<string | null>(null);
   const [debugCanvasInfo, setDebugCanvasInfo] = useState<string>("");
@@ -1472,18 +1503,23 @@ function ZumenPageContent() {
       setIsExporting(false);
     }
   }, [captureSheet, activeTemplate]);
-const updateImageTransform = useCallback(
+  const updateImageTransform = useCallback(
     (slot: ImageSlotKey, field: keyof ImageTransform, value: number) => {
+      const normalizedValue =
+        field === "scale" ? Math.max(imageMinScales[slot] ?? 0.1, value) : value;
       setImageTransforms((prev) => ({
         ...prev,
         [slot]: {
           ...prev[slot],
-          [field]: value,
+           [field]: normalizedValue,
         },
       }));
     },
-    []
+     [imageMinScales]
   );
+const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
+    setImageMinScales((prev) => ({ ...prev, [slot]: value }));
+  }, []);
 
   const resetImageTransforms = useCallback(() => {
     setImageTransforms({
@@ -1497,6 +1533,7 @@ const updateImageTransform = useCallback(
       imgSub6: { ...DEFAULT_IMAGE_TRANSFORM },
       imgMap: { ...DEFAULT_IMAGE_TRANSFORM },
     });
+    setImageMinScales(DEFAULT_IMAGE_MIN_SCALES);
   }, []);
 
   useEffect(() => {
@@ -1572,7 +1609,7 @@ const updateImageTransform = useCallback(
               </div>
 
               <div className="p-2">
-                <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} transform={imageTransforms.imgMap} />
+                 <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} transform={imageTransforms.imgMap} onMinScaleChange={(v) => updateImageMinScale("imgMap", v)} />
                 <div
                   className="border-t border-black p-1 text-center"
                   style={adaptiveTextStyle(`NAVI ${data.address}`, 9, 12)}
@@ -1612,7 +1649,7 @@ const updateImageTransform = useCallback(
                 </div>
 
                 <div className="mt-2">
-                   <ImgBox src={data.imgMain} label="メイン写真" h={180} transform={imageTransforms.imgMain} />
+                  <ImgBox src={data.imgMain} label="メイン写真" h={180} transform={imageTransforms.imgMain} onMinScaleChange={(v) => updateImageMinScale("imgMain", v)} />
                 </div>
 
                 <div className="mt-2 space-y-1 text-xs">
@@ -1628,16 +1665,16 @@ const updateImageTransform = useCallback(
               </div>
 
               <div className="border-r border-black p-2">
-               <ImgBox src={data.imgPlan} label="間取り図" h={320} fit="contain" transform={imageTransforms.imgPlan} />
+                <ImgBox src={data.imgPlan} label="間取り図" h={320} fit="contain" transform={imageTransforms.imgPlan} onMinScaleChange={(v) => updateImageMinScale("imgPlan", v)} />
               </div>
 
               <div className="p-2">
                 <div className="grid grid-cols-2 gap-2">
-                 <ImgBox src={data.imgSub1} label="サブ画像1" h={180} transform={imageTransforms.imgSub1} />
-                  <ImgBox src={data.imgSub2} label="サブ画像2" h={180} transform={imageTransforms.imgSub2} />
+                  <ImgBox src={data.imgSub1} label="サブ画像1" h={180} transform={imageTransforms.imgSub1} onMinScaleChange={(v) => updateImageMinScale("imgSub1", v)} />
+                  <ImgBox src={data.imgSub2} label="サブ画像2" h={180} transform={imageTransforms.imgSub2} onMinScaleChange={(v) => updateImageMinScale("imgSub2", v)} />
                 </div>
                 <div className="mt-2">
-                 <ImgBox src={data.imgSub3} label="現地案内図" h={170} transform={imageTransforms.imgSub3} />
+               <ImgBox src={data.imgSub3} label="現地案内図" h={170} transform={imageTransforms.imgSub3} onMinScaleChange={(v) => updateImageMinScale("imgSub3", v)} />
                 </div>
 
                 {featureRows.length > 0 && (
@@ -1814,7 +1851,7 @@ const updateImageTransform = useCallback(
               </div>
 
               <div className="p-2">
-               <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} transform={imageTransforms.imgMap} />
+               <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} transform={imageTransforms.imgMap} onMinScaleChange={(v) => updateImageMinScale("imgMap", v)} />
                 <div
                   className="px-1 py-0.5 text-center font-bold text-white"
                   style={{
@@ -1997,13 +2034,13 @@ const updateImageTransform = useCallback(
 
             <div className="grid grid-cols-[260px_1fr_320px]">
               <div className="border-r border-black p-2">
-                <ImgBox src={data.imgMain} label="外観画像（左上）" h={210} transform={imageTransforms.imgMain} />
+                <ImgBox src={data.imgMain} label="外観画像（左上）" h={210} transform={imageTransforms.imgMain} onMinScaleChange={(v) => updateImageMinScale("imgMain", v)} />
                 <div className="mt-2 grid grid-cols-[calc(50%+0.1cm)_calc(50%-0.1cm)] gap-2">
-                  <ImgBox src={data.imgSub1} label="共用（左中）" h={118} transform={imageTransforms.imgSub1} />
-                  <ImgBox src={data.imgSub2} label="室内（左中）" h={118} transform={imageTransforms.imgSub2} />
+                  <ImgBox src={data.imgSub1} label="共用（左中）" h={118} transform={imageTransforms.imgSub1} onMinScaleChange={(v) => updateImageMinScale("imgSub1", v)} />
+                  <ImgBox src={data.imgSub2} label="室内（左中）" h={118} transform={imageTransforms.imgSub2} onMinScaleChange={(v) => updateImageMinScale("imgSub2", v)} />
                 </div>
                <div className="mt-2">
-                  <ImgBox src={data.imgSub3} label="追加画像（左下）" h={120} transform={imageTransforms.imgSub3} />
+                  <ImgBox src={data.imgSub3} label="追加画像（左下）" h={120} transform={imageTransforms.imgSub3} onMinScaleChange={(v) => updateImageMinScale("imgSub3", v)} />
                 </div>
                 <div className="mt-3 text-[10px] leading-5">
                   {lifeInfoRows.slice(0, 6).map((row) => (
@@ -2025,17 +2062,17 @@ const updateImageTransform = useCallback(
                 >
                   {data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}
                 </div>
-                <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={320} fit="contain" transform={imageTransforms.imgPlan} />
+                 <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={320} fit="contain" transform={imageTransforms.imgPlan} onMinScaleChange={(v) => updateImageMinScale("imgPlan", v)} />
                 <div className="mt-2 grid grid-cols-2 gap-2">
                    <ImgBox
                     src={data.imgSub4}
-                     transform={imageTransforms.imgSub4}
+                    transform={imageTransforms.imgSub4} onMinScaleChange={(v) => updateImageMinScale("imgSub4", v)}
                     label="リビング（中央下左）"
                     h={template === "chic" ? 244 : 168}
                   />
                   <ImgBox
                     src={data.imgSub5}
-                     transform={imageTransforms.imgSub5}
+                    transform={imageTransforms.imgSub5} onMinScaleChange={(v) => updateImageMinScale("imgSub5", v)}
                     label="キッチン（中央下右）"
                     h={template === "chic" ? 244 : 168}
                   />
@@ -2390,7 +2427,7 @@ const updateImageTransform = useCallback(
                     <div key={slot} className="rounded border border-zinc-200 bg-white p-2 text-xs">
                       <div className="mb-1 font-semibold">{IMAGE_SLOT_LABELS[slot]}</div>
                       <label className="block">拡大率 {t.scale.toFixed(2)}
-                       <input type="range" min={1} max={3} step={0.05} value={t.scale} onChange={(e)=>updateImageTransform(slot,"scale",Number(e.target.value))} className="w-full"/>
+                      <input type="range" min={imageMinScales[slot] ?? 0.1} max={3} step={0.05} value={t.scale} onChange={(e)=>updateImageTransform(slot,"scale",Number(e.target.value))} className="w-full"/>
                       </label>
                       <label className="block">X {t.offsetX}px
                         <input type="range" min={-180} max={180} step={1} value={t.offsetX} onChange={(e)=>updateImageTransform(slot,"offsetX",Number(e.target.value))} className="w-full"/>
