@@ -2391,7 +2391,7 @@ const updateImageTransform = useCallback(
                     <div key={slot} className="rounded border border-zinc-200 bg-white p-2 text-xs">
                       <div className="mb-1 font-semibold">{IMAGE_SLOT_LABELS[slot]}</div>
                       <label className="block">拡大率 {t.scale.toFixed(2)}
-                        <input type="range" min={0.6} max={2.2} step={0.05} value={t.scale} onChange={(e)=>updateImageTransform(slot,"scale",Number(e.target.value))} className="w-full"/>
+                       <input type="range" min={1} max={3} step={0.05} value={t.scale} onChange={(e)=>updateImageTransform(slot,"scale",Number(e.target.value))} className="w-full"/>
                       </label>
                       <label className="block">X {t.offsetX}px
                         <input type="range" min={-180} max={180} step={1} value={t.offsetX} onChange={(e)=>updateImageTransform(slot,"offsetX",Number(e.target.value))} className="w-full"/>
