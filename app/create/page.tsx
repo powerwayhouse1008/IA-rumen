@@ -1653,7 +1653,7 @@ useEffect(() => {
                           {data[key] ? (
                             <div className="relative h-full">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={data[key]} alt={label} className="h-full w-full object-cover" />
+                              <img src={data[key]} alt={label} className="h-full w-full object-contain" />
                               <button
                                 type="button"
                                 onClick={() => removeImage(key)}
