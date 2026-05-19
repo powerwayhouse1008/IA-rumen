@@ -2338,33 +2338,7 @@ const updateImageTransform = useCallback(
             {exportError}
           </div>
         )}
- {!isSavedDraftsView && activeTemplate && (
-          <div className="mb-3 rounded-xl border border-zinc-200 bg-white p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-sm font-semibold">画像の位置・サイズ調整</div>
-              <button type="button" onClick={resetImageTransforms} className="rounded-md border border-zinc-300 px-3 py-1 text-xs">リセット</button>
-            </div>
-            <div className="grid gap-2 md:grid-cols-3">
-              {(Object.keys(IMAGE_SLOT_LABELS) as ImageSlotKey[]).map((slot) => {
-                const t = imageTransforms[slot];
-                return (
-                  <div key={slot} className="rounded border border-zinc-200 p-2 text-xs">
-                    <div className="mb-1 font-semibold">{IMAGE_SLOT_LABELS[slot]}</div>
-                    <label className="block">拡大率 {t.scale.toFixed(2)}
-                      <input type="range" min={0.6} max={2.2} step={0.05} value={t.scale} onChange={(e)=>updateImageTransform(slot,"scale",Number(e.target.value))} className="w-full"/>
-                    </label>
-                    <label className="block">X {t.offsetX}px
-                      <input type="range" min={-180} max={180} step={1} value={t.offsetX} onChange={(e)=>updateImageTransform(slot,"offsetX",Number(e.target.value))} className="w-full"/>
-                    </label>
-                    <label className="block">Y {t.offsetY}px
-                      <input type="range" min={-180} max={180} step={1} value={t.offsetY} onChange={(e)=>updateImageTransform(slot,"offsetY",Number(e.target.value))} className="w-full"/>
-                    </label>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+ 
 
         {!isSavedDraftsView && showDebugPreview && (
           <div className="mb-4 rounded-xl border border-sky-300 bg-sky-50 p-3">
@@ -2399,7 +2373,39 @@ const updateImageTransform = useCallback(
           </div>
         )}
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4">
+         <div
+          className={`rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4 ${
+            !isSavedDraftsView && activeTemplate ? "lg:grid lg:grid-cols-[280px_1fr] lg:gap-4" : ""
+          }`}
+        >
+          {!isSavedDraftsView && activeTemplate && (
+            <aside className="mb-4 rounded-xl border border-zinc-200 bg-zinc-50 p-3 lg:mb-0 lg:max-h-[80vh] lg:overflow-y-auto">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="text-sm font-semibold">画像の位置・サイズ調整</div>
+                <button type="button" onClick={resetImageTransforms} className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs">リセット</button>
+              </div>
+              <div className="space-y-2">
+                {(Object.keys(IMAGE_SLOT_LABELS) as ImageSlotKey[]).map((slot) => {
+                  const t = imageTransforms[slot];
+                  return (
+                    <div key={slot} className="rounded border border-zinc-200 bg-white p-2 text-xs">
+                      <div className="mb-1 font-semibold">{IMAGE_SLOT_LABELS[slot]}</div>
+                      <label className="block">拡大率 {t.scale.toFixed(2)}
+                        <input type="range" min={0.6} max={2.2} step={0.05} value={t.scale} onChange={(e)=>updateImageTransform(slot,"scale",Number(e.target.value))} className="w-full"/>
+                      </label>
+                      <label className="block">X {t.offsetX}px
+                        <input type="range" min={-180} max={180} step={1} value={t.offsetX} onChange={(e)=>updateImageTransform(slot,"offsetX",Number(e.target.value))} className="w-full"/>
+                      </label>
+                      <label className="block">Y {t.offsetY}px
+                        <input type="range" min={-180} max={180} step={1} value={t.offsetY} onChange={(e)=>updateImageTransform(slot,"offsetY",Number(e.target.value))} className="w-full"/>
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </aside>
+          )}
+          <div>
           {isSavedDraftsView ? (
             <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
               <div>
@@ -2523,6 +2529,7 @@ const updateImageTransform = useCallback(
               </div>
             </div>
           )}
+           </div>
         </div>
       </div>
     </main>
