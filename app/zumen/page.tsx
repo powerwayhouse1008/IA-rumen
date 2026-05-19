@@ -527,6 +527,8 @@ function ZumenPageContent() {
 
   const [data, setData] = useState<ZumenData | null>(null);
   const [savedDrafts, setSavedDrafts] = useState<StoredDraft[]>([]);
+const [transformSaveMessage, setTransformSaveMessage] = useState("");
+  const [transformSaveTone, setTransformSaveTone] = useState<"success" | "warning" | "error">("success");
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
 
   const previewRef = useRef<HTMLDivElement | null>(null);
@@ -1554,10 +1556,15 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
     setImageMinScales(DEFAULT_IMAGE_MIN_SCALES);
   }, []);
    
- const persistImageTransforms = useCallback(() => {
-    if (!data) return;
-    if (JSON.stringify(data.imageTransforms ?? {}) === JSON.stringify(imageTransforms)) return;
-
+  const persistImageTransforms = useCallback((source: "auto" | "manual" = "auto") => {
+    if (!data) return false;
+    if (JSON.stringify(data.imageTransforms ?? {}) === JSON.stringify(imageTransforms)) {
+      if (source === "manual") {
+        setTransformSaveTone("success");
+        setTransformSaveMessage("保存済みです（変更なし）。");
+      }
+      return false;
+    }
     const payloadWithTransforms: ZumenData = { ...data, imageTransforms };
     setData(payloadWithTransforms);
 
@@ -1580,11 +1587,41 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedDraft),
+    }).then(() => {
+      setTransformSaveTone("success");
+      setTransformSaveMessage(source === "manual" ? "保存しました。" : "自動保存しました。");
     }).catch((error) => {
       console.error("failed to sync image transforms:", error);
+      setTransformSaveTone("warning");
+      setTransformSaveMessage("ローカル保存済み（Supabase同期は未完了）。");
     });
- 　 }, [data, imageTransforms, savedDrafts, selectedDraftId]);
+ 　 if (!selectedDraftId) {
+      setTransformSaveTone("success");
+      setTransformSaveMessage(source === "manual" ? "保存しました。" : "自動保存しました。");
+    }
 
+    return true;
+  }, [data, imageTransforms, savedDrafts, selectedDraftId]);
+
+  const saveImageTransforms = useCallback(() => {
+    persistImageTransforms("manual");
+  }, [persistImageTransforms]);
+
+  useEffect(() => {
+    if (!data) return;
+    const timer = window.setTimeout(() => {
+      persistImageTransforms();
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, [data, imageTransforms, persistImageTransforms]);
+
+
+  useEffect(() => {
+    if (!transformSaveMessage) return;
+    const timer = window.setTimeout(() => setTransformSaveMessage(""), 2200);
+    return () => window.clearTimeout(timer);
+  }, [transformSaveMessage]);
   const saveImageTransforms = useCallback(() => {
     persistImageTransforms();
   }, [persistImageTransforms]);
@@ -2485,6 +2522,17 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
                   <button type="button" onClick={resetImageTransforms} className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs">リセット</button>
                 </div>
               </div>
+               {transformSaveMessage ? (
+                <div className={`mb-2 rounded-md px-2 py-1 text-xs ${
+                  transformSaveTone === "success"
+                    ? "bg-sky-100 text-sky-700"
+                    : transformSaveTone === "warning"
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-rose-100 text-rose-700"
+                }`}>
+                  {transformSaveMessage}
+                </div>
+              ) : null}
               <div className="space-y-2">
                 {(Object.keys(IMAGE_SLOT_LABELS) as ImageSlotKey[]).map((slot) => {
                   const t = imageTransforms[slot];
