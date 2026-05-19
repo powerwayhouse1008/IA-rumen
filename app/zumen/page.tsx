@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {
-  CSSProperties,
+   CSSProperties,
   Suspense,
   useCallback,
   useEffect,
