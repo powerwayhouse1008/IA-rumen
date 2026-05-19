@@ -1563,6 +1563,7 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
 
     try {
       localStorage.setItem("zumenData", JSON.stringify(payloadWithTransforms));
+    (window as Window & { __zumenPayload?: ZumenData }).__zumenPayload = payloadWithTransforms;
     } catch (error) {
       console.error("failed to persist preview payload:", error);
     }
