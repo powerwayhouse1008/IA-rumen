@@ -1554,7 +1554,7 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
     setImageMinScales(DEFAULT_IMAGE_MIN_SCALES);
   }, []);
    
- const saveImageTransforms = useCallback(() => {
+ const persistImageTransforms = useCallback(() => {
     if (!data) return;
     if (JSON.stringify(data.imageTransforms ?? {}) === JSON.stringify(imageTransforms)) return;
 
@@ -1563,7 +1563,7 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
 
     try {
       localStorage.setItem("zumenData", JSON.stringify(payloadWithTransforms));
-    (window as Window & { __zumenPayload?: ZumenData }).__zumenPayload = payloadWithTransforms;
+      (window as Window & { __zumenPayload?: ZumenData }).__zumenPayload = payloadWithTransforms;
     } catch (error) {
       console.error("failed to persist preview payload:", error);
     }
@@ -1583,7 +1583,20 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
     }).catch((error) => {
       console.error("failed to sync image transforms:", error);
     });
- 　}, [data, imageTransforms, savedDrafts, selectedDraftId]);
+ 　 }, [data, imageTransforms, savedDrafts, selectedDraftId]);
+
+  const saveImageTransforms = useCallback(() => {
+    persistImageTransforms();
+  }, [persistImageTransforms]);
+
+  useEffect(() => {
+    if (!data) return;
+    const timer = window.setTimeout(() => {
+      persistImageTransforms();
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, [data, imageTransforms, persistImageTransforms]);
    
   useEffect(() => {
     if (!shouldExportPdf || !data || isExporting) return;
