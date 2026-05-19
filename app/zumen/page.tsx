@@ -1553,7 +1553,8 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
     setImageTransforms(createDefaultImageTransforms());
     setImageMinScales(DEFAULT_IMAGE_MIN_SCALES);
   }, []);
- useEffect(() => {
+   
+ const saveImageTransforms = useCallback(() => {
     if (!data) return;
     if (JSON.stringify(data.imageTransforms ?? {}) === JSON.stringify(imageTransforms)) return;
 
