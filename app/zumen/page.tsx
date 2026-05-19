@@ -1622,18 +1622,7 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
     const timer = window.setTimeout(() => setTransformSaveMessage(""), 2200);
     return () => window.clearTimeout(timer);
   }, [transformSaveMessage]);
-  const saveImageTransforms = useCallback(() => {
-    persistImageTransforms();
-  }, [persistImageTransforms]);
-
-  useEffect(() => {
-    if (!data) return;
-    const timer = window.setTimeout(() => {
-      persistImageTransforms();
-    }, 500);
-
-    return () => window.clearTimeout(timer);
-  }, [data, imageTransforms, persistImageTransforms]);
+  
    
   useEffect(() => {
     if (!shouldExportPdf || !data || isExporting) return;
