@@ -270,7 +270,7 @@ function toExportableImageSrc(src?: string) {
 function ImgBox({
   src,
   label,
-  fit = "cover",
+  fit = "contain",
   h,
   showCenterLogo = false,
   transform = DEFAULT_IMAGE_TRANSFORM,
