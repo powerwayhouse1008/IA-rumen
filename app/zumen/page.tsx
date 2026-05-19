@@ -1581,8 +1581,8 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
     }).catch((error) => {
       console.error("failed to sync image transforms:", error);
     });
-  }, [imageTransforms, data, selectedDraftId, savedDrafts]);
-
+ 　}, [data, imageTransforms, savedDrafts, selectedDraftId]);
+   
   useEffect(() => {
     if (!shouldExportPdf || !data || isExporting) return;
 
@@ -2465,7 +2465,10 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
             <aside className="mb-4 rounded-xl border border-zinc-200 bg-zinc-50 p-3 lg:mb-0 lg:max-h-[80vh] lg:overflow-y-auto">
               <div className="mb-2 flex items-center justify-between">
                 <div className="text-sm font-semibold">画像の位置・サイズ調整</div>
-                <button type="button" onClick={resetImageTransforms} className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs">リセット</button>
+                 <div className="flex items-center gap-2">
+                  <button type="button" onClick={saveImageTransforms} className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs text-emerald-700">保存</button>
+                  <button type="button" onClick={resetImageTransforms} className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs">リセット</button>
+                </div>
               </div>
               <div className="space-y-2">
                 {(Object.keys(IMAGE_SLOT_LABELS) as ImageSlotKey[]).map((slot) => {
