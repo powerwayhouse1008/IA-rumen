@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import {
-   CSSProperties,
+  CSSProperties,
+  PointerEvent as ReactPointerEvent,
   Suspense,
   useCallback,
   useEffect,
@@ -305,7 +306,11 @@ function ImgBox({
   h,
   showCenterLogo = false,
   transform = DEFAULT_IMAGE_TRANSFORM,
+  editable = false,
+  sheetScale = 1,
   onMinScaleChange,
+  onTransformChange,
+  onDelete,
 }: {
   src?: string;
   label: string;
@@ -313,9 +318,22 @@ function ImgBox({
   h: number;
   showCenterLogo?: boolean;
   transform?: ImageTransform;
+  editable?: boolean;
+  sheetScale?: number;
   onMinScaleChange?: (value: number) => void;
+  onTransformChange?: (transform: ImageTransform) => void;
+  onDelete?: () => void;
 }) {
-   const handleImageLoad = useCallback(
+   const frameRef = useRef<HTMLDivElement | null>(null);
+  const [isSelected, setIsSelected] = useState(false);
+  const [isInteracting, setIsInteracting] = useState(false);
+
+  const scaledPointerDelta = useCallback(
+    (current: number, start: number) => (current - start) / Math.max(sheetScale, 0.01),
+    [sheetScale],
+  );
+
+  const handleImageLoad = useCallback(
     (event: { currentTarget: HTMLImageElement }) => {
       if (!onMinScaleChange) return;
       const img = event.currentTarget;
@@ -328,23 +346,122 @@ function ImgBox({
     },
     [onMinScaleChange],
   );
+ const isPointerOutsideFrame = useCallback((event: PointerEvent) => {
+    const frame = frameRef.current;
+    if (!frame) return false;
+    const rect = frame.getBoundingClientRect();
+    return (
+      event.clientX < rect.left ||
+      event.clientX > rect.right ||
+      event.clientY < rect.top ||
+      event.clientY > rect.bottom
+    );
+  }, []);
+
+  const startMove = useCallback(
+    (event: ReactPointerEvent<HTMLImageElement>) => {
+      if (!editable || !src || !onTransformChange) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      setIsSelected(true);
+      setIsInteracting(true);
+
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const startTransform = transform;
+
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        onTransformChange({
+          ...startTransform,
+          offsetX: Math.round(startTransform.offsetX + scaledPointerDelta(moveEvent.clientX, startX)),
+          offsetY: Math.round(startTransform.offsetY + scaledPointerDelta(moveEvent.clientY, startY)),
+        });
+      };
+
+      const handlePointerUp = (upEvent: PointerEvent) => {
+        window.removeEventListener("pointermove", handlePointerMove);
+        window.removeEventListener("pointerup", handlePointerUp);
+        setIsInteracting(false);
+
+        if (onDelete && isPointerOutsideFrame(upEvent)) {
+          onDelete();
+        }
+      };
+
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", handlePointerUp, { once: true });
+    },
+    [editable, isPointerOutsideFrame, onDelete, onTransformChange, scaledPointerDelta, src, transform],
+  );
+
+  const startResize = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>, directionX: -1 | 1, directionY: -1 | 1) => {
+      if (!editable || !src || !onTransformChange) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      setIsSelected(true);
+      setIsInteracting(true);
+
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const startTransform = transform;
+
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        const dx = scaledPointerDelta(moveEvent.clientX, startX);
+        const dy = scaledPointerDelta(moveEvent.clientY, startY);
+        const nextScale = Math.max(0.1, Math.min(3, startTransform.scale + (directionX * dx + directionY * dy) / 220));
+        onTransformChange({
+          ...startTransform,
+          scale: Number(nextScale.toFixed(2)),
+        });
+      };
+
+      const handlePointerUp = (upEvent: PointerEvent) => {
+        window.removeEventListener("pointermove", handlePointerMove);
+        window.removeEventListener("pointerup", handlePointerUp);
+        setIsInteracting(false);
+
+        if (onDelete && isPointerOutsideFrame(upEvent)) {
+          onDelete();
+        }
+      };
+
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", handlePointerUp, { once: true });
+    },
+    [editable, isPointerOutsideFrame, onDelete, onTransformChange, scaledPointerDelta, src, transform],
+  );
+
+  const handleFramePointerDown = useCallback(() => {
+    if (editable && src) setIsSelected(true);
+  }, [editable, src]);
+
+  const showHandles = editable && src && (isSelected || isInteracting);
 
   return (
     <div
-      className="relative flex items-center justify-center overflow-hidden border border-black bg-zinc-50"
+      ref={frameRef}
+      className={`relative flex items-center justify-center overflow-hidden border bg-zinc-50 ${
+        showHandles ? "border-sky-500 ring-2 ring-sky-300" : "border-black"
+      }`}
       style={{ height: `${h}px` }}
+      onPointerDown={handleFramePointerDown}
     >
       {src ? (
         <>
           <img
             src={toExportableImageSrc(src)}
             alt={label}
-            className="h-full w-full origin-center"
+            className={`h-full w-full origin-center select-none ${editable ? "cursor-move touch-none" : ""}`}
             style={{
               objectFit: fit,
               transform: `translate(${transform.offsetX}px, ${transform.offsetY}px) scale(${transform.scale})`,
             }}
+            onPointerDown={startMove}
             onLoad={handleImageLoad}
+            draggable={false}
             crossOrigin="anonymous"
             referrerPolicy="no-referrer"
           />
@@ -357,6 +474,42 @@ function ImgBox({
                 <path d="M12 3 3 10.5h2V21h6v-5h2v5h6V10.5h2L12 3Zm5 16h-2v-5H9v5H7v-9.62l5-4.17 5 4.17V19Z" />
               </svg>
             </div>
+          ) : null}
+           {showHandles ? (
+            <>
+              <div data-html2canvas-ignore="true" className="pointer-events-none absolute inset-0 border-2 border-sky-500" />
+              <button
+                data-html2canvas-ignore="true"
+                type="button"
+                aria-label={`${label} resize top left`}
+                className="absolute left-1 top-1 h-3 w-3 cursor-nwse-resize rounded-full border border-sky-700 bg-white shadow"
+                onPointerDown={(event) => startResize(event, -1, -1)}
+              />
+              <button
+                data-html2canvas-ignore="true"
+                type="button"
+                aria-label={`${label} resize top right`}
+                className="absolute right-1 top-1 h-3 w-3 cursor-nesw-resize rounded-full border border-sky-700 bg-white shadow"
+                onPointerDown={(event) => startResize(event, 1, -1)}
+              />
+              <button
+                data-html2canvas-ignore="true"
+                type="button"
+                aria-label={`${label} resize bottom left`}
+                className="absolute bottom-1 left-1 h-3 w-3 cursor-nesw-resize rounded-full border border-sky-700 bg-white shadow"
+                onPointerDown={(event) => startResize(event, -1, 1)}
+              />
+              <button
+                data-html2canvas-ignore="true"
+                type="button"
+                aria-label={`${label} resize bottom right`}
+                className="absolute bottom-1 right-1 h-3 w-3 cursor-nwse-resize rounded-full border border-sky-700 bg-white shadow"
+                onPointerDown={(event) => startResize(event, 1, 1)}
+              />
+              <div data-html2canvas-ignore="true" className="pointer-events-none absolute left-1/2 top-1 -translate-x-1/2 rounded bg-sky-600 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow">
+                Drag / Resize
+              </div>
+            </>
           ) : null}
         </>
       ) : (
@@ -527,7 +680,7 @@ function ZumenPageContent() {
 
   const [data, setData] = useState<ZumenData | null>(null);
   const [savedDrafts, setSavedDrafts] = useState<StoredDraft[]>([]);
-const [transformSaveMessage, setTransformSaveMessage] = useState("");
+  const [transformSaveMessage, setTransformSaveMessage] = useState("");
   const [transformSaveTone, setTransformSaveTone] = useState<"success" | "warning" | "error">("success");
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
 
@@ -540,7 +693,7 @@ const [transformSaveMessage, setTransformSaveMessage] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [imageFormat, setImageFormat] = useState<ImageFormat>("png");
   const [exportError, setExportError] = useState<string | null>(null);
-   const [imageTransforms, setImageTransforms] = useState<Record<ImageSlotKey, ImageTransform>>(
+  const [imageTransforms, setImageTransforms] = useState<Record<ImageSlotKey, ImageTransform>>(
     createDefaultImageTransforms
   );
   const [imageMinScales, setImageMinScales] = useState<Record<ImageSlotKey, number>>(DEFAULT_IMAGE_MIN_SCALES);
@@ -1533,21 +1686,65 @@ const [transformSaveMessage, setTransformSaveMessage] = useState("");
       setIsExporting(false);
     }
   }, [captureSheet, activeTemplate]);
+   const persistZumenPayload = useCallback(
+    (payload: ZumenData, source: "auto" | "manual" = "auto") => {
+      setData(payload);
+
+      try {
+        localStorage.setItem("zumenData", JSON.stringify(payload));
+        (window as Window & { __zumenPayload?: ZumenData }).__zumenPayload = payload;
+      } catch (error) {
+        console.error("failed to persist preview payload:", error);
+      }
+
+      if (!selectedDraftId) {
+        setTransformSaveTone("success");
+        setTransformSaveMessage(source === "manual" ? "保存しました。" : "自動保存しました。");
+        return true;
+      }
+
+      const target = savedDrafts.find((draft) => draft.id === selectedDraftId);
+      if (!target) return false;
+
+      const updatedDraft: StoredDraft = { ...target, payload };
+      const nextDrafts = savedDrafts.map((draft) => (draft.id === selectedDraftId ? updatedDraft : draft));
+      setSavedDrafts(nextDrafts);
+      saveStoredDraftsToLocal(nextDrafts);
+      void fetch("/api/zumen-drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedDraft),
+      })
+        .then(() => {
+          setTransformSaveTone("success");
+          setTransformSaveMessage(source === "manual" ? "保存しました。" : "自動保存しました。");
+        })
+        .catch((error) => {
+          console.error("failed to sync zumen payload:", error);
+          setTransformSaveTone("warning");
+          setTransformSaveMessage("ローカル保存済み（Supabase同期は未完了）。");
+        });
+
+      return true;
+    },
+    [savedDrafts, selectedDraftId],
+  );
+
   const updateImageTransform = useCallback(
-    (slot: ImageSlotKey, field: keyof ImageTransform, value: number) => {
-      const normalizedValue =
-        field === "scale" ? Math.max(imageMinScales[slot] ?? 0.1, value) : value;
+     (slot: ImageSlotKey, transform: ImageTransform) => {
       setImageTransforms((prev) => ({
         ...prev,
         [slot]: {
-          ...prev[slot],
-           [field]: normalizedValue,
+           scale: Math.max(imageMinScales[slot] ?? 0.1, Math.min(3, transform.scale)),
+          offsetX: transform.offsetX,
+          offsetY: transform.offsetY,
         },
       }));
     },
-     [imageMinScales]
+      [imageMinScales],
   );
-const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
+
+  const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
     setImageMinScales((prev) => ({ ...prev, [slot]: value }));
   }, []);
 
@@ -1556,56 +1753,58 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
     setImageMinScales(DEFAULT_IMAGE_MIN_SCALES);
   }, []);
    
-  const persistImageTransforms = useCallback((source: "auto" | "manual" = "auto") => {
-    if (!data) return false;
-    if (JSON.stringify(data.imageTransforms ?? {}) === JSON.stringify(imageTransforms)) {
-      if (source === "manual") {
-        setTransformSaveTone("success");
-        setTransformSaveMessage("保存済みです（変更なし）。");
+ 
+
+    const deleteImageSlot = useCallback(
+    (slot: ImageSlotKey) => {
+      if (!data) return;
+      const nextTransforms = {
+        ...imageTransforms,
+        [slot]: { ...DEFAULT_IMAGE_TRANSFORM },
+      };
+      const payloadWithDeletedImage: ZumenData = {
+        ...data,
+        [slot]: undefined,
+        imageTransforms: nextTransforms,
+      };
+      setImageTransforms(nextTransforms);
+      setTransformSaveTone("success");
+     setTransformSaveMessage(`${IMAGE_SLOT_LABELS[slot]}を削除しました。`);
+      persistZumenPayload(payloadWithDeletedImage, "manual");
+    },
+    [data, imageTransforms, persistZumenPayload],
+  );
+
+   const persistImageTransforms = useCallback(
+    (source: "auto" | "manual" = "auto") => {
+      if (!data) return false;
+      if (JSON.stringify(data.imageTransforms ?? {}) === JSON.stringify(imageTransforms)) {
+        if (source === "manual") {
+          setTransformSaveTone("success");
+          setTransformSaveMessage("保存済みです（変更なし）。");
+        }
+        return false;
       }
-      return false;
-    }
-    const payloadWithTransforms: ZumenData = { ...data, imageTransforms };
-    setData(payloadWithTransforms);
 
-    try {
-      localStorage.setItem("zumenData", JSON.stringify(payloadWithTransforms));
-      (window as Window & { __zumenPayload?: ZumenData }).__zumenPayload = payloadWithTransforms;
-    } catch (error) {
-      console.error("failed to persist preview payload:", error);
-    }
-
-    if (!selectedDraftId) return;
-    const target = savedDrafts.find((draft) => draft.id === selectedDraftId);
-    if (!target) return;
-
-    const updatedDraft: StoredDraft = { ...target, payload: payloadWithTransforms };
-    const nextDrafts = savedDrafts.map((draft) => (draft.id === selectedDraftId ? updatedDraft : draft));
-    setSavedDrafts(nextDrafts);
-    saveStoredDraftsToLocal(nextDrafts);
-    void fetch("/api/zumen-drafts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedDraft),
-    }).then(() => {
-      setTransformSaveTone("success");
-      setTransformSaveMessage(source === "manual" ? "保存しました。" : "自動保存しました。");
-    }).catch((error) => {
-      console.error("failed to sync image transforms:", error);
-      setTransformSaveTone("warning");
-      setTransformSaveMessage("ローカル保存済み（Supabase同期は未完了）。");
-    });
- 　 if (!selectedDraftId) {
-      setTransformSaveTone("success");
-      setTransformSaveMessage(source === "manual" ? "保存しました。" : "自動保存しました。");
-    }
-
-    return true;
-  }, [data, imageTransforms, savedDrafts, selectedDraftId]);
+      return persistZumenPayload({ ...data, imageTransforms }, source);
+    },
+    [data, imageTransforms, persistZumenPayload],
+  );
 
   const saveImageTransforms = useCallback(() => {
     persistImageTransforms("manual");
   }, [persistImageTransforms]);
+const getEditableImageProps = useCallback(
+    (slot: ImageSlotKey) => ({
+      editable: !isSavedDraftsView,
+      sheetScale,
+      transform: imageTransforms[slot],
+      onMinScaleChange: (value: number) => updateImageMinScale(slot, value),
+      onTransformChange: (transform: ImageTransform) => updateImageTransform(slot, transform),
+      onDelete: () => deleteImageSlot(slot),
+    }),
+    [deleteImageSlot, imageTransforms, isSavedDraftsView, sheetScale, updateImageMinScale, updateImageTransform],
+  );
 
   useEffect(() => {
     if (!data) return;
@@ -1697,7 +1896,7 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
               </div>
 
               <div className="p-2">
-                 <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} transform={imageTransforms.imgMap} onMinScaleChange={(v) => updateImageMinScale("imgMap", v)} />
+                  <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} {...getEditableImageProps(data.imgMap ? "imgMap" : "imgMain")} />
                 <div
                   className="border-t border-black p-1 text-center"
                   style={adaptiveTextStyle(`NAVI ${data.address}`, 9, 12)}
@@ -1737,7 +1936,7 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
                 </div>
 
                 <div className="mt-2">
-                  <ImgBox src={data.imgMain} label="メイン写真" h={180} transform={imageTransforms.imgMain} onMinScaleChange={(v) => updateImageMinScale("imgMain", v)} />
+                 <ImgBox src={data.imgMain} label="メイン写真" h={180} {...getEditableImageProps("imgMain")} />
                 </div>
 
                 <div className="mt-2 space-y-1 text-xs">
@@ -1753,16 +1952,16 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
               </div>
 
               <div className="border-r border-black p-2">
-                <ImgBox src={data.imgPlan} label="間取り図" h={320} fit="contain" transform={imageTransforms.imgPlan} onMinScaleChange={(v) => updateImageMinScale("imgPlan", v)} />
+                 <ImgBox src={data.imgPlan} label="間取り図" h={320} fit="contain" {...getEditableImageProps("imgPlan")} />
               </div>
 
               <div className="p-2">
                 <div className="grid grid-cols-2 gap-2">
-                  <ImgBox src={data.imgSub1} label="サブ画像1" h={180} transform={imageTransforms.imgSub1} onMinScaleChange={(v) => updateImageMinScale("imgSub1", v)} />
-                  <ImgBox src={data.imgSub2} label="サブ画像2" h={180} transform={imageTransforms.imgSub2} onMinScaleChange={(v) => updateImageMinScale("imgSub2", v)} />
+                  <ImgBox src={data.imgSub1} label="サブ画像1" h={180} {...getEditableImageProps("imgSub1")} />
+                  <ImgBox src={data.imgSub2} label="サブ画像2" h={180} {...getEditableImageProps("imgSub2")} />
                 </div>
                 <div className="mt-2">
-               <ImgBox src={data.imgSub3} label="現地案内図" h={170} transform={imageTransforms.imgSub3} onMinScaleChange={(v) => updateImageMinScale("imgSub3", v)} />
+               <ImgBox src={data.imgSub3} label="現地案内図" h={170} {...getEditableImageProps("imgSub3")} />
                 </div>
 
                 {featureRows.length > 0 && (
@@ -1939,7 +2138,7 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
               </div>
 
               <div className="p-2">
-               <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} transform={imageTransforms.imgMap} onMinScaleChange={(v) => updateImageMinScale("imgMap", v)} />
+                 <ImgBox src={data.imgMap ?? data.imgMain} label="MAP" h={170} showCenterLogo={Boolean(data.imgMap)} {...getEditableImageProps(data.imgMap ? "imgMap" : "imgMain")} />
                 <div
                   className="px-1 py-0.5 text-center font-bold text-white"
                   style={{
@@ -1955,10 +2154,10 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
 
             <div className="grid grid-cols-[380px_420px_323px] border-b border-black">
               <div className="border-r border-black p-2" style={{ backgroundColor: theme.brand }}>
-                <ImgBox src={data.imgMain} label="メイン画像" h={220} />
+                <ImgBox src={data.imgMain} label="メイン画像" h={220} {...getEditableImageProps("imgMain")} />
                 <div className="mt-2 grid grid-cols-2 gap-2">
-                  <ImgBox src={data.imgSub1} label="サブ1" h={85} />
-                  <ImgBox src={data.imgSub2} label="サブ2" h={85} />
+                  <ImgBox src={data.imgSub1} label="サブ1" h={85} {...getEditableImageProps("imgSub1")} />
+                  <ImgBox src={data.imgSub2} label="サブ2" h={85} {...getEditableImageProps("imgSub2")} />
                 </div>
               </div>
 
@@ -1970,13 +2169,13 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
                   <div className="text-xs">□専有面積/75㎡(22.68坪)</div>
                   <div className="text-xs">□バルコニー面積/10㎡(3.02坪)</div>
                   <div className="mt-2">
-                    <ImgBox src={data.imgPlan} label="間取り" h={205} fit="contain" />
+                    <ImgBox src={data.imgPlan} label="間取り" h={205} fit="contain" {...getEditableImageProps("imgPlan")} />
                   </div>
                 </div>
               </div>
 
               <div className="p-2">
-                <ImgBox src={data.imgSub3} label="拡大図" h={130} />
+                <ImgBox src={data.imgSub3} label="拡大図" h={130} {...getEditableImageProps("imgSub3")} />
 
                 {featureRows.length > 0 && (
                   <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
@@ -2122,13 +2321,13 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
 
             <div className="grid grid-cols-[260px_1fr_320px]">
               <div className="border-r border-black p-2">
-                <ImgBox src={data.imgMain} label="外観画像（左上）" h={210} transform={imageTransforms.imgMain} onMinScaleChange={(v) => updateImageMinScale("imgMain", v)} />
+               <ImgBox src={data.imgMain} label="外観画像（左上）" h={210} {...getEditableImageProps("imgMain")} />
                 <div className="mt-2 grid grid-cols-[calc(50%+0.1cm)_calc(50%-0.1cm)] gap-2">
-                  <ImgBox src={data.imgSub1} label="共用（左中）" h={118} transform={imageTransforms.imgSub1} onMinScaleChange={(v) => updateImageMinScale("imgSub1", v)} />
-                  <ImgBox src={data.imgSub2} label="室内（左中）" h={118} transform={imageTransforms.imgSub2} onMinScaleChange={(v) => updateImageMinScale("imgSub2", v)} />
+                   <ImgBox src={data.imgSub1} label="共用（左中）" h={118} {...getEditableImageProps("imgSub1")} />
+                  <ImgBox src={data.imgSub2} label="室内（左中）" h={118} {...getEditableImageProps("imgSub2")} />
                 </div>
                <div className="mt-2">
-                  <ImgBox src={data.imgSub3} label="追加画像（左下）" h={120} transform={imageTransforms.imgSub3} onMinScaleChange={(v) => updateImageMinScale("imgSub3", v)} />
+                   <ImgBox src={data.imgSub3} label="追加画像（左下）" h={120} {...getEditableImageProps("imgSub3")} />
                 </div>
                 <div className="mt-3 text-[10px] leading-5">
                   {lifeInfoRows.slice(0, 6).map((row) => (
@@ -2150,17 +2349,17 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
                 >
                   {data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}
                 </div>
-                 <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={320} fit="contain" transform={imageTransforms.imgPlan} onMinScaleChange={(v) => updateImageMinScale("imgPlan", v)} />
+                <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={320} fit="contain" {...getEditableImageProps("imgPlan")} />
                 <div className="mt-2 grid grid-cols-2 gap-2">
                    <ImgBox
                     src={data.imgSub4}
-                    transform={imageTransforms.imgSub4} onMinScaleChange={(v) => updateImageMinScale("imgSub4", v)}
+                    {...getEditableImageProps("imgSub4")}
                     label="リビング（中央下左）"
                     h={template === "chic" ? 244 : 168}
                   />
                   <ImgBox
                     src={data.imgSub5}
-                    transform={imageTransforms.imgSub5} onMinScaleChange={(v) => updateImageMinScale("imgSub5", v)}
+                    {...getEditableImageProps("imgSub5")}
                     label="キッチン（中央下右）"
                     h={template === "chic" ? 244 : 168}
                   />
@@ -2498,21 +2697,21 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
         )}
 
          <div
-          className={`rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4 ${
-            !isSavedDraftsView && activeTemplate ? "lg:grid lg:grid-cols-[280px_1fr] lg:gap-4" : ""
-          }`}
+         className={`rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4 `}
         >
-          {!isSavedDraftsView && activeTemplate && (
-            <aside className="mb-4 rounded-xl border border-zinc-200 bg-zinc-50 p-3 lg:mb-0 lg:max-h-[80vh] lg:overflow-y-auto">
-              <div className="mb-2 flex items-center justify-between">
-                <div className="text-sm font-semibold">画像の位置・サイズ調整</div>
-                 <div className="flex items-center gap-2">
+          {!isSavedDraftsView && activeTemplate ? (
+            <div className="mb-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <span className="font-semibold">画像編集:</span> 画像をマウスでドラッグして位置を調整し、四隅のハンドルでWordのようにサイズ変更できます。画像を枠外へドラッグして離すと自動削除します。
+                </div>
+                <div className="flex items-center gap-2">
                   <button type="button" onClick={saveImageTransforms} className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs text-emerald-700">保存</button>
                   <button type="button" onClick={resetImageTransforms} className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs">リセット</button>
                 </div>
               </div>
-               {transformSaveMessage ? (
-                <div className={`mb-2 rounded-md px-2 py-1 text-xs ${
+                {transformSaveMessage ? (
+                <div className={`mt-2 rounded-md px-2 py-1 text-xs ${
                   transformSaveTone === "success"
                     ? "bg-sky-100 text-sky-700"
                     : transformSaveTone === "warning"
@@ -2522,27 +2721,8 @@ const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
                   {transformSaveMessage}
                 </div>
               ) : null}
-              <div className="space-y-2">
-                {(Object.keys(IMAGE_SLOT_LABELS) as ImageSlotKey[]).map((slot) => {
-                  const t = imageTransforms[slot];
-                  return (
-                    <div key={slot} className="rounded border border-zinc-200 bg-white p-2 text-xs">
-                      <div className="mb-1 font-semibold">{IMAGE_SLOT_LABELS[slot]}</div>
-                      <label className="block">拡大率 {t.scale.toFixed(2)}
-                      <input type="range" min={imageMinScales[slot] ?? 0.1} max={3} step={0.05} value={t.scale} onChange={(e)=>updateImageTransform(slot,"scale",Number(e.target.value))} className="w-full"/>
-                      </label>
-                      <label className="block">X {t.offsetX}px
-                        <input type="range" min={-180} max={180} step={1} value={t.offsetX} onChange={(e)=>updateImageTransform(slot,"offsetX",Number(e.target.value))} className="w-full"/>
-                      </label>
-                      <label className="block">Y {t.offsetY}px
-                        <input type="range" min={-180} max={180} step={1} value={t.offsetY} onChange={(e)=>updateImageTransform(slot,"offsetY",Number(e.target.value))} className="w-full"/>
-                      </label>
-                    </div>
-                  );
-                })}
               </div>
-            </aside>
-          )}
+          ) : null}
           <div>
           {isSavedDraftsView ? (
             <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
