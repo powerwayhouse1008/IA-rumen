@@ -2772,18 +2772,35 @@ const getEditableImageProps = useCallback(
                   <button type="button" onClick={resetImageTransforms} className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs">リセット</button>
                 </div>
               </div>
-                {transformSaveMessage ? (
-                <div className={`mt-2 rounded-md px-2 py-1 text-xs ${
-                  transformSaveTone === "success"
-                    ? "bg-sky-100 text-sky-700"
-                    : transformSaveTone === "warning"
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-rose-100 text-rose-700"
-                }`}>
-                  {transformSaveMessage}
-                </div>
-              ) : null}
               </div>
+          ) : null}
+          {transformSaveMessage ? (
+            <div
+              data-html2canvas-ignore="true"
+              role="status"
+              aria-live="polite"
+              className={`fixed right-4 top-4 z-50 flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-lg ${
+                transformSaveTone === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 shadow-emerald-950/10"
+                  : transformSaveTone === "warning"
+                    ? "border-amber-200 bg-amber-50 text-amber-700 shadow-amber-950/10"
+                    : "border-rose-200 bg-rose-50 text-rose-700 shadow-rose-950/10"
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold text-white ${
+                  transformSaveTone === "success"
+                    ? "bg-emerald-500"
+                    : transformSaveTone === "warning"
+                      ? "bg-amber-500"
+                      : "bg-rose-500"
+                }`}
+              >
+                {transformSaveTone === "success" ? "✓" : transformSaveTone === "warning" ? "!" : "×"}
+              </span>
+              <span>{transformSaveMessage}</span>
+            </div>
           ) : null}
           <div>
           {isSavedDraftsView ? (
