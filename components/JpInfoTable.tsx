@@ -62,6 +62,7 @@ const CellText = memo(function CellText({
 }: CellTextProps) {
   const displayValue = value || "-";
   const fontSize = estimateFontSize(displayValue, maxFontSize, minFontSize, capacity);
+  const textHeight = Math.max(rowHeight - 2, Math.ceil(fontSize * 1.25));
 
   return (
     <span
@@ -69,8 +70,8 @@ const CellText = memo(function CellText({
       style={{
         fontFamily: JP_EXPORT_FONT_FAMILY,
         fontSize,
-        height: `${rowHeight - 1}px`,
-        lineHeight: `${rowHeight - 1}px`,
+        height: `${textHeight}px`,
+        lineHeight: `${textHeight}px`,
         textOverflow: "clip",
       }}
     >
@@ -97,15 +98,15 @@ export const InfoTable = memo(function InfoTable({
   compactForChic = false,
 }: InfoTableProps) {
   const labelWidth = compactForChic ? CHIC_LABEL_WIDTH : LABEL_WIDTH;
-  const rowHeight = compactForChic || compact ? 22 : 24;
+  const rowHeight = compactForChic || compact ? 18 : 20;
   const cellPaddingClass = compactForChic ? "px-1.5" : "px-2";
-  const tableTextClass = compactForChic ? "text-[10px]" : "text-[11px]";
-  const cellMaxFontSize = compactForChic ? 10 : 11;
+  const tableTextClass = compactForChic ? "text-[9px]" : "text-[10px]";
+  const cellMaxFontSize = compactForChic ? 9 : 10;
   const labelCapacity = compactForChic ? 7.8 : 8.8;
   const halfValueCapacity = compactForChic ? 8.5 : 10.5;
   const fullValueCapacity = compactForChic ? 28 : 34;
   const cellClass = cx(
-    "box-border min-w-0 overflow-hidden border-r border-b border-black py-0",
+    "box-border flex min-w-0 items-center overflow-hidden border-r border-b border-black py-0",
     cellPaddingClass
   );
   const labelCellClass = cx(cellClass, "font-bold");
