@@ -455,7 +455,8 @@ function ImgBox({
   return (
     <div
       ref={frameRef}
-        className={`relative flex items-center justify-center overflow-visible border bg-transparent ${
+        data-zumen-image-frame="true"
+      className={`relative flex items-center justify-center overflow-hidden border bg-transparent ${
         showHandles ? "border-sky-500 ring-2 ring-sky-300" : "border-transparent"
       }`}
       style={{ height: `${h}px` }}
@@ -1460,7 +1461,15 @@ function ZumenPageContent() {
     clone.style.margin = "0";
     clone.style.background = "#ffffff";
     clone.style.visibility = "visible";
-
+    
+    const clonedImageFrames = Array.from(clone.querySelectorAll<HTMLElement>("[data-zumen-image-frame]"));
+    clonedImageFrames.forEach((frame) => {
+      frame.classList.remove("border-sky-500", "ring-2", "ring-sky-300");
+      frame.classList.add("border-transparent");
+      frame.style.borderColor = "transparent";
+      frame.style.boxShadow = "none";
+      frame.style.outline = "none";
+    });
     const clonedImages = Array.from(clone.querySelectorAll("img"));
     clonedImages.forEach((img) => {
       const src = img.getAttribute("src") ?? img.currentSrc ?? img.src ?? "";
