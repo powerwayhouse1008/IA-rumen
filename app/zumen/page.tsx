@@ -447,7 +447,7 @@ function ImgBox({
   return (
     <div
       ref={frameRef}
-      className={`relative flex items-center justify-center overflow-hidden border bg-zinc-50 ${
+      className={`relative flex items-center justify-center overflow-hidden border bg-transparent ${
         showHandles ? "border-sky-500 ring-2 ring-sky-300" : "border-transparent"
       }`}
       style={{ height: `${h}px` }}
@@ -517,7 +517,7 @@ function ImgBox({
           ) : null}
         </>
       ) : (
-        <div className="text-xs text-zinc-500">{label}</div>
+        <div aria-label={label} className="h-full w-full" role="img" />
       )}
     </div>
   );
