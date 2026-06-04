@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, type CSSProperties, type ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 
 type Row = {
   label: string;
@@ -18,7 +18,7 @@ type InfoTableProps = {
 };
 
 type CellTextProps = {
-  value: string;
+  value?: string;
   maxFontSize: number;
   minFontSize?: number;
   capacity: number;
@@ -53,25 +53,29 @@ function estimateFontSize(value: string, maxFontSize: number, minFontSize: numbe
 const CellText = memo(function CellText({
   value,
   maxFontSize,
-  minFontSize = 5,
+  minFontSize = 6,
   capacity,
   className,
 }: CellTextProps) {
-  const fontSize = estimateFontSize(value, maxFontSize, minFontSize, capacity);
+  const displayValue = value || "-";
+  const fontSize = estimateFontSize(displayValue, maxFontSize, minFontSize, capacity);
 
   return (
     <span
-      className={cx("block max-w-full overflow-hidden whitespace-nowrap leading-none", className)}
-      style={{ fontSize, lineHeight: 1, textOverflow: "clip" }}
+      className={cx("block max-w-full overflow-hidden whitespace-nowrap", className)}
+      style={{ fontSize, lineHeight: 1.35, textOverflow: "clip" }}
     >
-      {value || "-"}
+      {displayValue}
     </span>
   );
 });
 
 export function SectionTitle({ children, bgColor = DEFAULT_SECTION_COLOR }: { children: ReactNode; bgColor?: string }) {
   return (
-    <div className="border border-black px-2 py-0 text-[11px] font-bold" style={{ backgroundColor: bgColor }}>
+    <div
+      className="flex min-h-[18px] items-center border border-black px-2 py-0 text-[11px] font-bold leading-[1.35]"
+      style={{ backgroundColor: bgColor }}
+    >
       {children}
     </div>
   );
@@ -80,79 +84,64 @@ export function SectionTitle({ children, bgColor = DEFAULT_SECTION_COLOR }: { ch
 export const InfoTable = memo(function InfoTable({
   rows,
   labelBgColor = DEFAULT_LABEL_COLOR,
+  autoValueWidth = false,
   compact = false,
   compactForChic = false,
 }: InfoTableProps) {
   const labelWidth = compactForChic ? CHIC_LABEL_WIDTH : LABEL_WIDTH;
-  const rowHeight = compactForChic || compact ? "20px" : "22px";
-  const cellPaddingX = compactForChic ? "6px" : "8px";
+  const valueWidth = autoValueWidth ? "minmax(0,1fr)" : "1fr";
+  const gridTemplateColumns = `${labelWidth} ${valueWidth} ${labelWidth} ${valueWidth}`;
+  const cellHeightClass = compactForChic || compact ? "h-[20px]" : "h-[22px]";
+  const cellPaddingClass = compactForChic ? "px-1.5" : "px-2";
   const tableTextClass = compactForChic ? "text-[10px]" : "text-[11px]";
   const cellMaxFontSize = compactForChic ? 10 : 11;
-  const valueColumnWidth = `calc((100% - ${labelWidth} - ${labelWidth}) / 2)`;
   const labelCapacity = compactForChic ? 7.8 : 8.8;
   const halfValueCapacity = compactForChic ? 8.5 : 10.5;
   const fullValueCapacity = compactForChic ? 28 : 34;
-
-  const cellStyle: CSSProperties = {
-    boxSizing: "border-box",
-    height: rowHeight,
-    minWidth: 0,
-    overflow: "hidden",
-    padding: `0 ${cellPaddingX}`,
-    verticalAlign: "middle",
-  };
-
-  const labelCellStyle: CSSProperties = {
-    ...cellStyle,
-    backgroundColor: labelBgColor,
-  };
+  const baseCellClass = cx(
+    "box-border flex min-w-0 items-center overflow-hidden border-r border-black py-0 leading-[1.35]",
+    cellHeightClass,
+    cellPaddingClass
+  );
+  const labelCellClass = cx(baseCellClass, "font-bold");
+  const lastCellClass = baseCellClass.replace(" border-r border-black", "");
 
   return (
-    <table
-      className={cx("w-full border border-black border-t-0", tableTextClass)}
-      style={{ borderCollapse: "collapse", tableLayout: "fixed" }}
-    >
-      <colgroup>
-        <col style={{ width: labelWidth }} />
-        <col style={{ width: valueColumnWidth }} />
-        <col style={{ width: labelWidth }} />
-        <col style={{ width: valueColumnWidth }} />
-      </colgroup>
-      <tbody>
-        {rows.map((row, index) => {
-          const topBorderClass = index === 0 ? "border-t-0" : undefined;
+    <div className={cx("w-full border border-black border-t-0", tableTextClass)}>
+      {rows.map((row, index) => {
+        const isLastRow = index === rows.length - 1;
+        const rowClassName = cx("grid w-full", !isLastRow && "border-b border-black");
 
-          if (row.label2) {
-            return (
-              <tr key={`${row.label}-${index}`}>
-                <td className={cx("border border-black", topBorderClass)} style={labelCellStyle}>
-                  <CellText value={row.label} maxFontSize={cellMaxFontSize} capacity={labelCapacity} className="font-bold" />
-                </td>
-                <td className={cx("border border-black", topBorderClass)} style={cellStyle}>
-                  <CellText value={row.value} maxFontSize={cellMaxFontSize} capacity={halfValueCapacity} />
-                </td>
-                <td className={cx("border border-black", topBorderClass)} style={labelCellStyle}>
-                  <CellText value={row.label2} maxFontSize={cellMaxFontSize} capacity={labelCapacity} className="font-bold" />
-                </td>
-                <td className={cx("border border-black", topBorderClass)} style={cellStyle}>
-                  <CellText value={row.value2 ?? "-"} maxFontSize={cellMaxFontSize} capacity={halfValueCapacity} />
-                </td>
-              </tr>
-            );
-          }
-
+        if (row.label2) {
           return (
-            <tr key={`${row.label}-${index}`}>
-              <td className={cx("border border-black", topBorderClass)} style={labelCellStyle}>
+            <div key={`${row.label}-${index}`} className={rowClassName} style={{ gridTemplateColumns }}>
+              <div className={labelCellClass} style={{ backgroundColor: labelBgColor }}>
                 <CellText value={row.label} maxFontSize={cellMaxFontSize} capacity={labelCapacity} className="font-bold" />
-              </td>
-              <td className={cx("border border-black", topBorderClass)} colSpan={3} style={cellStyle}>
-                <CellText value={row.value} maxFontSize={cellMaxFontSize} capacity={fullValueCapacity} />
-              </td>
-            </tr>
+              </div>
+              <div className={baseCellClass}>
+                <CellText value={row.value} maxFontSize={cellMaxFontSize} capacity={halfValueCapacity} />
+              </div>
+              <div className={labelCellClass} style={{ backgroundColor: labelBgColor }}>
+                <CellText value={row.label2} maxFontSize={cellMaxFontSize} capacity={labelCapacity} className="font-bold" />
+              </div>
+              <div className={lastCellClass}>
+                <CellText value={row.value2} maxFontSize={cellMaxFontSize} capacity={halfValueCapacity} />
+              </div>
+            </div>
           );
-        })}
-      </tbody>
-    </table>
+        }
+
+        return (
+          <div key={`${row.label}-${index}`} className={rowClassName} style={{ gridTemplateColumns }}>
+            <div className={labelCellClass} style={{ backgroundColor: labelBgColor }}>
+              <CellText value={row.label} maxFontSize={cellMaxFontSize} capacity={labelCapacity} className="font-bold" />
+            </div>
+            <div className={lastCellClass} style={{ gridColumn: "span 3" }}>
+              <CellText value={row.value} maxFontSize={cellMaxFontSize} capacity={fullValueCapacity} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 });
