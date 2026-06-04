@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   CSSProperties,
   PointerEvent as ReactPointerEvent,
-  WheelEvent as ReactWheelEvent,
   RefObject,
   Suspense,
   useCallback,
@@ -447,7 +446,7 @@ function ImgBox({
   [editable, isPointerOutsideDeleteBoundary, onDelete, onTransformChange, scaledPointerDelta, src, transform],
   );
  const handleWheelZoom = useCallback(
-    (event: ReactWheelEvent<HTMLDivElement>) => {
+    (event: WheelEvent) => {
       if (!editable || !src || !onTransformChange) return;
       event.preventDefault();
       event.stopPropagation();
@@ -482,7 +481,15 @@ function ImgBox({
     },
     [editable, onTransformChange, src, transform],
   );
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
 
+    frame.addEventListener("wheel", handleWheelZoom, { passive: false });
+    return () => {
+      frame.removeEventListener("wheel", handleWheelZoom);
+    };
+  }, [handleWheelZoom]);
   const handleFramePointerDown = useCallback(() => {
     if (editable && src) setIsSelected(true);
   }, [editable, src]);
@@ -498,7 +505,6 @@ function ImgBox({
       }`}
       style={{ height: `${h}px` }}
       onPointerDown={handleFramePointerDown}
-       onWheel={handleWheelZoom}
     >
       {src ? (
         <>
