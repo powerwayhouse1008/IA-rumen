@@ -22,7 +22,7 @@ type CellTextProps = {
   maxFontSize: number;
   minFontSize?: number;
   capacity: number;
-  compact?: boolean;
+  rowHeight: number;
   className?: string;
 };
 
@@ -57,21 +57,20 @@ const CellText = memo(function CellText({
   maxFontSize,
   minFontSize = 6,
   capacity,
-  compact = false,
+  rowHeight,
   className,
 }: CellTextProps) {
   const displayValue = value || "-";
   const fontSize = estimateFontSize(displayValue, maxFontSize, minFontSize, capacity);
-  const lineHeight = compact ? 1.15 : 1.2;
 
   return (
     <span
       className={cx("block max-w-full overflow-hidden whitespace-nowrap", className)}
-     style={{
+      style={{
         fontFamily: JP_EXPORT_FONT_FAMILY,
         fontSize,
-        lineHeight,
-        minHeight: `${Math.ceil(fontSize * lineHeight)}px`,
+        height: `${rowHeight - 1}px`,
+        lineHeight: `${rowHeight - 1}px`,
         textOverflow: "clip",
       }}
     >
@@ -94,14 +93,10 @@ export function SectionTitle({ children, bgColor = DEFAULT_SECTION_COLOR }: { ch
 export const InfoTable = memo(function InfoTable({
   rows,
   labelBgColor = DEFAULT_LABEL_COLOR,
-  autoValueWidth = false,
   compact = false,
   compactForChic = false,
 }: InfoTableProps) {
   const labelWidth = compactForChic ? CHIC_LABEL_WIDTH : LABEL_WIDTH;
-  const valueColumnWidth = autoValueWidth
-    ? "1fr"
-    : `calc((100% - ${labelWidth} - ${labelWidth}) / 2)`;
   const rowHeight = compactForChic || compact ? 22 : 24;
   const cellPaddingClass = compactForChic ? "px-1.5" : "px-2";
   const tableTextClass = compactForChic ? "text-[10px]" : "text-[11px]";
@@ -109,33 +104,39 @@ export const InfoTable = memo(function InfoTable({
   const labelCapacity = compactForChic ? 7.8 : 8.8;
   const halfValueCapacity = compactForChic ? 8.5 : 10.5;
   const fullValueCapacity = compactForChic ? 28 : 34;
-  const gridTemplateColumns = `${labelWidth} ${valueColumnWidth} ${labelWidth} ${valueColumnWidth}`;
   const cellClass = cx(
-    "box-border flex min-w-0 items-center overflow-hidden border-r border-b border-black py-0",
+    "box-border min-w-0 overflow-hidden border-r border-b border-black py-0",
     cellPaddingClass
   );
   const labelCellClass = cx(cellClass, "font-bold");
-  const isCompact = compactForChic || compact;
+  const labelCellStyle: CSSProperties = {
+    flex: `0 0 ${labelWidth}`,
+    height: rowHeight,
+    backgroundColor: labelBgColor,
+  };
+  const halfValueCellStyle: CSSProperties = { flex: "1 1 0", height: rowHeight };
+  const fullValueCellStyle: CSSProperties = {
+    flex: "1 1 0",
+    height: rowHeight,
+  };
 
   function renderCell(
     key: string,
     value: string | undefined,
     capacity: number,
-    options: { label?: boolean; gridColumn?: string } = {}
+    options: { label?: boolean; full?: boolean } = {}
   ) {
-    const style: CSSProperties = {
-      minHeight: rowHeight,
-      ...(options.label ? { backgroundColor: labelBgColor } : undefined),
-      ...(options.gridColumn ? { gridColumn: options.gridColumn } : undefined),
-    };
-
     return (
-      <div key={key} className={options.label ? labelCellClass : cellClass} style={style}>
+      <div
+        key={key}
+        className={options.label ? labelCellClass : cellClass}
+        style={options.label ? labelCellStyle : options.full ? fullValueCellStyle : halfValueCellStyle}
+      >
         <CellText
           value={value}
           maxFontSize={cellMaxFontSize}
           capacity={capacity}
-          compact={isCompact}
+          rowHeight={rowHeight}
           className={options.label ? "font-bold" : undefined}
         />
       </div>
@@ -153,8 +154,8 @@ export const InfoTable = memo(function InfoTable({
           return (
             <div
               key={`${row.label}-${index}`}
-              className="grid w-full"
-              style={{ gridTemplateColumns, minHeight: rowHeight }}
+              className="flex w-full"
+              style={{ height: rowHeight }}
             >
               {renderCell(`${row.label}-${index}-label`, row.label, labelCapacity, { label: true })}
               {renderCell(`${row.label}-${index}-value`, row.value, halfValueCapacity)}
@@ -167,11 +168,11 @@ export const InfoTable = memo(function InfoTable({
         return (
           <div
             key={`${row.label}-${index}`}
-            className="grid w-full"
-            style={{ gridTemplateColumns, minHeight: rowHeight }}
+            className="flex w-full"
+            style={{ height: rowHeight }}
           >
             {renderCell(`${row.label}-${index}-label`, row.label, labelCapacity, { label: true })}
-            {renderCell(`${row.label}-${index}-value`, row.value, fullValueCapacity, { gridColumn: "2 / 5" })}
+            {renderCell(`${row.label}-${index}-value`, row.value, fullValueCapacity, { full: true })}
           </div>
         );
       })}

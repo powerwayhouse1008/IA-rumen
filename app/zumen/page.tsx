@@ -1597,23 +1597,14 @@ function ZumenPageContent() {
       let canvas: HTMLCanvasElement;
 
       try {
-        canvas = await renderWithOptions(false);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "";
-        const isOklchParseError = message.includes(
-          'Attempting to parse an unsupported color function "oklch"'
-        );
-
-        if (!isOklchParseError) {
-          throw error;
-        }
-
-        console.warn(
-          "html2canvas parser does not support oklch(). Retrying with foreignObjectRendering.",
-          error
-        );
-
         canvas = await renderWithOptions(true);
+      } catch (foreignObjectError) {
+        console.warn(
+          "html2canvas foreignObjectRendering failed. Retrying with standard renderer.",
+          foreignObjectError
+        );
+
+        canvas = await renderWithOptions(false);
       }
 
       if (!canvas.width || !canvas.height) {
