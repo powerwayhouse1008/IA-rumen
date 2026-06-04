@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { memo, type CSSProperties, type ReactNode } from "react";
 
 type Row = {
   label: string;
@@ -8,154 +8,151 @@ type Row = {
   label2?: string;
   value2?: string;
 };
-function AutoShrinkCellText({
-  value,
-  maxFontSize = 11,
-  minFontSize = 5,
-  className = "",
-}: {
-  value: string;
-  maxFontSize?: number;
-  minFontSize?: number;
-  className?: string;
-}) {
-  const textRef = useRef<HTMLSpanElement>(null);
-  const [fontSize, setFontSize] = useState(maxFontSize);
 
-  useLayoutEffect(() => {
-    const textEl = textRef.current;
-    if (!textEl) return;
-
-    const parentEl = textEl.parentElement;
-    if (!parentEl) return;
-
-    const fitText = () => {
-      let nextFontSize = maxFontSize;
-      const availableWidth = Math.max(parentEl.clientWidth - 4, 0);
-      const availableHeight = Math.max(parentEl.clientHeight - 3, 0);
-      textEl.style.fontSize = `${nextFontSize}px`;
-      textEl.style.lineHeight = "1";
-
-      const isOverflowing = () => {
-        const textRect = textEl.getBoundingClientRect();
-        return textEl.scrollWidth > availableWidth || textRect.height > availableHeight;
-      };
-
-      while (isOverflowing() && nextFontSize > minFontSize) {
-        nextFontSize -= 0.5;
-        textEl.style.fontSize = `${nextFontSize}px`;
-      }
-
-      setFontSize(nextFontSize);
-    };
-
-    fitText();
-
-    const observer = new ResizeObserver(() => {
-      fitText();
-    });
-
-    observer.observe(parentEl);
-    return () => observer.disconnect();
-  }, [value, maxFontSize, minFontSize]);
-
-  return (
-    <span
-      ref={textRef}
-      className={`block max-w-full whitespace-nowrap leading-none ${className}`.trim()}
-      style={{ fontSize: `${fontSize}px`, lineHeight: 1 }}
-    >
-      {value}
-    </span>
-  );
-}
-
-export function SectionTitle({ children, bgColor = "#f3c9b8" }: { children: React.ReactNode; bgColor?: string }) {
-  return (
-      <div className="border border-black px-2 py-0 text-[11px] font-bold" style={{ backgroundColor: bgColor }}>
-      {children}
-    </div>
-  );
-}
-
-export function InfoTable({
-  rows,
-  labelBgColor = "#fde7dd",
-  autoValueWidth = false,
-  compact = false,
-  compactForChic = false,
-}: {
+type InfoTableProps = {
   rows: Row[];
   labelBgColor?: string;
   autoValueWidth?: boolean;
   compact?: boolean;
   compactForChic?: boolean;
-}) {
-  const labelWidth = compactForChic ? "82px" : "95px"; // keep sections full-width while making colored label cells slightly narrower
-  const singleColumnTemplate = autoValueWidth ? `${labelWidth} minmax(0, 1fr)` : `${labelWidth} 1fr`;
-  const doubleColumnTemplate = autoValueWidth
-    ? `${labelWidth} minmax(0, 1fr) ${labelWidth} minmax(0, 1fr)`
-    : `${labelWidth} 1fr ${labelWidth} 1fr`;
-   const baseCellClass = `box-border flex ${compactForChic ? "h-[20px]" : compact ? "h-[20px]" : "h-[22px]"} min-w-0 items-center overflow-hidden ${
-    compactForChic ? "px-1.5" : "px-2"
-  } py-0`;
-  const labelCellClass = `${baseCellClass} border-r border-black`;
-  const valueCellClass = `${baseCellClass} border-r border-black`;
-  const lastValueCellClass = baseCellClass;
-  const tableTextClass = compactForChic ? "text-[10px]" : "text-[11px]";
-  const cellMaxFontSize = compactForChic ? 10 : 11;
+};
 
+type CellTextProps = {
+  value: string;
+  maxFontSize: number;
+  minFontSize?: number;
+  capacity: number;
+  className?: string;
+};
+
+const DEFAULT_SECTION_COLOR = "#f3c9b8";
+const DEFAULT_LABEL_COLOR = "#fde7dd";
+const LABEL_WIDTH = "95px";
+const CHIC_LABEL_WIDTH = "82px";
+
+function cx(...classes: Array<string | false | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
+
+function getVisualLength(value: string) {
+  return Array.from(value || "-").reduce((total, char) => {
+    if (/\s/.test(char)) return total + 0.35;
+    if (/^[\x00-\x7F]$/.test(char)) return total + 0.55;
+    return total + 1;
+  }, 0);
+}
+
+function estimateFontSize(value: string, maxFontSize: number, minFontSize: number, capacity: number) {
+  const visualLength = getVisualLength(value);
+  if (visualLength <= capacity) return maxFontSize;
+
+  const nextFontSize = Math.floor((maxFontSize * capacity * 10) / visualLength) / 10;
+  return Math.max(minFontSize, Math.min(maxFontSize, nextFontSize));
+}
+
+const CellText = memo(function CellText({
+  value,
+  maxFontSize,
+  minFontSize = 5,
+  capacity,
+  className,
+}: CellTextProps) {
+  const fontSize = estimateFontSize(value, maxFontSize, minFontSize, capacity);
 
   return (
-   <div className={`w-full border border-black border-t-0 ${tableTextClass}`}>
-      {rows.map((r, i) => {
-        if (r.label2) {
-          return (
-            <div
-              key={i}
-              className="grid w-full border-b border-black last:border-b-0"
-              style={{ gridTemplateColumns: doubleColumnTemplate }}
-            >
-              <div
-                 className={labelCellClass}
-                style={{ backgroundColor: labelBgColor }}
-              >
-                <AutoShrinkCellText value={r.label} maxFontSize={cellMaxFontSize} className="font-bold" />
-              </div>
-              <div className={valueCellClass}>
-                 <AutoShrinkCellText value={r.value} maxFontSize={cellMaxFontSize} />
-              </div>
-              <div
-                className={labelCellClass}
-                style={{ backgroundColor: labelBgColor }}
-              >
-                 <AutoShrinkCellText value={r.label2} maxFontSize={cellMaxFontSize} className="font-bold" />
-              </div>
-             <div className={lastValueCellClass}>
-                <AutoShrinkCellText value={r.value2 ?? "-"} maxFontSize={cellMaxFontSize} />
-              </div>
-            </div>
-          );
-        }
+    <span
+      className={cx("block max-w-full overflow-hidden whitespace-nowrap leading-none", className)}
+      style={{ fontSize, lineHeight: 1, textOverflow: "clip" }}
+    >
+      {value || "-"}
+    </span>
+  );
+});
 
-        return (
-         <div
-            key={i}
-            className="grid w-full border-b border-black last:border-b-0"
-            style={{ gridTemplateColumns: singleColumnTemplate }}
-          >
-            <div
-              className={labelCellClass}
-              style={{ backgroundColor: labelBgColor }}
-            >
-              <AutoShrinkCellText value={r.label} maxFontSize={cellMaxFontSize} className="font-bold" />
-            </div>
-           <div className={lastValueCellClass}>
-              <AutoShrinkCellText value={r.value} maxFontSize={cellMaxFontSize} />
-            </div>
-          </div>
-       );
-      })}
+export function SectionTitle({ children, bgColor = DEFAULT_SECTION_COLOR }: { children: ReactNode; bgColor?: string }) {
+  return (
+    <div className="border border-black px-2 py-0 text-[11px] font-bold" style={{ backgroundColor: bgColor }}>
+      {children}
     </div>
   );
 }
+
+export const InfoTable = memo(function InfoTable({
+  rows,
+  labelBgColor = DEFAULT_LABEL_COLOR,
+  compact = false,
+  compactForChic = false,
+}: InfoTableProps) {
+  const labelWidth = compactForChic ? CHIC_LABEL_WIDTH : LABEL_WIDTH;
+  const rowHeight = compactForChic || compact ? "20px" : "22px";
+  const cellPaddingX = compactForChic ? "6px" : "8px";
+  const tableTextClass = compactForChic ? "text-[10px]" : "text-[11px]";
+  const cellMaxFontSize = compactForChic ? 10 : 11;
+  const valueColumnWidth = `calc((100% - ${labelWidth} - ${labelWidth}) / 2)`;
+  const labelCapacity = compactForChic ? 7.8 : 8.8;
+  const halfValueCapacity = compactForChic ? 8.5 : 10.5;
+  const fullValueCapacity = compactForChic ? 28 : 34;
+
+  const cellStyle: CSSProperties = {
+    boxSizing: "border-box",
+    height: rowHeight,
+    minWidth: 0,
+    overflow: "hidden",
+    padding: `0 ${cellPaddingX}`,
+    verticalAlign: "middle",
+  };
+
+  const labelCellStyle: CSSProperties = {
+    ...cellStyle,
+    backgroundColor: labelBgColor,
+  };
+
+  return (
+    <table
+      className={cx("w-full border border-black border-t-0", tableTextClass)}
+      style={{ borderCollapse: "collapse", tableLayout: "fixed" }}
+    >
+      <colgroup>
+        <col style={{ width: labelWidth }} />
+        <col style={{ width: valueColumnWidth }} />
+        <col style={{ width: labelWidth }} />
+        <col style={{ width: valueColumnWidth }} />
+      </colgroup>
+      <tbody>
+        {rows.map((row, index) => {
+          const topBorderClass = index === 0 ? "border-t-0" : undefined;
+
+          if (row.label2) {
+            return (
+              <tr key={`${row.label}-${index}`}>
+                <td className={cx("border border-black", topBorderClass)} style={labelCellStyle}>
+                  <CellText value={row.label} maxFontSize={cellMaxFontSize} capacity={labelCapacity} className="font-bold" />
+                </td>
+                <td className={cx("border border-black", topBorderClass)} style={cellStyle}>
+                  <CellText value={row.value} maxFontSize={cellMaxFontSize} capacity={halfValueCapacity} />
+                </td>
+                <td className={cx("border border-black", topBorderClass)} style={labelCellStyle}>
+                  <CellText value={row.label2} maxFontSize={cellMaxFontSize} capacity={labelCapacity} className="font-bold" />
+                </td>
+                <td className={cx("border border-black", topBorderClass)} style={cellStyle}>
+                  <CellText value={row.value2 ?? "-"} maxFontSize={cellMaxFontSize} capacity={halfValueCapacity} />
+                </td>
+              </tr>
+            );
+          }
+
+          return (
+            <tr key={`${row.label}-${index}`}>
+              <td className={cx("border border-black", topBorderClass)} style={labelCellStyle}>
+                <CellText value={row.label} maxFontSize={cellMaxFontSize} capacity={labelCapacity} className="font-bold" />
+              </td>
+              <td className={cx("border border-black", topBorderClass)} colSpan={3} style={cellStyle}>
+                <CellText value={row.value} maxFontSize={cellMaxFontSize} capacity={fullValueCapacity} />
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+});
