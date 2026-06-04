@@ -567,9 +567,6 @@ function ImgBox({
                   className="absolute bottom-1 right-1 h-3 w-3 cursor-nwse-resize rounded-full border border-sky-700 bg-white shadow"
                   onPointerDown={(event) => startResize(event, 1, 1)}
                 />
-                <div data-html2canvas-ignore="true" className="pointer-events-none absolute left-1/2 top-1 -translate-x-1/2 rounded bg-sky-600 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow">
-                   Drag / Wheel zoom / Free resize
-                </div>
               </>
             ) : null}
           </div>
