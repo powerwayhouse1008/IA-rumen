@@ -1448,9 +1448,8 @@ function ZumenPageContent() {
     wrapper.style.padding = "0";
     wrapper.style.overflow = "hidden";
     wrapper.style.background = "#ffffff";
-    wrapper.style.opacity = "0.01";
     wrapper.style.pointerEvents = "none";
-    wrapper.style.zIndex = "2147483647";
+    wrapper.style.zIndex = "-1";
 
     const clone = sheetRef.current.cloneNode(true) as HTMLDivElement;
     clone.style.width = `${EXPORT_SHEET_WIDTH}px`;
@@ -1458,7 +1457,7 @@ function ZumenPageContent() {
     clone.style.transform = "none";
     clone.style.transformOrigin = "top left";
     clone.style.overflow = "hidden";
-    clone.style.margin = "0";
+     clone.style.margin = `${PAPER_MARGIN_PX}px`;
     clone.style.background = "#ffffff";
     clone.style.visibility = "visible";
     
@@ -1499,7 +1498,7 @@ function ZumenPageContent() {
     await waitForSheetImages(clone);
 
     return {
-      clone,
+     exportTarget: wrapper,
       cleanup: () => {
         if (wrapper.parentNode) {
           wrapper.parentNode.removeChild(wrapper);
@@ -1531,10 +1530,9 @@ function ZumenPageContent() {
   }, []);
 
   const captureSheet = useCallback(async () => {
-    const { clone, cleanup } = await createExportClone();
-
+    const { exportTarget, cleanup } = await createExportClone();
     const renderWithOptions = (foreignObjectRendering: boolean) =>
-      html2canvas(clone, {
+     html2canvas(exportTarget, {
         scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
