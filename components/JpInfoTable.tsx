@@ -22,6 +22,7 @@ type CellTextProps = {
   maxFontSize: number;
   minFontSize?: number;
   capacity: number;
+  compact?: boolean;
   className?: string;
 };
 
@@ -56,10 +57,12 @@ const CellText = memo(function CellText({
   maxFontSize,
   minFontSize = 6,
   capacity,
+  compact = false,
   className,
 }: CellTextProps) {
   const displayValue = value || "-";
   const fontSize = estimateFontSize(displayValue, maxFontSize, minFontSize, capacity);
+  const lineHeight = compact ? 1.15 : 1.2;
 
   return (
     <span
@@ -67,7 +70,8 @@ const CellText = memo(function CellText({
      style={{
         fontFamily: JP_EXPORT_FONT_FAMILY,
         fontSize,
-        lineHeight: 1.2,
+        lineHeight,
+        minHeight: `${Math.ceil(fontSize * lineHeight)}px`,
         textOverflow: "clip",
       }}
     >
@@ -98,7 +102,7 @@ export const InfoTable = memo(function InfoTable({
   const valueColumnWidth = autoValueWidth
     ? undefined
     : `calc((100% - ${labelWidth} - ${labelWidth}) / 2)`;
-  const rowHeight = compactForChic || compact ? 20 : 22;
+  const rowHeight = compactForChic || compact ? 22 : 24;
   const cellPaddingClass = compactForChic ? "px-1.5" : "px-2";
   const tableTextClass = compactForChic ? "text-[10px]" : "text-[11px]";
   const cellMaxFontSize = compactForChic ? 10 : 11;
@@ -106,10 +110,11 @@ export const InfoTable = memo(function InfoTable({
   const halfValueCapacity = compactForChic ? 8.5 : 10.5;
   const fullValueCapacity = compactForChic ? 28 : 34;
  const cellClass = cx(
-    "box-border overflow-hidden border border-black py-0 leading-none align-middle",
+    "box-border border border-black py-0 align-middle",
     cellPaddingClass
   );
  const labelCellClass = cx(cellClass, "font-bold");
+ const cellInnerClass = "flex h-full min-h-full items-center overflow-hidden";
 
 
   return (
@@ -129,16 +134,46 @@ export const InfoTable = memo(function InfoTable({
             return (
               <tr key={`${row.label}-${index}`} style={{ height: rowHeight }}>
                 <td className={labelCellClass} style={{ backgroundColor: labelBgColor, height: rowHeight }}>
-                  <CellText value={row.label} maxFontSize={cellMaxFontSize} capacity={labelCapacity} className="font-bold" />
+                  <div className={cellInnerClass}>
+                    <CellText
+                      value={row.label}
+                      maxFontSize={cellMaxFontSize}
+                      capacity={labelCapacity}
+                      compact={compactForChic || compact}
+                      className="font-bold"
+                    />
+                  </div>
                 </td>
                 <td className={cellClass} style={{ height: rowHeight }}>
-                  <CellText value={row.value} maxFontSize={cellMaxFontSize} capacity={halfValueCapacity} />
+                  <div className={cellInnerClass}>
+                    <CellText
+                      value={row.value}
+                      maxFontSize={cellMaxFontSize}
+                      capacity={halfValueCapacity}
+                      compact={compactForChic || compact}
+                    />
+                  </div>
                 </td>
                 <td className={labelCellClass} style={{ backgroundColor: labelBgColor, height: rowHeight }}>
-                  <CellText value={row.label2} maxFontSize={cellMaxFontSize} capacity={labelCapacity} className="font-bold" />
+                  <div className={cellInnerClass}>
+                    <CellText
+                      value={row.label2}
+                      maxFontSize={cellMaxFontSize}
+                      capacity={labelCapacity}
+                      compact={compactForChic || compact}
+                      className="font-bold"
+                    />
+                  </div>
                 </td>
                 <td className={cellClass} style={{ height: rowHeight }}>
-                  <CellText value={row.value2} maxFontSize={cellMaxFontSize} capacity={halfValueCapacity} />
+                  <div className={cellInnerClass}>
+                    <CellText
+                      value={row.value2}
+                      maxFontSize={cellMaxFontSize}
+                      capacity={halfValueCapacity}
+                      compact={compactForChic || compact}
+                    />
+                  </div>
                 </td>
               </tr>
             );
@@ -147,10 +182,25 @@ export const InfoTable = memo(function InfoTable({
           return (
             <tr key={`${row.label}-${index}`} style={{ height: rowHeight }}>
               <td className={labelCellClass} style={{ backgroundColor: labelBgColor, height: rowHeight }}>
-                <CellText value={row.label} maxFontSize={cellMaxFontSize} capacity={labelCapacity} className="font-bold" />
+                <div className={cellInnerClass}>
+                  <CellText
+                    value={row.label}
+                    maxFontSize={cellMaxFontSize}
+                    capacity={labelCapacity}
+                    compact={compactForChic || compact}
+                    className="font-bold"
+                  />
+                </div>
               </td>
               <td className={cellClass} colSpan={3} style={{ height: rowHeight }}>
-                <CellText value={row.value} maxFontSize={cellMaxFontSize} capacity={fullValueCapacity} />
+                <div className={cellInnerClass}>
+                  <CellText
+                    value={row.value}
+                    maxFontSize={cellMaxFontSize}
+                    capacity={fullValueCapacity}
+                    compact={compactForChic || compact}
+                  />
+                </div>
               </td>
             </tr>
           );
