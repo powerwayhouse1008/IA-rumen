@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, type ReactNode } from "react";
+import { memo, type CSSProperties, type ReactNode } from "react";
 
 type Row = {
   label: string;
@@ -100,7 +100,7 @@ export const InfoTable = memo(function InfoTable({
 }: InfoTableProps) {
   const labelWidth = compactForChic ? CHIC_LABEL_WIDTH : LABEL_WIDTH;
   const valueColumnWidth = autoValueWidth
-    ? undefined
+    ? "1fr"
     : `calc((100% - ${labelWidth} - ${labelWidth}) / 2)`;
   const rowHeight = compactForChic || compact ? 22 : 24;
   const cellPaddingClass = compactForChic ? "px-1.5" : "px-2";
@@ -109,103 +109,72 @@ export const InfoTable = memo(function InfoTable({
   const labelCapacity = compactForChic ? 7.8 : 8.8;
   const halfValueCapacity = compactForChic ? 8.5 : 10.5;
   const fullValueCapacity = compactForChic ? 28 : 34;
- const cellClass = cx(
-    "box-border border border-black py-0 align-middle",
+  const gridTemplateColumns = `${labelWidth} ${valueColumnWidth} ${labelWidth} ${valueColumnWidth}`;
+  const cellClass = cx(
+    "box-border flex min-w-0 items-center overflow-hidden border-r border-b border-black py-0",
     cellPaddingClass
   );
- const labelCellClass = cx(cellClass, "font-bold");
- const cellInnerClass = "flex h-full min-h-full items-center overflow-hidden";
+  const labelCellClass = cx(cellClass, "font-bold");
+  const isCompact = compactForChic || compact;
+
+  function renderCell(
+    key: string,
+    value: string | undefined,
+    capacity: number,
+    options: { label?: boolean; gridColumn?: string } = {}
+  ) {
+    const style: CSSProperties = {
+      minHeight: rowHeight,
+      ...(options.label ? { backgroundColor: labelBgColor } : undefined),
+      ...(options.gridColumn ? { gridColumn: options.gridColumn } : undefined),
+    };
+
+    return (
+      <div key={key} className={options.label ? labelCellClass : cellClass} style={style}>
+        <CellText
+          value={value}
+          maxFontSize={cellMaxFontSize}
+          capacity={capacity}
+          compact={isCompact}
+          className={options.label ? "font-bold" : undefined}
+        />
+      </div>
+    );
+  }
 
 
   return (
-     <table
-      className={cx("w-full table-fixed border-collapse border border-black border-t-0", tableTextClass)}
+    <div
+      className={cx("w-full border-l border-black", tableTextClass)}
       style={{ fontFamily: JP_EXPORT_FONT_FAMILY }}
     >
-      <colgroup>
-        <col style={{ width: labelWidth }} />
-        <col style={valueColumnWidth ? { width: valueColumnWidth } : undefined} />
-        <col style={{ width: labelWidth }} />
-        <col style={valueColumnWidth ? { width: valueColumnWidth } : undefined} />
-      </colgroup>
-      <tbody>
-        {rows.map((row, index) => {
-          if (row.label2) {
-            return (
-              <tr key={`${row.label}-${index}`} style={{ height: rowHeight }}>
-                <td className={labelCellClass} style={{ backgroundColor: labelBgColor, height: rowHeight }}>
-                  <div className={cellInnerClass}>
-                    <CellText
-                      value={row.label}
-                      maxFontSize={cellMaxFontSize}
-                      capacity={labelCapacity}
-                      compact={compactForChic || compact}
-                      className="font-bold"
-                    />
-                  </div>
-                </td>
-                <td className={cellClass} style={{ height: rowHeight }}>
-                  <div className={cellInnerClass}>
-                    <CellText
-                      value={row.value}
-                      maxFontSize={cellMaxFontSize}
-                      capacity={halfValueCapacity}
-                      compact={compactForChic || compact}
-                    />
-                  </div>
-                </td>
-                <td className={labelCellClass} style={{ backgroundColor: labelBgColor, height: rowHeight }}>
-                  <div className={cellInnerClass}>
-                    <CellText
-                      value={row.label2}
-                      maxFontSize={cellMaxFontSize}
-                      capacity={labelCapacity}
-                      compact={compactForChic || compact}
-                      className="font-bold"
-                    />
-                  </div>
-                </td>
-                <td className={cellClass} style={{ height: rowHeight }}>
-                  <div className={cellInnerClass}>
-                    <CellText
-                      value={row.value2}
-                      maxFontSize={cellMaxFontSize}
-                      capacity={halfValueCapacity}
-                      compact={compactForChic || compact}
-                    />
-                  </div>
-                </td>
-              </tr>
-            );
-          }
-
+      {rows.map((row, index) => {
+        if (row.label2) {
           return (
-            <tr key={`${row.label}-${index}`} style={{ height: rowHeight }}>
-              <td className={labelCellClass} style={{ backgroundColor: labelBgColor, height: rowHeight }}>
-                <div className={cellInnerClass}>
-                  <CellText
-                    value={row.label}
-                    maxFontSize={cellMaxFontSize}
-                    capacity={labelCapacity}
-                    compact={compactForChic || compact}
-                    className="font-bold"
-                  />
-                </div>
-              </td>
-              <td className={cellClass} colSpan={3} style={{ height: rowHeight }}>
-                <div className={cellInnerClass}>
-                  <CellText
-                    value={row.value}
-                    maxFontSize={cellMaxFontSize}
-                    capacity={fullValueCapacity}
-                    compact={compactForChic || compact}
-                  />
-                </div>
-              </td>
-            </tr>
+            <div
+              key={`${row.label}-${index}`}
+              className="grid w-full"
+              style={{ gridTemplateColumns, minHeight: rowHeight }}
+            >
+              {renderCell(`${row.label}-${index}-label`, row.label, labelCapacity, { label: true })}
+              {renderCell(`${row.label}-${index}-value`, row.value, halfValueCapacity)}
+              {renderCell(`${row.label}-${index}-label2`, row.label2, labelCapacity, { label: true })}
+              {renderCell(`${row.label}-${index}-value2`, row.value2, halfValueCapacity)}
+            </div>
           );
-         })}
-      </tbody>
-    </table>
+        }
+
+        return (
+          <div
+            key={`${row.label}-${index}`}
+            className="grid w-full"
+            style={{ gridTemplateColumns, minHeight: rowHeight }}
+          >
+            {renderCell(`${row.label}-${index}-label`, row.label, labelCapacity, { label: true })}
+            {renderCell(`${row.label}-${index}-value`, row.value, fullValueCapacity, { gridColumn: "2 / 5" })}
+          </div>
+        );
+      })}
+    </div>
   );
 });
