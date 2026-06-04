@@ -406,7 +406,7 @@ function ImgBox({
   );
 
   const startResize = useCallback(
-    (event: ReactPointerEvent<HTMLButtonElement>, directionX: -1 | 1, directionY: -1 | 1) => {
+    (event: ReactPointerEvent<HTMLButtonElement>, directionX: -1 | 0 | 1, directionY: -1 | 0 | 1) => {
       if (!editable || !src || !onTransformChange) return;
       event.preventDefault();
       event.stopPropagation();
@@ -421,8 +421,14 @@ function ImgBox({
       const handlePointerMove = (moveEvent: PointerEvent) => {
         const dx = scaledPointerDelta(moveEvent.clientX, startX);
         const dy = scaledPointerDelta(moveEvent.clientY, startY);
-        const nextScaleX = Math.max(0.05, Math.min(8, startTransform.scaleX + (directionX * dx) / 120));
-        const nextScaleY = Math.max(0.05, Math.min(8, startTransform.scaleY + (directionY * dy) / 120));
+        const nextScaleX =
+          directionX === 0
+            ? startTransform.scaleX
+            : Math.max(0.05, Math.min(8, startTransform.scaleX + (directionX * dx) / 120));
+        const nextScaleY =
+          directionY === 0
+            ? startTransform.scaleY
+            : Math.max(0.05, Math.min(8, startTransform.scaleY + (directionY * dy) / 120));
         onTransformChange({
           ...startTransform,
            scaleX: Number(nextScaleX.toFixed(2)),
@@ -549,9 +555,23 @@ function ImgBox({
                 <button
                   data-html2canvas-ignore="true"
                   type="button"
+                  aria-label={`${label} resize top`}
+                  className="absolute left-1/2 top-1 h-3 w-5 -translate-x-1/2 cursor-ns-resize rounded-full border border-sky-700 bg-white shadow"
+                  onPointerDown={(event) => startResize(event, 0, -1)}
+                />
+                <button
+                  data-html2canvas-ignore="true"
+                  type="button"
                   aria-label={`${label} resize top right`}
                   className="absolute right-1 top-1 h-3 w-3 cursor-nesw-resize rounded-full border border-sky-700 bg-white shadow"
                   onPointerDown={(event) => startResize(event, 1, -1)}
+                />
+                <button
+                  data-html2canvas-ignore="true"
+                  type="button"
+                  aria-label={`${label} resize right`}
+                  className="absolute right-1 top-1/2 h-5 w-3 -translate-y-1/2 cursor-ew-resize rounded-full border border-sky-700 bg-white shadow"
+                  onPointerDown={(event) => startResize(event, 1, 0)}
                 />
                 <button
                   data-html2canvas-ignore="true"
@@ -563,9 +583,23 @@ function ImgBox({
                 <button
                   data-html2canvas-ignore="true"
                   type="button"
+                  aria-label={`${label} resize bottom`}
+                  className="absolute bottom-1 left-1/2 h-3 w-5 -translate-x-1/2 cursor-ns-resize rounded-full border border-sky-700 bg-white shadow"
+                  onPointerDown={(event) => startResize(event, 0, 1)}
+                />
+                <button
+                  data-html2canvas-ignore="true"
+                  type="button"
                   aria-label={`${label} resize bottom right`}
                   className="absolute bottom-1 right-1 h-3 w-3 cursor-nwse-resize rounded-full border border-sky-700 bg-white shadow"
                   onPointerDown={(event) => startResize(event, 1, 1)}
+                />
+                <button
+                  data-html2canvas-ignore="true"
+                  type="button"
+                  aria-label={`${label} resize left`}
+                  className="absolute left-1 top-1/2 h-5 w-3 -translate-y-1/2 cursor-ew-resize rounded-full border border-sky-700 bg-white shadow"
+                  onPointerDown={(event) => startResize(event, -1, 0)}
                 />
               </>
             ) : null}
