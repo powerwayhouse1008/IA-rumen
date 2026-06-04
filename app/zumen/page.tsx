@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   CSSProperties,
   PointerEvent as ReactPointerEvent,
+  WheelEvent as ReactWheelEvent,
   RefObject,
   Suspense,
   useCallback,
@@ -445,6 +446,42 @@ function ImgBox({
     },
   [editable, isPointerOutsideDeleteBoundary, onDelete, onTransformChange, scaledPointerDelta, src, transform],
   );
+ const handleWheelZoom = useCallback(
+    (event: ReactWheelEvent<HTMLDivElement>) => {
+      if (!editable || !src || !onTransformChange) return;
+      event.preventDefault();
+      event.stopPropagation();
+
+      const frame = frameRef.current;
+      if (!frame) return;
+
+      const rect = frame.getBoundingClientRect();
+      const frameScaleX = rect.width / Math.max(frame.clientWidth, 1);
+      const frameScaleY = rect.height / Math.max(frame.clientHeight, 1);
+      const pointerX = (event.clientX - rect.left) / Math.max(frameScaleX, 0.01);
+      const pointerY = (event.clientY - rect.top) / Math.max(frameScaleY, 0.01);
+      const centerX = frame.clientWidth / 2;
+      const centerY = frame.clientHeight / 2;
+
+      const zoomFactor = Math.exp(-event.deltaY * 0.001);
+      const nextScale = Math.max(0.05, Math.min(8, transform.scale * zoomFactor));
+      const currentScaleX = Math.max(transform.scale * transform.scaleX, 0.01);
+      const currentScaleY = Math.max(transform.scale * transform.scaleY, 0.01);
+      const nextScaleX = Math.max(nextScale * transform.scaleX, 0.01);
+      const nextScaleY = Math.max(nextScale * transform.scaleY, 0.01);
+      const relativeX = pointerX - centerX - transform.offsetX;
+      const relativeY = pointerY - centerY - transform.offsetY;
+
+      setIsSelected(true);
+      onTransformChange({
+        ...transform,
+        scale: Number(nextScale.toFixed(3)),
+        offsetX: Math.round(transform.offsetX + relativeX * (1 - nextScaleX / currentScaleX)),
+        offsetY: Math.round(transform.offsetY + relativeY * (1 - nextScaleY / currentScaleY)),
+      });
+    },
+    [editable, onTransformChange, src, transform],
+  );
 
   const handleFramePointerDown = useCallback(() => {
     if (editable && src) setIsSelected(true);
@@ -461,6 +498,7 @@ function ImgBox({
       }`}
       style={{ height: `${h}px` }}
       onPointerDown={handleFramePointerDown}
+       onWheel={handleWheelZoom}
     >
       {src ? (
         <>
@@ -524,7 +562,7 @@ function ImgBox({
                   onPointerDown={(event) => startResize(event, 1, 1)}
                 />
                 <div data-html2canvas-ignore="true" className="pointer-events-none absolute left-1/2 top-1 -translate-x-1/2 rounded bg-sky-600 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow">
-                  Drag / Free resize
+                   Drag / Wheel zoom / Free resize
                 </div>
               </>
             ) : null}
@@ -2730,7 +2768,7 @@ const getEditableImageProps = useCallback(
             <div className="mb-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                 <span className="font-semibold">画像編集:</span> 画像をマウスでドラッグして位置を調整し、四隅のハンドルで縦横を自由に伸縮できます。枠はレイアウトの目安だけなので、枠外まで自由に配置できます。画像を用紙外へドラッグして離すと自動削除します。
+                <span className="font-semibold">画像編集:</span> 画像をクリックして選択し、マウスでドラッグして位置を調整できます。選択した画像はマウスホイールで拡大・縮小でき、四隅のハンドルで縦横を自由に伸縮できます。枠はレイアウトの目安だけなので、枠外まで自由に配置できます。画像を用紙外へドラッグして離すと自動削除します。
                 </div>
                 <div className="flex items-center gap-2">
                   <button type="button" onClick={saveImageTransforms} className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs text-emerald-700">保存</button>
