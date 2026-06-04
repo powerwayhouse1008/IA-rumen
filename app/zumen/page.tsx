@@ -165,6 +165,8 @@ type ImageSlotKey =
 
 type ImageTransform = {
   scale: number;
+  scaleX: number;
+  scaleY: number;
   offsetX: number;
   offsetY: number;
 };
@@ -183,6 +185,8 @@ const IMAGE_SLOT_LABELS: Record<ImageSlotKey, string> = {
 
 const DEFAULT_IMAGE_TRANSFORM: ImageTransform = {
   scale: 1,
+  scaleX: 1,
+  scaleY: 1,
   offsetX: 0,
   offsetY: 0,
 };
@@ -220,6 +224,8 @@ const normalizeImageTransforms = (
     if (!v) return;
     defaults[slot] = {
       scale: typeof v.scale === "number" && Number.isFinite(v.scale) ? v.scale : defaults[slot].scale,
+      scaleX: typeof v.scaleX === "number" && Number.isFinite(v.scaleX) ? v.scaleX : defaults[slot].scaleX,
+      scaleY: typeof v.scaleY === "number" && Number.isFinite(v.scaleY) ? v.scaleY : defaults[slot].scaleY,
       offsetX:
         typeof v.offsetX === "number" && Number.isFinite(v.offsetX) ? v.offsetX : defaults[slot].offsetX,
       offsetY:
@@ -415,10 +421,12 @@ function ImgBox({
       const handlePointerMove = (moveEvent: PointerEvent) => {
         const dx = scaledPointerDelta(moveEvent.clientX, startX);
         const dy = scaledPointerDelta(moveEvent.clientY, startY);
-        const nextScale = Math.max(0.1, Math.min(3, startTransform.scale + (directionX * dx + directionY * dy) / 220));
+        const nextScaleX = Math.max(0.05, Math.min(8, startTransform.scaleX + (directionX * dx) / 120));
+        const nextScaleY = Math.max(0.05, Math.min(8, startTransform.scaleY + (directionY * dy) / 120));
         onTransformChange({
           ...startTransform,
-          scale: Number(nextScale.toFixed(2)),
+           scaleX: Number(nextScaleX.toFixed(2)),
+          scaleY: Number(nextScaleY.toFixed(2)),
         });
       };
 
@@ -447,7 +455,7 @@ function ImgBox({
   return (
     <div
       ref={frameRef}
-      className={`relative flex items-center justify-center overflow-hidden border bg-transparent ${
+        className={`relative flex items-center justify-center overflow-visible border bg-transparent ${
         showHandles ? "border-sky-500 ring-2 ring-sky-300" : "border-transparent"
       }`}
       style={{ height: `${h}px` }}
@@ -455,66 +463,71 @@ function ImgBox({
     >
       {src ? (
         <>
-          <img
-            src={toExportableImageSrc(src)}
-            alt={label}
-            className={`h-full w-full origin-center select-none ${editable ? "cursor-move touch-none" : ""}`}
+           <div
+            className="absolute inset-0 origin-center"
             style={{
               objectFit: fit,
-              transform: `translate(${transform.offsetX}px, ${transform.offsetY}px) scale(${transform.scale})`,
+               transform: `translate(${transform.offsetX}px, ${transform.offsetY}px) scale(${transform.scale * transform.scaleX}, ${transform.scale * transform.scaleY})`,
             }}
-            onPointerDown={startMove}
-            onLoad={handleImageLoad}
-            draggable={false}
-            crossOrigin="anonymous"
-            referrerPolicy="no-referrer"
-          />
-          {showCenterLogo ? (
-            <div
-              aria-label="house marker"
-              className="pointer-events-none absolute left-1/2 top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-sky-500 text-white shadow"
             >
-              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
-                <path d="M12 3 3 10.5h2V21h6v-5h2v5h6V10.5h2L12 3Zm5 16h-2v-5H9v5H7v-9.62l5-4.17 5 4.17V19Z" />
-              </svg>
-            </div>
-          ) : null}
-           {showHandles ? (
-            <>
-              <div data-html2canvas-ignore="true" className="pointer-events-none absolute inset-0 border-2 border-sky-500" />
-              <button
-                data-html2canvas-ignore="true"
-                type="button"
-                aria-label={`${label} resize top left`}
-                className="absolute left-1 top-1 h-3 w-3 cursor-nwse-resize rounded-full border border-sky-700 bg-white shadow"
-                onPointerDown={(event) => startResize(event, -1, -1)}
-              />
-              <button
-                data-html2canvas-ignore="true"
-                type="button"
-                aria-label={`${label} resize top right`}
-                className="absolute right-1 top-1 h-3 w-3 cursor-nesw-resize rounded-full border border-sky-700 bg-white shadow"
-                onPointerDown={(event) => startResize(event, 1, -1)}
-              />
-              <button
-                data-html2canvas-ignore="true"
-                type="button"
-                aria-label={`${label} resize bottom left`}
-                className="absolute bottom-1 left-1 h-3 w-3 cursor-nesw-resize rounded-full border border-sky-700 bg-white shadow"
-                onPointerDown={(event) => startResize(event, -1, 1)}
-              />
-              <button
-                data-html2canvas-ignore="true"
-                type="button"
-                aria-label={`${label} resize bottom right`}
-                className="absolute bottom-1 right-1 h-3 w-3 cursor-nwse-resize rounded-full border border-sky-700 bg-white shadow"
-                onPointerDown={(event) => startResize(event, 1, 1)}
-              />
-              <div data-html2canvas-ignore="true" className="pointer-events-none absolute left-1/2 top-1 -translate-x-1/2 rounded bg-sky-600 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow">
-                Drag / Resize
+            <img
+              src={toExportableImageSrc(src)}
+              alt={label}
+              className={`h-full w-full origin-center select-none ${editable ? "cursor-move touch-none" : ""}`}
+              style={{ objectFit: fit }}
+              onPointerDown={startMove}
+              onLoad={handleImageLoad}
+              draggable={false}
+              crossOrigin="anonymous"
+              referrerPolicy="no-referrer"
+            />
+            {showCenterLogo ? (
+              <div
+                aria-label="house marker"
+                className="pointer-events-none absolute left-1/2 top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-sky-500 text-white shadow"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
+                  <path d="M12 3 3 10.5h2V21h6v-5h2v5h6V10.5h2L12 3Zm5 16h-2v-5H9v5H7v-9.62l5-4.17 5 4.17V19Z" />
+                </svg>
               </div>
-            </>
-          ) : null}
+            ) : null}
+            {showHandles ? (
+              <>
+                <div data-html2canvas-ignore="true" className="pointer-events-none absolute inset-0 border-2 border-sky-500" />
+                <button
+                  data-html2canvas-ignore="true"
+                  type="button"
+                  aria-label={`${label} resize top left`}
+                  className="absolute left-1 top-1 h-3 w-3 cursor-nwse-resize rounded-full border border-sky-700 bg-white shadow"
+                  onPointerDown={(event) => startResize(event, -1, -1)}
+                />
+                <button
+                  data-html2canvas-ignore="true"
+                  type="button"
+                  aria-label={`${label} resize top right`}
+                  className="absolute right-1 top-1 h-3 w-3 cursor-nesw-resize rounded-full border border-sky-700 bg-white shadow"
+                  onPointerDown={(event) => startResize(event, 1, -1)}
+                />
+                <button
+                  data-html2canvas-ignore="true"
+                  type="button"
+                  aria-label={`${label} resize bottom left`}
+                  className="absolute bottom-1 left-1 h-3 w-3 cursor-nesw-resize rounded-full border border-sky-700 bg-white shadow"
+                  onPointerDown={(event) => startResize(event, -1, 1)}
+                />
+                <button
+                  data-html2canvas-ignore="true"
+                  type="button"
+                  aria-label={`${label} resize bottom right`}
+                  className="absolute bottom-1 right-1 h-3 w-3 cursor-nwse-resize rounded-full border border-sky-700 bg-white shadow"
+                  onPointerDown={(event) => startResize(event, 1, 1)}
+                />
+                <div data-html2canvas-ignore="true" className="pointer-events-none absolute left-1/2 top-1 -translate-x-1/2 rounded bg-sky-600 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow">
+                  Drag / Free resize
+                </div>
+              </>
+            ) : null}
+          </div>
         </>
       ) : (
         <div aria-label={label} className="h-full w-full" role="img" />
@@ -700,7 +713,7 @@ function ZumenPageContent() {
   const [imageTransforms, setImageTransforms] = useState<Record<ImageSlotKey, ImageTransform>>(
     createDefaultImageTransforms
   );
-  const [imageMinScales, setImageMinScales] = useState<Record<ImageSlotKey, number>>(DEFAULT_IMAGE_MIN_SCALES);
+   const [, setImageMinScales] = useState<Record<ImageSlotKey, number>>(DEFAULT_IMAGE_MIN_SCALES);
 
   const [debugCanvasUrl, setDebugCanvasUrl] = useState<string | null>(null);
   const [debugCanvasInfo, setDebugCanvasInfo] = useState<string>("");
@@ -1735,17 +1748,19 @@ function ZumenPageContent() {
   );
 
   const updateImageTransform = useCallback(
-     (slot: ImageSlotKey, transform: ImageTransform) => {
+    (slot: ImageSlotKey, transform: ImageTransform) => {
       setImageTransforms((prev) => ({
         ...prev,
         [slot]: {
-           scale: Math.max(imageMinScales[slot] ?? 0.1, Math.min(3, transform.scale)),
+          scale: Math.max(0.05, Math.min(8, transform.scale)),
+          scaleX: Math.max(0.05, Math.min(8, transform.scaleX)),
+          scaleY: Math.max(0.05, Math.min(8, transform.scaleY)),
           offsetX: transform.offsetX,
           offsetY: transform.offsetY,
         },
       }));
     },
-      [imageMinScales],
+       [],
   );
 
   const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
@@ -2708,7 +2723,7 @@ const getEditableImageProps = useCallback(
             <div className="mb-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <span className="font-semibold">画像編集:</span> 画像をマウスでドラッグして位置を調整し、四隅のハンドルでWordのようにサイズ変更できます。画像を枠外へドラッグして離すと自動削除します。
+                 <span className="font-semibold">画像編集:</span> 画像をマウスでドラッグして位置を調整し、四隅のハンドルで縦横を自由に伸縮できます。枠はレイアウトの目安だけなので、枠外まで自由に配置できます。画像を用紙外へドラッグして離すと自動削除します。
                 </div>
                 <div className="flex items-center gap-2">
                   <button type="button" onClick={saveImageTransforms} className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs text-emerald-700">保存</button>
