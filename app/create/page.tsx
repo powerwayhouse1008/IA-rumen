@@ -4,6 +4,33 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+type ImageSlotKey =
+  | "imgMain"
+  | "imgPlan"
+  | "imgSub1"
+  | "imgSub2"
+  | "imgSub3"
+  | "imgSub4"
+  | "imgSub5"
+  | "imgSub6"
+  | "imgMap";
+
+type ImageTransform = {
+  scale: number;
+  scaleX: number;
+  scaleY: number;
+  offsetX: number;
+  offsetY: number;
+};
+
+const DEFAULT_IMAGE_TRANSFORM: ImageTransform = {
+  scale: 1,
+  scaleX: 1,
+  scaleY: 1,
+  offsetX: 0,
+  offsetY: 0,
+};
+
 type ZumenData = {
   price: string;
   name: string;
@@ -27,6 +54,7 @@ type ZumenData = {
   imgSub6?: string;
   imgQr?: string;
   imgMap?: string;
+  imageTransforms?: Partial<Record<ImageSlotKey, Partial<ImageTransform>>>;
   draftTitle?: string;
   themeColor?: ThemeColorKey;
   contactInfo?: {
@@ -337,6 +365,7 @@ const createNewPayloadWithContact = (source: DraftPayload | null): DraftPayload 
     imgQr: "",
     imgMap: "",
     draftTitle: "",
+    imageTransforms: {},
     category: DEFAULT_CATEGORY,
     propertyType: "",
     houseDetails: createEmptyFields(INITIAL_HOUSE_DETAILS),
@@ -779,6 +808,7 @@ export default function Page() {
       imgSub6: "",
       imgQr: "",
       imgMap: "",
+      imageTransforms: {},
       draftTitle: "",
       themeColor,
       contactInfo,
@@ -944,6 +974,15 @@ useEffect(() => {
      try {
       const uploadedUrl = await uploadImageToSupabase(file);
       update(key, uploadedUrl);
+        if (key !== "imgQr") {
+        setData((prev) => ({
+          ...prev,
+          imageTransforms: {
+            ...(prev.imageTransforms ?? {}),
+            [key]: { ...DEFAULT_IMAGE_TRANSFORM },
+          },
+        }));
+      }
       setSaveMessage("画像を圧縮してSupabase Storageへアップロードしました。");
       setSaveMessageTone("success");
     } catch (error) {
@@ -960,6 +999,15 @@ useEffect(() => {
     >
   ) {
     update(key, undefined);
+    if (key !== "imgQr") {
+      setData((prev) => ({
+        ...prev,
+        imageTransforms: {
+          ...(prev.imageTransforms ?? {}),
+          [key]: { ...DEFAULT_IMAGE_TRANSFORM },
+        },
+      }));
+    }
   }
 
   async function createAddressMap(address: string): Promise<string | undefined> {
