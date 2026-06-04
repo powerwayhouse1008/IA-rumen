@@ -157,8 +157,5 @@ export const InfoTable = memo(function InfoTable({
          })}
       </tbody>
     </table>
-        );
-      })}
-    </div>
   );
 });
