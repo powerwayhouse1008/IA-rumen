@@ -11,7 +11,7 @@ type Row = {
 function AutoShrinkCellText({
   value,
   maxFontSize = 11,
-  minFontSize = 6,
+  minFontSize = 5,
   className = "",
 }: {
   value: string;
@@ -31,12 +31,17 @@ function AutoShrinkCellText({
 
     const fitText = () => {
       let nextFontSize = maxFontSize;
+      const availableWidth = Math.max(parentEl.clientWidth - 4, 0);
+      const availableHeight = Math.max(parentEl.clientHeight - 3, 0);
       textEl.style.fontSize = `${nextFontSize}px`;
+      textEl.style.lineHeight = "1";
 
-      while (
-        (textEl.scrollWidth > parentEl.clientWidth || textEl.scrollHeight > parentEl.clientHeight) &&
-        nextFontSize > minFontSize
-      ) {
+      const isOverflowing = () => {
+        const textRect = textEl.getBoundingClientRect();
+        return textEl.scrollWidth > availableWidth || textRect.height > availableHeight;
+      };
+
+      while (isOverflowing() && nextFontSize > minFontSize) {
         nextFontSize -= 0.5;
         textEl.style.fontSize = `${nextFontSize}px`;
       }
@@ -57,8 +62,8 @@ function AutoShrinkCellText({
   return (
     <span
       ref={textRef}
-      className={`block whitespace-nowrap leading-tight ${className}`.trim()}
-      style={{ fontSize: `${fontSize}px` }}
+      className={`block max-w-full whitespace-nowrap leading-none ${className}`.trim()}
+      style={{ fontSize: `${fontSize}px`, lineHeight: 1 }}
     >
       {value}
     </span>
@@ -91,7 +96,7 @@ export function InfoTable({
   const doubleColumnTemplate = autoValueWidth
     ? `${labelWidth} minmax(0, 1fr) ${labelWidth} minmax(0, 1fr)`
     : `${labelWidth} 1fr ${labelWidth} 1fr`;
-  const baseCellClass = `flex ${compactForChic ? "h-[18px]" : compact ? "h-[20px]" : "h-[22px]"} min-w-0 items-center overflow-hidden ${
+   const baseCellClass = `box-border flex ${compactForChic ? "h-[20px]" : compact ? "h-[20px]" : "h-[22px]"} min-w-0 items-center overflow-hidden ${
     compactForChic ? "px-1.5" : "px-2"
   } py-0`;
   const labelCellClass = `${baseCellClass} border-r border-black`;
@@ -143,10 +148,10 @@ export function InfoTable({
               className={labelCellClass}
               style={{ backgroundColor: labelBgColor }}
             >
-              <AutoShrinkCellText value={r.label} className="font-bold" />
+              <AutoShrinkCellText value={r.label} maxFontSize={cellMaxFontSize} className="font-bold" />
             </div>
            <div className={lastValueCellClass}>
-              <AutoShrinkCellText value={r.value} />
+              <AutoShrinkCellText value={r.value} maxFontSize={cellMaxFontSize} />
             </div>
           </div>
        );
