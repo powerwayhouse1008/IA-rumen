@@ -427,7 +427,7 @@ function ImgBox({
         window.removeEventListener("pointerup", handlePointerUp);
         setIsInteracting(false);
 
-        if (onDelete && isPointerOutsideFrame(upEvent)) {
+         if (onDelete && isPointerOutsideDeleteBoundary(upEvent)) {
           onDelete();
         }
       };
@@ -435,7 +435,7 @@ function ImgBox({
       window.addEventListener("pointermove", handlePointerMove);
       window.addEventListener("pointerup", handlePointerUp, { once: true });
     },
-    [editable, isPointerOutsideFrame, onDelete, onTransformChange, scaledPointerDelta, src, transform],
+  [editable, isPointerOutsideDeleteBoundary, onDelete, onTransformChange, scaledPointerDelta, src, transform],
   );
 
   const handleFramePointerDown = useCallback(() => {
