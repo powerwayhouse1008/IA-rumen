@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   CSSProperties,
   PointerEvent as ReactPointerEvent,
+  RefObject,
   Suspense,
   useCallback,
   useEffect,
@@ -311,6 +312,7 @@ function ImgBox({
   onMinScaleChange,
   onTransformChange,
   onDelete,
+  deleteBoundaryRef,
 }: {
   src?: string;
   label: string;
@@ -323,6 +325,7 @@ function ImgBox({
   onMinScaleChange?: (value: number) => void;
   onTransformChange?: (transform: ImageTransform) => void;
   onDelete?: () => void;
+  deleteBoundaryRef?: RefObject<HTMLElement | null>;
 }) {
    const frameRef = useRef<HTMLDivElement | null>(null);
   const [isSelected, setIsSelected] = useState(false);
@@ -346,17 +349,18 @@ function ImgBox({
     },
     [onMinScaleChange],
   );
- const isPointerOutsideFrame = useCallback((event: PointerEvent) => {
-    const frame = frameRef.current;
-    if (!frame) return false;
-    const rect = frame.getBoundingClientRect();
+ const isPointerOutsideDeleteBoundary = useCallback((event: PointerEvent) => {
+    const boundary = deleteBoundaryRef?.current ?? frameRef.current;
+    if (!boundary) return false;
+    const rect = boundary.getBoundingClientRect();
     return (
       event.clientX < rect.left ||
       event.clientX > rect.right ||
       event.clientY < rect.top ||
       event.clientY > rect.bottom
     );
-  }, []);
+   }, [deleteBoundaryRef]);
+
 
   const startMove = useCallback(
     (event: ReactPointerEvent<HTMLImageElement>) => {
@@ -384,7 +388,7 @@ function ImgBox({
         window.removeEventListener("pointerup", handlePointerUp);
         setIsInteracting(false);
 
-        if (onDelete && isPointerOutsideFrame(upEvent)) {
+        if (onDelete && isPointerOutsideDeleteBoundary(upEvent)) {
           onDelete();
         }
       };
@@ -392,7 +396,7 @@ function ImgBox({
       window.addEventListener("pointermove", handlePointerMove);
       window.addEventListener("pointerup", handlePointerUp, { once: true });
     },
-    [editable, isPointerOutsideFrame, onDelete, onTransformChange, scaledPointerDelta, src, transform],
+    [editable, isPointerOutsideDeleteBoundary, onDelete, onTransformChange, scaledPointerDelta, src, transform],
   );
 
   const startResize = useCallback(
@@ -444,7 +448,7 @@ function ImgBox({
     <div
       ref={frameRef}
       className={`relative flex items-center justify-center overflow-hidden border bg-zinc-50 ${
-        showHandles ? "border-sky-500 ring-2 ring-sky-300" : "border-black"
+        showHandles ? "border-sky-500 ring-2 ring-sky-300" : "border-transparent"
       }`}
       style={{ height: `${h}px` }}
       onPointerDown={handleFramePointerDown}
@@ -1802,6 +1806,7 @@ const getEditableImageProps = useCallback(
       onMinScaleChange: (value: number) => updateImageMinScale(slot, value),
       onTransformChange: (transform: ImageTransform) => updateImageTransform(slot, transform),
       onDelete: () => deleteImageSlot(slot),
+       deleteBoundaryRef: sheetRef,
     }),
     [deleteImageSlot, imageTransforms, isSavedDraftsView, sheetScale, updateImageMinScale, updateImageTransform],
   );
