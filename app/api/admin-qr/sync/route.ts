@@ -94,11 +94,11 @@ function buildRow(payload: Partial<SyncPayload>) {
     apikey: supabaseKey,
     Authorization: `Bearer ${supabaseKey}`,
     "Content-Type": "application/json",
-    Prefer: "resolution=merge-duplicates,return=representation",
+    Prefer: "return=representation",
   };
 
   const row = buildRow(payload);
-  const restUrl = `${supabaseUrl}/rest/v1/${configuredTableName}?on_conflict=property_code`;
+  const restUrl = `${supabaseUrl}/rest/v1/${configuredTableName}`;
   const res = await fetch(restUrl, {
     method: "POST",
     headers,

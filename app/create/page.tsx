@@ -246,6 +246,12 @@ const SHARED_QR_COUNTER_STORAGE_KEY = "sharedQrPropertyCodeCounter";
 const ZUMEN_DRAFTS_STORAGE_KEY = "zumenDrafts";
 const SHARED_QR_CODE_PREFIX = "P";
 const SHARED_QR_INITIAL_CODE = 1241;
+const NEW_DRAFT_CONTACT_INFO = {
+  ...DEFAULT_CONTACT_INFO,
+  companyPhone: "",
+  companyEmail: "",
+  staffName: "",
+};
 const INITIAL_MANSION_DETAILS = {
   right: "所有権",
   landArea: "25246.57",
@@ -339,9 +345,8 @@ function loadStoredDrafts(): StoredDraft[] {
   }
 }
 
-function loadDraftPayload(): DraftPayload | null {
-  if (typeof window === "undefined") return null;
-const createNewPayloadWithContact = (source: DraftPayload | null): DraftPayload => ({
+function createBlankNewDraftPayload(): DraftPayload {
+  return {
     price: "",
     name: "",
     access: "",
@@ -374,16 +379,19 @@ const createNewPayloadWithContact = (source: DraftPayload | null): DraftPayload 
     managerNo: "",
     publishDate: "",
     expireDate: "",
-    contactInfo: source?.contactInfo ?? DEFAULT_CONTACT_INFO,
+    contactInfo: NEW_DRAFT_CONTACT_INFO,
     themeColor: "sunset-red",
     adminQr: {
       ...DEFAULT_ADMIN_QR_FORM,
-      managerName: source?.contactInfo?.staffName ?? DEFAULT_CONTACT_INFO.staffName,
-      managerEmail: source?.contactInfo?.companyEmail ?? DEFAULT_CONTACT_INFO.companyEmail,
+      managerName: "",
+      managerEmail: "",
     },
     draftSavedAt: "",
-  });
+  };
+}
 
+function loadDraftPayload(): DraftPayload | null {
+  if (typeof window === "undefined") return null;
   const searchParams = new URLSearchParams(window.location.search);
   const shouldCreateNew = searchParams.get("new") === "1";
   const persistCleanPayload = (payload: DraftPayload) => {
@@ -405,7 +413,7 @@ const createNewPayloadWithContact = (source: DraftPayload | null): DraftPayload 
   const runtimePayload = (window as Window & { __zumenPayload?: DraftPayload }).__zumenPayload;
   if (runtimePayload) {
     if (shouldCreateNew) {
-      const cleanPayload = createNewPayloadWithContact(runtimePayload);
+      const cleanPayload = createBlankNewDraftPayload();
       persistCleanPayload(cleanPayload);
       return cleanPayload;
     }
@@ -415,7 +423,7 @@ const createNewPayloadWithContact = (source: DraftPayload | null): DraftPayload 
   const saved = localStorage.getItem("zumenData");
   if (!saved) {
 if (shouldCreateNew) {
-      const cleanPayload = createNewPayloadWithContact(null);
+      const cleanPayload = createBlankNewDraftPayload();
       persistCleanPayload(cleanPayload);
       return cleanPayload;
     }
@@ -425,14 +433,14 @@ if (shouldCreateNew) {
   try {
    const parsed = JSON.parse(saved) as DraftPayload;
     if (shouldCreateNew) {
-      const cleanPayload = createNewPayloadWithContact(parsed);
+      const cleanPayload = createBlankNewDraftPayload();
       persistCleanPayload(cleanPayload);
       return cleanPayload;
     }
     return parsed;
   } catch {
      if (shouldCreateNew) {
-      const cleanPayload = createNewPayloadWithContact(null);
+      const cleanPayload = createBlankNewDraftPayload();
       persistCleanPayload(cleanPayload);
       return cleanPayload;
     }
@@ -806,6 +814,7 @@ export default function Page() {
   });
   
   function resetToNewDraft() {
+    const blankPayload = createBlankNewDraftPayload();
     const clearedData: ZumenData = {
       price: "",
       name: "",
@@ -832,12 +841,10 @@ export default function Page() {
       imageTransforms: {},
       draftTitle: "",
       themeColor,
-      contactInfo,
+      contactInfo: NEW_DRAFT_CONTACT_INFO,
     };
     const clearedAdminQrForm: AdminQrForm = {
       ...DEFAULT_ADMIN_QR_FORM,
-      managerName: contactInfo.staffName,
-      managerEmail: contactInfo.companyEmail,
     };
 
     setSelectedCategory(DEFAULT_CATEGORY);
@@ -857,27 +864,16 @@ export default function Page() {
     setMansionDetails(createEmptyFields(INITIAL_MANSION_DETAILS));
     setRentalDetails(createEmptyFields(INITIAL_RENTAL_DETAILS));
     setAdminQrForm(clearedAdminQrForm);
+    setContactInfo(NEW_DRAFT_CONTACT_INFO);
     setSaveMessage("");
     setSaveMessageTone("success");
 
     const payload: DraftPayload = {
-      ...clearedData,
-      category: DEFAULT_CATEGORY,
-      propertyType: "",
-      houseDetails: createEmptyFields(INITIAL_HOUSE_DETAILS),
-      mansionDetails: createEmptyFields(INITIAL_MANSION_DETAILS),
-      rentalDetails: createEmptyFields(INITIAL_RENTAL_DETAILS),
-      contactInfo,
+      ...blankPayload,
       themeColor,
-      managerNo: "",
-      publishDate: "",
-      expireDate: "",
-      adminQr: clearedAdminQrForm,
-      draftTitle: "",
-      draftSavedAt: "",
     };
     savePayloadToStorage(payload);
-    router.push("/create");
+    router.push("/create?new=1");
   }
 
   function onCreateNew() {
@@ -936,7 +932,18 @@ useEffect(() => {
   const isMansionCategory = normalizedPropertyType.includes("マンション") || selectedCategory === "new-mansion" || selectedCategory === "used-mansion";
   const isHouseCategory = normalizedPropertyType.includes("住宅") || selectedCategory === "new-house" || selectedCategory === "used-house";
   const isRentalCategory = normalizedPropertyType.includes("賃貸") || selectedCategory === "rental";
-  const canGo = useMemo(() => data.price.trim() && data.name.trim() && data.address.trim(), [data]);
+  const canGo = useMemo(
+    () =>
+      Boolean(
+        data.price.trim() &&
+          data.name.trim() &&
+          data.address.trim() &&
+          contactInfo.staffName.trim() &&
+          contactInfo.companyPhone.trim() &&
+          contactInfo.companyEmail.trim()
+      ),
+    [contactInfo.companyEmail, contactInfo.companyPhone, contactInfo.staffName, data]
+  );
   const saveStatusTitle =
     saveMessageTone === "success" ? "保存完了" : saveMessageTone === "warning" ? "保存注意" : "保存エラー";
   const saveToneBadgeClass =
@@ -1062,11 +1069,61 @@ useEffect(() => {
     return Math.floor(parsed);
   }
 
-  function reserveNextSharedPropertyCode() {
-    const current = readSharedQrCounter();
-    const next = current + 1;
+  function parseSharedPropertyCode(propertyCode?: string | null) {
+    const match = propertyCode?.trim().match(new RegExp(`^${SHARED_QR_CODE_PREFIX}(\\d+)$`, "i"));
+    if (!match) return null;
+    const parsed = Number(match[1]);
+    return Number.isFinite(parsed) ? Math.floor(parsed) : null;
+  }
+
+  function readUsedSharedQrNumbers() {
+    const usedNumbers = new Set<number>();
+    const collect = (payload?: DraftPayload | null) => {
+      const code = payload?.adminQr?.propertyCode;
+      const number = parseSharedPropertyCode(code);
+      if (number !== null) usedNumbers.add(number);
+    };
+
+    loadStoredDrafts().forEach((draft) => collect(draft.payload));
+
     if (typeof window !== "undefined") {
-      localStorage.setItem(SHARED_QR_COUNTER_STORAGE_KEY, String(next));
+      try {
+        collect(JSON.parse(localStorage.getItem("zumenData") ?? "null") as DraftPayload | null);
+      } catch {
+        // ignore invalid cached drafts
+      }
+    }
+
+    return usedNumbers;
+  }
+
+  function getNextSharedQrNumber() {
+    const usedNumbers = readUsedSharedQrNumbers();
+    let nextNumber = readSharedQrCounter();
+    while (usedNumbers.has(nextNumber)) {
+      nextNumber += 1;
+    }
+    return nextNumber;
+  }
+
+  function getNextSharedPropertyCode() {
+    return `${SHARED_QR_CODE_PREFIX}${getNextSharedQrNumber()}`;
+  }
+
+  function advanceSharedQrCounterAfter(propertyCode: string) {
+    if (typeof window === "undefined") return;
+    const usedNumber = parseSharedPropertyCode(propertyCode);
+    if (usedNumber === null) return;
+    const current = readSharedQrCounter();
+    if (usedNumber >= current) {
+      localStorage.setItem(SHARED_QR_COUNTER_STORAGE_KEY, String(usedNumber + 1));
+    }
+  }
+
+  function reserveNextSharedPropertyCode() {
+    const current = getNextSharedQrNumber();
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SHARED_QR_COUNTER_STORAGE_KEY, String(current + 1));
     }
     return `${SHARED_QR_CODE_PREFIX}${current}`;
   }
@@ -1079,6 +1136,9 @@ useEffect(() => {
   async function createSharedQr() {
     const manualPropertyCode = adminQrForm.propertyCode.trim();
     const propertyCode = manualPropertyCode || reserveNextSharedPropertyCode();
+    if (manualPropertyCode) {
+      advanceSharedQrCounterAfter(propertyCode);
+    }
     const propertyId = adminQrForm.propertyId?.trim() || crypto.randomUUID();
     const inquiryUrl = `https://qr.powerway.house/inquiry?property_id=${encodeURIComponent(propertyId)}&via=qrcode`;
     const qrServiceUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(inquiryUrl)}`;
@@ -1583,7 +1643,7 @@ useEffect(() => {
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
                   <div className="mb-2 text-sm font-semibold text-zinc-700">物件登録 + QR（admin共通）</div>
                   <div className="mb-2 text-sm text-zinc-700">
-                    次のコード: <span className="font-semibold">{adminQrForm.propertyCode || `${SHARED_QR_CODE_PREFIX}${readSharedQrCounter()}`}</span>
+                    次のコード: <span className="font-semibold">{adminQrForm.propertyCode || getNextSharedPropertyCode()}</span>
                     <span className="text-xs text-zinc-500">（自動採番・手入力可）</span>
                   </div>
                   <div className="mb-2 text-xs text-zinc-500">property_id: {adminQrForm.propertyId || "(自動生成)"}</div>
@@ -1591,7 +1651,7 @@ useEffect(() => {
                     <Input
                       value={adminQrForm.propertyCode}
                       onChange={(e) => updateAdminQr("propertyCode", e.target.value)}
-                      placeholder={`物件コード（例: ${SHARED_QR_CODE_PREFIX}${readSharedQrCounter()}）`}
+                      placeholder={`物件コード（例: ${getNextSharedPropertyCode()}）`}
                     />
                     <Input value={adminQrForm.buildingName} onChange={(e) => updateAdminQr("buildingName", e.target.value)} placeholder="建物名 (building_name)" />
                     <Input value={adminQrForm.address} onChange={(e) => updateAdminQr("address", e.target.value)} placeholder="住所 (address)" />
@@ -1862,10 +1922,10 @@ useEffect(() => {
               <div className="mb-3 text-sm font-semibold text-zinc-700">会社・連絡先情報（図面フッター表示）</div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div><FieldLabel>会社名</FieldLabel><Input value={contactInfo.companyName} onChange={(e) => updateContact("companyName", e.target.value)} /></div>
-                <div><FieldLabel>担当者</FieldLabel><Input value={contactInfo.staffName} onChange={(e) => updateContact("staffName", e.target.value)} /></div>
-                <div><FieldLabel>電話番号</FieldLabel><Input value={contactInfo.companyPhone} onChange={(e) => updateContact("companyPhone", e.target.value)} /></div>
+                <div><FieldLabel required>担当者</FieldLabel><Input required value={contactInfo.staffName} onChange={(e) => updateContact("staffName", e.target.value)} /></div>
+                <div><FieldLabel required>電話番号</FieldLabel><Input required value={contactInfo.companyPhone} onChange={(e) => updateContact("companyPhone", e.target.value)} /></div>
                 <div><FieldLabel>FAX</FieldLabel><Input value={contactInfo.companyFax} onChange={(e) => updateContact("companyFax", e.target.value)} /></div>
-                <div><FieldLabel>Gmail</FieldLabel><Input value={contactInfo.companyEmail} onChange={(e) => updateContact("companyEmail", e.target.value)} /></div>
+                <div><FieldLabel required>Gmail</FieldLabel><Input required type="email" value={contactInfo.companyEmail} onChange={(e) => updateContact("companyEmail", e.target.value)} /></div>
                 <div className="md:col-span-2"><FieldLabel>住所</FieldLabel><Input value={contactInfo.companyAddress} onChange={(e) => updateContact("companyAddress", e.target.value)} /></div>
                 <div><FieldLabel>免許番号</FieldLabel><Input value={contactInfo.licenseNo} onChange={(e) => updateContact("licenseNo", e.target.value)} /></div>
                 <div><FieldLabel>取引形態</FieldLabel><Input value={contactInfo.transactionType} onChange={(e) => updateContact("transactionType", e.target.value)} /></div>
