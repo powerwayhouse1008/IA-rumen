@@ -701,6 +701,27 @@ function isSupabaseConfigMissingError(errorMessage: string): boolean {
   return /supabase.*(not configured|unconfigured|missing|未設定|環境変数)/i.test(errorMessage);
 }
 
+function toFriendlySupabaseMessage(errorMessage: string) {
+  const message = errorMessage.trim();
+  if (!message) return "Supabaseとの同期に失敗しました。通信状態を確認して、もう一度お試しください。";
+  if (isSupabaseConfigMissingError(message)) {
+    return "Supabaseの接続設定が未設定です。管理者に環境変数の確認を依頼してください。";
+  }
+  if (/duplicate key|重複|unique/i.test(message)) {
+    return "同じ物件コードがすでに登録されています。コードを変更して、もう一度作成してください。";
+  }
+  if (/permission|jwt|not authorized|unauthorized|401|403|権限/i.test(message)) {
+    return "Supabaseへの保存権限がありません。管理者にキーまたは権限の確認を依頼してください。";
+  }
+  if (/Could not find|missing column|column|カラム/i.test(message)) {
+    return "Supabaseのテーブル項目が不足しています。管理者にテーブル設定の確認を依頼してください。";
+  }
+  if (/table|relation/i.test(message)) {
+    return "Supabaseの保存先テーブルが見つかりません。管理者にテーブル名の設定を確認してください。";
+  }
+  return `Supabaseとの同期に失敗しました。時間をおいて再度お試しください。詳細: ${message}`;
+}
+
 async function syncDraftToSupabase(draft: StoredDraft): Promise<SupabaseSyncStatus> {
   try {
     const syncPayload = async (payload: StoredDraft) =>
@@ -1056,7 +1077,8 @@ useEffect(() => {
   }
 
   async function createSharedQr() {
-    const propertyCode = adminQrForm.propertyCode.trim() || reserveNextSharedPropertyCode();
+    const manualPropertyCode = adminQrForm.propertyCode.trim();
+    const propertyCode = manualPropertyCode || reserveNextSharedPropertyCode();
     const propertyId = adminQrForm.propertyId?.trim() || crypto.randomUUID();
     const inquiryUrl = `https://qr.powerway.house/inquiry?property_id=${encodeURIComponent(propertyId)}&via=qrcode`;
     const qrServiceUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(inquiryUrl)}`;
@@ -1094,7 +1116,7 @@ useEffect(() => {
       setSaveMessageTone("success");
       setSaveMessage("QR作成＋Supabase同期に成功しました。");
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Supabase同期に失敗しました。";
+      const msg = toFriendlySupabaseMessage(error instanceof Error ? error.message : "");
       setQrSyncMessage(`同期エラー: ${msg}`);
       setSaveMessageTone("error");
       setSaveMessage("QRは作成しましたが、Supabase同期でエラーが発生しました。");
@@ -1560,9 +1582,17 @@ useEffect(() => {
               <div className="space-y-4">
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
                   <div className="mb-2 text-sm font-semibold text-zinc-700">物件登録 + QR（admin共通）</div>
-                  <div className="mb-2 text-sm text-zinc-700">次のコード: <span className="font-semibold">{adminQrForm.propertyCode || `${SHARED_QR_CODE_PREFIX}${readSharedQrCounter()}`}</span>（自動採番）</div>
+                  <div className="mb-2 text-sm text-zinc-700">
+                    次のコード: <span className="font-semibold">{adminQrForm.propertyCode || `${SHARED_QR_CODE_PREFIX}${readSharedQrCounter()}`}</span>
+                    <span className="text-xs text-zinc-500">（自動採番・手入力可）</span>
+                  </div>
                   <div className="mb-2 text-xs text-zinc-500">property_id: {adminQrForm.propertyId || "(自動生成)"}</div>
                   <div className="grid gap-2 md:grid-cols-2">
+                    <Input
+                      value={adminQrForm.propertyCode}
+                      onChange={(e) => updateAdminQr("propertyCode", e.target.value)}
+                      placeholder={`物件コード（例: ${SHARED_QR_CODE_PREFIX}${readSharedQrCounter()}）`}
+                    />
                     <Input value={adminQrForm.buildingName} onChange={(e) => updateAdminQr("buildingName", e.target.value)} placeholder="建物名 (building_name)" />
                     <Input value={adminQrForm.address} onChange={(e) => updateAdminQr("address", e.target.value)} placeholder="住所 (address)" />
                     <Input value={adminQrForm.price} onChange={(e) => updateAdminQr("price", e.target.value)} placeholder="価額 (price)" />

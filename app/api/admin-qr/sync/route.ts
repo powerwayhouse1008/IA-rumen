@@ -22,12 +22,39 @@ function getEnvOrEmpty(name: string) {
   return process.env[name]?.trim() ?? "";
 }
 
-  function parseSuggestedTable(errorText: string) {
+function parseSuggestedTable(errorText: string) {
   return errorText.match(/table\s+'public\.([^']+)'/i)?.[1];
 }
 
-  function parseMissingColumn(errorText: string) {
+function parseMissingColumn(errorText: string) {
   return errorText.match(/Could not find the '([^']+)' column of '[^']+'/i)?.[1];
+}
+
+function buildSupabaseErrorMessage(errorText: string, status: number, tableName: string) {
+  const suggestedTable = parseSuggestedTable(errorText);
+  const missingColumn = parseMissingColumn(errorText);
+
+  if (/duplicate key|unique/i.test(errorText)) {
+    return "同じ物件コードがすでに登録されています。物件コードを変更して、もう一度作成してください。";
+  }
+
+  if (/there is no unique or exclusion constraint|on_conflict/i.test(errorText)) {
+    return `Supabaseの「${tableName}」テーブルで property_code の重複チェック設定が不足しています。管理者にユニーク制約の確認を依頼してください。`;
+  }
+
+  if (missingColumn) {
+    return `Supabaseの「${tableName}」テーブルに「${missingColumn}」列がありません。管理者にテーブル項目の追加を依頼してください。`;
+  }
+
+  if (suggestedTable) {
+    return `Supabaseの保存先テーブル「${tableName}」が見つかりません。設定値を「${suggestedTable}」に変更するか、正しいテーブルを作成してください。`;
+  }
+
+  if (/permission|jwt|not authorized|unauthorized/i.test(errorText) || status === 401 || status === 403) {
+    return "Supabaseへの保存権限がありません。管理者にAPIキーまたはRLS設定の確認を依頼してください。";
+  }
+
+  return `Supabaseへの保存に失敗しました。管理者に確認してください。（ステータス: ${status}）`;
 }
 
 function buildRow(payload: Partial<SyncPayload>) {
@@ -59,7 +86,7 @@ function buildRow(payload: Partial<SyncPayload>) {
   const configuredTableName = getEnvOrEmpty("SUPABASE_QR_TABLE") || "properties";
  if (!supabaseUrl || !supabaseKey) {
     throw new Error(
-      "Supabase env missing. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or anon key)."
+      "Supabaseの接続設定が未設定です。管理者に環境変数（SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY）を確認してください。"
     );
   }
 
@@ -79,13 +106,7 @@ function buildRow(payload: Partial<SyncPayload>) {
   });
     if (!res.ok) {
     const errText = await res.text();
-    const suggestedTable = parseSuggestedTable(errText);
-    const missingColumn = parseMissingColumn(errText);
-    throw new Error(
-      `Supabase upsert failed on ${configuredTableName} (on_conflict=property_code): ${res.status} ${errText}${
-        suggestedTable ? ` | suggested table: ${suggestedTable}` : ""
-      }${missingColumn ? ` | missing column: ${missingColumn}` : ""}`
-    );
+    throw new Error(buildSupabaseErrorMessage(errText, res.status, configuredTableName));
   }
 
    return res.json();
@@ -129,7 +150,7 @@ export async function POST(req: NextRequest) {
 
   if (!payload.propertyId || !payload.propertyCode) {
     return Response.json(
-      { error: "Missing propertyId/propertyCode" },
+      { error: "物件IDまたは物件コードが不足しています。もう一度作成してください。" },
       { status: 400 }
     );
   }
@@ -143,7 +164,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ ok: true, data: supabaseData, mirror: mirrorResult });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Sync failed unexpectedly.";
+      error instanceof Error ? error.message : "同期中に予期しないエラーが発生しました。";
     return Response.json({ error: message }, { status: 500 });
   }
 }

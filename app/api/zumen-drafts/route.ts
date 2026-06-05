@@ -22,10 +22,34 @@ type DraftRecord = {
 
 function ensureSupabaseConfig() {
   if (!supabaseUrl || !supabaseKey) {
-    return "Supabase environment variables are not configured";
+    return "Supabaseの接続設定が未設定です。管理者に環境変数を確認してください。";
   }
 
   return null;
+}
+
+function toFriendlySupabaseError(errorText: string, status?: number) {
+  const message = errorText.trim();
+
+  if (/duplicate key|unique/i.test(message)) {
+    return "同じ保存データがすでに存在します。保存名を変更するか、時間をおいて再度お試しください。";
+  }
+
+  if (/Could not find|missing column|column/i.test(message)) {
+    return "Supabaseの保存先テーブルに必要な列がありません。管理者にテーブル設定の確認を依頼してください。";
+  }
+
+  if (/table|relation/i.test(message)) {
+    return "Supabaseの保存先テーブルが見つかりません。管理者にテーブル名の設定を確認してください。";
+  }
+
+  if (/permission|jwt|not authorized|unauthorized/i.test(message) || status === 401 || status === 403) {
+    return "Supabaseへの保存権限がありません。管理者にAPIキーまたはRLS設定の確認を依頼してください。";
+  }
+
+  return status
+    ? `Supabaseとの通信に失敗しました。時間をおいて再度お試しください。（ステータス: ${status}）`
+    : "Supabaseとの通信に失敗しました。時間をおいて再度お試しください。";
 }
 
 async function supabaseRequest<T>(path: string, init?: RequestInit): Promise<{ data: T | null; error: string | null }> {
@@ -47,7 +71,7 @@ async function supabaseRequest<T>(path: string, init?: RequestInit): Promise<{ d
 
   if (!response.ok) {
     const message = await response.text();
-    return { data: null, error: message || `Supabase request failed: ${response.status}` };
+    return { data: null, error: toFriendlySupabaseError(message, response.status) };
   }
 
   if (response.status === 204) {
@@ -152,7 +176,7 @@ export async function DELETE(req: NextRequest) {
   const draftId = searchParams.get("draftId");
 
   if (!draftId) {
-    return NextResponse.json({ error: "draftId is required" }, { status: 400 });
+    return NextResponse.json({ error: "削除する保存データIDが見つかりません。" }, { status: 400 });
   }
 
   const { error } = await supabaseRequest<unknown>(`${draftsTable}?id=eq.${encodeURIComponent(draftId)}`, {
