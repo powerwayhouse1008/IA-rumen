@@ -345,7 +345,7 @@ function loadStoredDrafts(): StoredDraft[] {
   }
 }
 
-function createBlankNewDraftPayload(): DraftPayload {
+function createBlankNewDraftPayload(category: CategoryKey = DEFAULT_CATEGORY): DraftPayload {
   return {
     price: "",
     name: "",
@@ -371,7 +371,7 @@ function createBlankNewDraftPayload(): DraftPayload {
     imgMap: "",
     draftTitle: "",
     imageTransforms: {},
-    category: DEFAULT_CATEGORY,
+    category,
     propertyType: "",
     houseDetails: createEmptyFields(INITIAL_HOUSE_DETAILS),
     mansionDetails: createEmptyFields(INITIAL_MANSION_DETAILS),
@@ -413,7 +413,7 @@ function loadDraftPayload(): DraftPayload | null {
   const runtimePayload = (window as Window & { __zumenPayload?: DraftPayload }).__zumenPayload;
   if (runtimePayload) {
     if (shouldCreateNew) {
-      const cleanPayload = createBlankNewDraftPayload();
+      const cleanPayload = createBlankNewDraftPayload((runtimePayload.category as CategoryKey | undefined) ?? DEFAULT_CATEGORY);
       persistCleanPayload(cleanPayload);
       return cleanPayload;
     }
@@ -433,7 +433,7 @@ if (shouldCreateNew) {
   try {
    const parsed = JSON.parse(saved) as DraftPayload;
     if (shouldCreateNew) {
-      const cleanPayload = createBlankNewDraftPayload();
+      const cleanPayload = createBlankNewDraftPayload((parsed.category as CategoryKey | undefined) ?? DEFAULT_CATEGORY);
       persistCleanPayload(cleanPayload);
       return cleanPayload;
     }
@@ -814,7 +814,8 @@ export default function Page() {
   });
   
   function resetToNewDraft() {
-    const blankPayload = createBlankNewDraftPayload();
+    const currentCategory = selectedCategory;
+    const blankPayload = createBlankNewDraftPayload(currentCategory);
     const clearedData: ZumenData = {
       price: "",
       name: "",
@@ -847,7 +848,7 @@ export default function Page() {
       ...DEFAULT_ADMIN_QR_FORM,
     };
 
-    setSelectedCategory(DEFAULT_CATEGORY);
+    setSelectedCategory(currentCategory);
     setPropertyType("");
     setData(clearedData);
     setCatchCopy("");
