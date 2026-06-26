@@ -1206,6 +1206,12 @@ function ZumenPageContent() {
 
   const facilityRows = useMemo(() => {
     if (isRental) {
+      const rentalEquipment =
+        [data?.rentalDetails?.buildingEquipment, data?.rentalDetails?.indoorEquipment]
+          .map((value) => value?.trim() ?? "")
+          .filter(Boolean)
+          .join("\n") || "-";
+
       return [
         { label: "所在地", value: data?.address || "-" },
          { label: "交通", value: transportInlineText },
@@ -1222,12 +1228,10 @@ function ZumenPageContent() {
           value: data?.rentalDetails?.builtAt || "-",
         },
         {
-          label: "建物設備",
-          value: data?.rentalDetails?.buildingEquipment || "-",
-        },
-        {
-          label: "室内設備",
-          value: data?.rentalDetails?.indoorEquipment || "-",
+          label: "設備",
+          value: rentalEquipment,
+          rowHeight: activeTemplate === "chic" ? 57 : undefined,
+          multiline: true,
         },
         {
           label: "現　況",
@@ -1278,7 +1282,7 @@ function ZumenPageContent() {
       { label: "ガス", value: "-" },
       { label: "現況", value: "-", label2: "引渡し", value2: "-" },
     ];
-   }, [data, isHouse, isMansion, isRental, transportInlineText]);
+   }, [data, isHouse, isMansion, isRental, transportInlineText, activeTemplate]);
 
   const remarks = isMansion
     ? data?.mansionDetails?.note

@@ -7,6 +7,8 @@ type Row = {
   value: string;
   label2?: string;
   value2?: string;
+  rowHeight?: number;
+  multiline?: boolean;
 };
 
 type InfoTableProps = {
@@ -24,6 +26,7 @@ type CellTextProps = {
   capacity: number;
   rowHeight: number;
   className?: string;
+  multiline?: boolean;
 };
 
 const DEFAULT_SECTION_COLOR = "#f3c9b8";
@@ -59,10 +62,27 @@ const CellText = memo(function CellText({
   capacity,
   rowHeight,
   className,
+  multiline = false,
 }: CellTextProps) {
   const displayValue = value || "-";
   const fontSize = estimateFontSize(displayValue, maxFontSize, minFontSize, capacity);
   const textHeight = Math.max(rowHeight - 2, Math.ceil(fontSize * 1.25));
+
+  if (multiline) {
+    return (
+      <span
+        className={cx("block max-w-full overflow-hidden whitespace-pre-wrap break-words", className)}
+        style={{
+          fontFamily: JP_EXPORT_FONT_FAMILY,
+          fontSize,
+          height: `${Math.max(rowHeight - 2, 1)}px`,
+          lineHeight: 1.25,
+        }}
+      >
+        {displayValue}
+      </span>
+    );
+  }
 
   return (
     <span
@@ -125,20 +145,26 @@ export const InfoTable = memo(function InfoTable({
     key: string,
     value: string | undefined,
     capacity: number,
-    options: { label?: boolean; full?: boolean } = {}
+    currentRowHeight: number,
+    options: { label?: boolean; full?: boolean; multiline?: boolean } = {}
   ) {
+    const cellStyle: CSSProperties = {
+      ...(options.label ? labelCellStyle : options.full ? fullValueCellStyle : halfValueCellStyle),
+      height: currentRowHeight,
+    };
     return (
       <div
         key={key}
         className={options.label ? labelCellClass : cellClass}
-        style={options.label ? labelCellStyle : options.full ? fullValueCellStyle : halfValueCellStyle}
+        style={cellStyle}
       >
         <CellText
           value={value}
           maxFontSize={cellMaxFontSize}
           capacity={capacity}
-          rowHeight={rowHeight}
+          rowHeight={currentRowHeight}
           className={options.label ? "font-bold" : undefined}
+          multiline={!options.label && options.multiline}
         />
       </div>
     );
@@ -151,17 +177,18 @@ export const InfoTable = memo(function InfoTable({
       style={{ fontFamily: JP_EXPORT_FONT_FAMILY }}
     >
       {rows.map((row, index) => {
+        const currentRowHeight = row.rowHeight ?? rowHeight;
         if (row.label2) {
           return (
             <div
               key={`${row.label}-${index}`}
               className="flex w-full"
-              style={{ height: rowHeight }}
+              style={{ height: currentRowHeight }}
             >
-              {renderCell(`${row.label}-${index}-label`, row.label, labelCapacity, { label: true })}
-              {renderCell(`${row.label}-${index}-value`, row.value, halfValueCapacity)}
-              {renderCell(`${row.label}-${index}-label2`, row.label2, labelCapacity, { label: true })}
-              {renderCell(`${row.label}-${index}-value2`, row.value2, halfValueCapacity)}
+              {renderCell(`${row.label}-${index}-label`, row.label, labelCapacity, currentRowHeight, { label: true })}
+              {renderCell(`${row.label}-${index}-value`, row.value, halfValueCapacity, currentRowHeight, { multiline: row.multiline })}
+              {renderCell(`${row.label}-${index}-label2`, row.label2, labelCapacity, currentRowHeight, { label: true })}
+              {renderCell(`${row.label}-${index}-value2`, row.value2, halfValueCapacity, currentRowHeight, { multiline: row.multiline })}
             </div>
           );
         }
@@ -170,10 +197,10 @@ export const InfoTable = memo(function InfoTable({
           <div
             key={`${row.label}-${index}`}
             className="flex w-full"
-            style={{ height: rowHeight }}
+            style={{ height: currentRowHeight }}
           >
-            {renderCell(`${row.label}-${index}-label`, row.label, labelCapacity, { label: true })}
-            {renderCell(`${row.label}-${index}-value`, row.value, fullValueCapacity, { full: true })}
+            {renderCell(`${row.label}-${index}-label`, row.label, labelCapacity, currentRowHeight, { label: true })}
+            {renderCell(`${row.label}-${index}-value`, row.value, fullValueCapacity, currentRowHeight, { full: true, multiline: row.multiline })}
           </div>
         );
       })}
