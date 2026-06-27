@@ -55,6 +55,30 @@ function estimateFontSize(value: string, maxFontSize: number, minFontSize: numbe
   return Math.max(minFontSize, Math.min(maxFontSize, nextFontSize));
 }
 
+function estimateMultilineFontSize(
+  value: string,
+  maxFontSize: number,
+  minFontSize: number,
+  capacity: number,
+  rowHeight: number
+) {
+  const lines = (value || "-").split(/\r?\n/);
+  const availableHeight = Math.max(rowHeight - 2, 1);
+
+  for (let fontSize = maxFontSize; fontSize >= minFontSize; fontSize -= 0.5) {
+    const adjustedCapacity = Math.max(1, capacity * (maxFontSize / fontSize));
+    const wrappedLineCount = lines.reduce((total, line) => {
+      return total + Math.max(1, Math.ceil(getVisualLength(line || "-") / adjustedCapacity));
+    }, 0);
+
+    if (wrappedLineCount * fontSize * 1.25 <= availableHeight) {
+      return fontSize;
+    }
+  }
+
+  return minFontSize;
+}
+
 const CellText = memo(function CellText({
   value,
   maxFontSize,
@@ -65,7 +89,9 @@ const CellText = memo(function CellText({
   multiline = false,
 }: CellTextProps) {
   const displayValue = value || "-";
-  const fontSize = estimateFontSize(displayValue, maxFontSize, minFontSize, capacity);
+  const fontSize = multiline
+    ? estimateMultilineFontSize(displayValue, maxFontSize, Math.min(minFontSize, 4), capacity, rowHeight)
+    : estimateFontSize(displayValue, maxFontSize, minFontSize, capacity);
   const textHeight = Math.max(rowHeight - 2, Math.ceil(fontSize * 1.25));
 
   if (multiline) {
