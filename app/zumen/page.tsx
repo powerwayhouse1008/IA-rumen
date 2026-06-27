@@ -1230,7 +1230,7 @@ function ZumenPageContent() {
         {
           label: "設備",
           value: rentalEquipment,
-          rowHeight: activeTemplate === "chic" ? 57 : undefined,
+          rowHeight: activeTemplate === "chic" ? 113 : undefined,
           multiline: true,
         },
         {
