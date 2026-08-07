@@ -1942,8 +1942,8 @@ useEffect(() => {
                 <div><FieldLabel required>担当者</FieldLabel><Input required value={contactInfo.staffName} onChange={(e) => updateContact("staffName", e.target.value)} /></div>
                 <div><FieldLabel required>電話番号</FieldLabel><Input required value={contactInfo.companyPhone} onChange={(e) => updateContact("companyPhone", e.target.value)} /></div>
                 <div><FieldLabel>FAX</FieldLabel><Input value={contactInfo.companyFax} onChange={(e) => updateContact("companyFax", e.target.value)} /></div>
-                <div><FieldLabel required>Gmail</FieldLabel><Input required type="email" value={contactInfo.companyEmail} onChange={(e) => updateContact("companyEmail", e.target.value)} /></div>
                 <div className="md:col-span-2"><FieldLabel>住所</FieldLabel><Input value={contactInfo.companyAddress} onChange={(e) => updateContact("companyAddress", e.target.value)} /></div>
+                <div><FieldLabel required>Gmail</FieldLabel><Input required type="email" value={contactInfo.companyEmail} onChange={(e) => updateContact("companyEmail", e.target.value)} /></div>
                 <div><FieldLabel>免許番号</FieldLabel><Input value={contactInfo.licenseNo} onChange={(e) => updateContact("licenseNo", e.target.value)} /></div>
                 <div><FieldLabel>取引形態</FieldLabel><Input value={contactInfo.transactionType} onChange={(e) => updateContact("transactionType", e.target.value)} /></div>
                 <div><FieldLabel>手数料</FieldLabel><Input value={contactInfo.fee} onChange={(e) => updateContact("fee", e.target.value)} /></div>

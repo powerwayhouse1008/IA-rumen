@@ -2548,6 +2548,7 @@ const getEditableImageProps = useCallback(
                   <div className="text-[21px] font-extrabold leading-tight">{contact.companyName}</div>
 
                   <div className="truncate text-[10px]">{contact.companyAddress}</div>
+                  <div className="truncate text-[10px]">Gmail: {contact.companyEmail}</div>
                 </div>
 
                 <div className="flex items-center justify-center border-l border-black px-1 py-1">
