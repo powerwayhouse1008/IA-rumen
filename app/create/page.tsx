@@ -820,6 +820,7 @@ export default function Page() {
     managerName: initialDraft?.adminQr?.managerName ?? initialDraft?.contactInfo?.staffName ?? "",
     managerEmail: initialDraft?.adminQr?.managerEmail ?? initialDraft?.contactInfo?.companyEmail ?? "",
   });
+  const [qrCounterRefreshKey, setQrCounterRefreshKey] = useState(0);
   
   function resetToNewDraft() {
     const currentCategory = selectedCategory;
@@ -1115,9 +1116,53 @@ useEffect(() => {
     return usedNumbers;
   }
 
+  async function readRemoteUsedSharedQrNumbers() {
+    const usedNumbers = new Set<number>();
+
+    try {
+      const res = await fetch("/api/zumen-drafts", { cache: "no-store" });
+      if (!res.ok) return usedNumbers;
+
+      const json = (await res.json()) as { drafts?: StoredDraft[] };
+      if (!Array.isArray(json.drafts)) return usedNumbers;
+
+      json.drafts.forEach((draft) => {
+        const number = parseSharedPropertyCode(draft.payload?.adminQr?.propertyCode);
+        if (number !== null) usedNumbers.add(number);
+      });
+    } catch {
+      // Keep local numbering available if the remote draft list cannot be loaded.
+    }
+
+    return usedNumbers;
+  }
+
+  function syncSharedQrCounterWithUsedNumbers(usedNumbers: Iterable<number>) {
+    if (typeof window === "undefined") return false;
+
+    let latestUsed = SHARED_QR_INITIAL_CODE - 1;
+    for (const usedNumber of usedNumbers) {
+      if (Number.isFinite(usedNumber)) {
+        latestUsed = Math.max(latestUsed, Math.floor(usedNumber));
+      }
+    }
+
+    const nextFromUsed = Math.max(SHARED_QR_INITIAL_CODE, latestUsed + 1);
+    const current = readSharedQrCounter();
+    if (nextFromUsed <= current) return false;
+
+    localStorage.setItem(SHARED_QR_COUNTER_STORAGE_KEY, String(nextFromUsed));
+    return true;
+  }
+
   function getNextSharedQrNumber() {
     const usedNumbers = readUsedSharedQrNumbers();
-    let nextNumber = readSharedQrCounter();
+    let latestUsed = SHARED_QR_INITIAL_CODE - 1;
+    usedNumbers.forEach((usedNumber) => {
+      latestUsed = Math.max(latestUsed, usedNumber);
+    });
+
+    let nextNumber = Math.max(readSharedQrCounter(), latestUsed + 1);
     while (usedNumbers.has(nextNumber)) {
       nextNumber += 1;
     }
@@ -1142,9 +1187,34 @@ useEffect(() => {
     const current = getNextSharedQrNumber();
     if (typeof window !== "undefined") {
       localStorage.setItem(SHARED_QR_COUNTER_STORAGE_KEY, String(current + 1));
+      setQrCounterRefreshKey((value) => value + 1);
     }
     return `${SHARED_QR_CODE_PREFIX}${current}`;
   }
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void readRemoteUsedSharedQrNumbers().then((remoteUsedNumbers) => {
+      if (!isMounted) return;
+
+      const allUsedNumbers = new Set<number>(readUsedSharedQrNumbers());
+      remoteUsedNumbers.forEach((number) => allUsedNumbers.add(number));
+
+      if (syncSharedQrCounterWithUsedNumbers(allUsedNumbers)) {
+        setQrCounterRefreshKey((value) => value + 1);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const nextSharedPropertyCode = useMemo(
+    () => getNextSharedPropertyCode(),
+    [qrCounterRefreshKey]
+  );
 
 
   function updateAdminQr<K extends keyof AdminQrForm>(key: K, value: AdminQrForm[K]) {
@@ -1661,7 +1731,7 @@ useEffect(() => {
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
                   <div className="mb-2 text-sm font-semibold text-zinc-700">物件登録 + QR（admin共通）</div>
                   <div className="mb-2 text-sm text-zinc-700">
-                    次のコード: <span className="font-semibold">{adminQrForm.propertyCode || getNextSharedPropertyCode()}</span>
+                    次のコード: <span className="font-semibold">{adminQrForm.propertyCode || nextSharedPropertyCode}</span>
                     <span className="text-xs text-zinc-500">（自動採番・手入力可）</span>
                   </div>
                   <div className="mb-2 text-xs text-zinc-500">property_id: {adminQrForm.propertyId || "(自動生成)"}</div>
