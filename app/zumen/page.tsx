@@ -202,6 +202,92 @@ const DEFAULT_IMAGE_MIN_SCALES: Record<ImageSlotKey, number> = {
   imgSub6: 1,
   imgMap: 1,
 };
+const IMAGE_AUTO_TUNE_STORAGE_KEY = "zumenImageAutoTunePrefs";
+
+type LearnedImageTransformPreferences = Partial<Record<ImageSlotKey, Partial<ImageTransform>>>;
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function blendTransform(base: ImageTransform, learned?: Partial<ImageTransform>): ImageTransform {
+  if (!learned) return base;
+
+  const weight = 0.35;
+  return {
+    scale: Number((base.scale * (1 - weight) + (learned.scale ?? base.scale) * weight).toFixed(3)),
+    scaleX: Number((base.scaleX * (1 - weight) + (learned.scaleX ?? base.scaleX) * weight).toFixed(2)),
+    scaleY: Number((base.scaleY * (1 - weight) + (learned.scaleY ?? base.scaleY) * weight).toFixed(2)),
+    offsetX: Math.round(base.offsetX * (1 - weight) + (learned.offsetX ?? base.offsetX) * weight),
+    offsetY: Math.round(base.offsetY * (1 - weight) + (learned.offsetY ?? base.offsetY) * weight),
+  };
+}
+
+function getLearnedImageTransformPreferences(): LearnedImageTransformPreferences {
+  if (typeof window === "undefined") return {};
+
+  try {
+    const parsed = JSON.parse(localStorage.getItem(IMAGE_AUTO_TUNE_STORAGE_KEY) ?? "{}");
+    return parsed && typeof parsed === "object" ? (parsed as LearnedImageTransformPreferences) : {};
+  } catch {
+    return {};
+  }
+}
+
+function rememberImageTransformPreferences(transforms: Record<ImageSlotKey, ImageTransform>) {
+  if (typeof window === "undefined") return;
+
+  try {
+    const current = getLearnedImageTransformPreferences();
+    const next: LearnedImageTransformPreferences = { ...current };
+    (Object.keys(transforms) as ImageSlotKey[]).forEach((slot) => {
+      next[slot] = blendTransform(transforms[slot], current[slot]);
+    });
+    localStorage.setItem(IMAGE_AUTO_TUNE_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Learning is helpful, but it should never block manual saving.
+  }
+}
+
+function calculateSmartImageTransform({
+  fit,
+  frameWidth,
+  frameHeight,
+  imageWidth,
+  imageHeight,
+  learned,
+}: {
+  fit: "cover" | "contain";
+  frameWidth: number;
+  frameHeight: number;
+  imageWidth: number;
+  imageHeight: number;
+  learned?: Partial<ImageTransform>;
+}): ImageTransform {
+  const frameAspect = frameWidth / Math.max(frameHeight, 1);
+  const imageAspect = imageWidth / Math.max(imageHeight, 1);
+  const mismatch = Math.min(0.18, Math.abs(Math.log(frameAspect / Math.max(imageAspect, 0.01))) * 0.08);
+
+  const base: ImageTransform =
+    fit === "contain"
+      ? { ...DEFAULT_IMAGE_TRANSFORM }
+      : {
+          scale: Number((1.02 + mismatch).toFixed(3)),
+          scaleX: 1,
+          scaleY: 1,
+          offsetX: 0,
+          offsetY: imageAspect > frameAspect ? -Math.round(frameHeight * 0.025) : 0,
+        };
+
+  const blended = blendTransform(base, learned);
+  return {
+    scale: clampNumber(blended.scale, 0.05, 8),
+    scaleX: clampNumber(blended.scaleX, 0.05, 8),
+    scaleY: clampNumber(blended.scaleY, 0.05, 8),
+    offsetX: Math.round(clampNumber(blended.offsetX, -frameWidth, frameWidth)),
+    offsetY: Math.round(clampNumber(blended.offsetY, -frameHeight, frameHeight)),
+  };
+}
 const createDefaultImageTransforms = (): Record<ImageSlotKey, ImageTransform> => ({
   imgMain: { ...DEFAULT_IMAGE_TRANSFORM },
   imgPlan: { ...DEFAULT_IMAGE_TRANSFORM },
@@ -309,6 +395,7 @@ function toExportableImageSrc(src?: string) {
 function ImgBox({
   src,
   label,
+  slot,
   fit = "contain",
   h,
   showCenterLogo = false,
@@ -322,6 +409,7 @@ function ImgBox({
 }: {
   src?: string;
   label: string;
+  slot?: ImageSlotKey;
   fit?: "cover" | "contain";
   h: number;
   showCenterLogo?: boolean;
@@ -506,6 +594,8 @@ function ImgBox({
     <div
       ref={frameRef}
         data-zumen-image-frame="true"
+      data-zumen-image-slot={slot}
+      data-zumen-image-fit={fit}
       className={`relative flex items-center justify-center overflow-hidden border bg-transparent ${
         showHandles ? "border-sky-500 ring-2 ring-sky-300" : "border-transparent"
       }`}
@@ -1888,11 +1978,54 @@ function ZumenPageContent() {
   );
 
   const saveImageTransforms = useCallback(() => {
+    rememberImageTransformPreferences(imageTransforms);
     persistImageTransforms("manual");
-  }, [persistImageTransforms]);
+  }, [imageTransforms, persistImageTransforms]);
+
+  const autoTuneImageTransforms = useCallback(() => {
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+
+    const learned = getLearnedImageTransformPreferences();
+    const nextTransforms = { ...imageTransforms };
+    let tunedCount = 0;
+
+    sheet.querySelectorAll<HTMLElement>("[data-zumen-image-frame='true']").forEach((frame) => {
+      const slot = frame.dataset.zumenImageSlot as ImageSlotKey | undefined;
+      const fit = frame.dataset.zumenImageFit === "cover" ? "cover" : "contain";
+      const image = frame.querySelector("img");
+      if (!slot || !image || !image.naturalWidth || !image.naturalHeight) return;
+
+      nextTransforms[slot] = calculateSmartImageTransform({
+        fit,
+        frameWidth: frame.clientWidth || 1,
+        frameHeight: frame.clientHeight || 1,
+        imageWidth: image.naturalWidth,
+        imageHeight: image.naturalHeight,
+        learned: learned[slot],
+      });
+      tunedCount += 1;
+    });
+
+    if (!tunedCount) {
+      setTransformSaveTone("warning");
+      setTransformSaveMessage("Dang doc anh, hay thu lai sau mot chut.");
+      return;
+    }
+
+    setImageTransforms(nextTransforms);
+    rememberImageTransformPreferences(nextTransforms);
+    setTransformSaveTone("success");
+    setTransformSaveMessage("AI da tu can chinh hinh anh va ghi nho cach chinh.");
+    if (data) {
+      persistZumenPayload({ ...data, imageTransforms: nextTransforms }, "manual");
+    }
+  }, [data, imageTransforms, persistZumenPayload]);
+
 const getEditableImageProps = useCallback(
     (slot: ImageSlotKey) => ({
       editable: !isSavedDraftsView,
+      slot,
       sheetScale,
       transform: imageTransforms[slot],
       onMinScaleChange: (value: number) => updateImageMinScale(slot, value),
@@ -2804,6 +2937,7 @@ const getEditableImageProps = useCallback(
                 <span className="font-semibold">画像編集:</span> 画像をクリックして選択し、マウスでドラッグして位置を調整できます。選択した画像はマウスホイールで拡大・縮小でき、四隅のハンドルで縦横を自由に伸縮できます。枠はレイアウトの目安だけなので、枠外まで自由に配置できます。画像を用紙外へドラッグして離すと自動削除します。
                 </div>
                 <div className="flex items-center gap-2">
+                  <button type="button" onClick={autoTuneImageTransforms} className="rounded-md border border-sky-300 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">AI auto</button>
                   <button type="button" onClick={saveImageTransforms} className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs text-emerald-700">保存</button>
                   <button type="button" onClick={resetImageTransforms} className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs">リセット</button>
                 </div>
