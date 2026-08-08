@@ -930,6 +930,10 @@ useEffect(() => {
       setMansionDetails({ ...(payload.mansionDetails as typeof INITIAL_MANSION_DETAILS | undefined ?? INITIAL_MANSION_DETAILS) });
       setRentalDetails({ ...(payload.rentalDetails as typeof INITIAL_RENTAL_DETAILS | undefined ?? INITIAL_RENTAL_DETAILS) });
       setAdminQrForm({ ...(payload.adminQr as AdminQrForm | undefined ?? DEFAULT_ADMIN_QR_FORM) });
+      if (payload.adminQr?.propertyCode) {
+        advanceSharedQrCounterAfter(payload.adminQr.propertyCode);
+        setQrCounterRefreshKey((value) => value + 1);
+      }
       savePayloadToStorage(payload);
     });
 
@@ -1215,6 +1219,16 @@ useEffect(() => {
     () => getNextSharedPropertyCode(),
     [qrCounterRefreshKey]
   );
+
+  useEffect(() => {
+    if (!adminQrForm.propertyCode) return;
+
+    const before = readSharedQrCounter();
+    advanceSharedQrCounterAfter(adminQrForm.propertyCode);
+    if (readSharedQrCounter() !== before) {
+      setQrCounterRefreshKey((value) => value + 1);
+    }
+  }, [adminQrForm.propertyCode]);
 
 
   function updateAdminQr<K extends keyof AdminQrForm>(key: K, value: AdminQrForm[K]) {
@@ -1731,7 +1745,7 @@ useEffect(() => {
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
                   <div className="mb-2 text-sm font-semibold text-zinc-700">物件登録 + QR（admin共通）</div>
                   <div className="mb-2 text-sm text-zinc-700">
-                    次のコード: <span className="font-semibold">{adminQrForm.propertyCode || nextSharedPropertyCode}</span>
+                    次のコード: <span className="font-semibold">{nextSharedPropertyCode}</span>
                     <span className="text-xs text-zinc-500">（自動採番・手入力可）</span>
                   </div>
                   <div className="mb-2 text-xs text-zinc-500">property_id: {adminQrForm.propertyId || "(自動生成)"}</div>
