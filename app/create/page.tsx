@@ -1242,7 +1242,19 @@ useEffect(() => {
 
 
   function updateAdminQr<K extends keyof AdminQrForm>(key: K, value: AdminQrForm[K]) {
-    setAdminQrForm((prev) => ({ ...prev, [key]: value }));
+    setAdminQrForm((prev) => {
+      const next = { ...prev, [key]: value };
+
+      if (
+        key === "propertyCode" &&
+        typeof value === "string" &&
+        value.trim() !== lastQrIdentityRef.current.propertyCode
+      ) {
+        return { ...next, propertyId: "", inquiryUrl: "" };
+      }
+
+      return next;
+    });
   }
 
   async function createSharedQr() {
@@ -1265,6 +1277,7 @@ useEffect(() => {
 
     setIsSyncingQr(true);
     setQrSyncMessage("");
+    let syncSucceeded = false;
 
     try {
       const syncRes = await fetch("/api/admin-qr/sync", {
@@ -1290,6 +1303,8 @@ useEffect(() => {
         throw new Error(syncJson.error || "Supabase sync failed");
       }
 
+      syncSucceeded = true;
+
       setQrSyncMessage("Supabase同期完了");
       setSaveMessageTone("success");
       setSaveMessage("QR作成＋Supabase同期に成功しました。");
@@ -1305,20 +1320,22 @@ useEffect(() => {
       }, 3200);
     }
 
-    setAdminQrForm(nextForm);
-    lastQrIdentityRef.current = { propertyCode, propertyId };
-    setData((prev) => ({
-      ...prev,
-      name: nextForm.buildingName,
-      address: nextForm.address,
-      imgQr: proxiedQrUrl,
-    }));
-    setContactInfo((prev) => ({
-      ...prev,
-      staffName: nextForm.managerName,
-      companyEmail: nextForm.managerEmail,
-      infoPageUrl: inquiryUrl,
-    }));
+    if (syncSucceeded) {
+      setAdminQrForm(nextForm);
+      lastQrIdentityRef.current = { propertyCode, propertyId };
+      setData((prev) => ({
+        ...prev,
+        name: nextForm.buildingName,
+        address: nextForm.address,
+        imgQr: proxiedQrUrl,
+      }));
+      setContactInfo((prev) => ({
+        ...prev,
+        staffName: nextForm.managerName,
+        companyEmail: nextForm.managerEmail,
+        infoPageUrl: inquiryUrl,
+      }));
+    }
   }
 
   async function buildPayload() {
