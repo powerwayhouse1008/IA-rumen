@@ -30,11 +30,23 @@ function parseMissingColumn(errorText: string) {
   return errorText.match(/Could not find the '([^']+)' column of '[^']+'/i)?.[1];
 }
 
+function parseDuplicateColumn(errorText: string) {
+  return errorText.match(/Key \(([^)]+)\)=/i)?.[1];
+}
+
 function buildSupabaseErrorMessage(errorText: string, status: number, tableName: string) {
   const suggestedTable = parseSuggestedTable(errorText);
   const missingColumn = parseMissingColumn(errorText);
+  const duplicateColumn = parseDuplicateColumn(errorText);
 
   if (/duplicate key|unique/i.test(errorText)) {
+    if (duplicateColumn === "id") {
+      return "同じproperty_idがすでに登録されています。物件コードを変更した場合は、新しいproperty_idで作成し直してください。";
+    }
+
+    if (duplicateColumn === "property_code") {
+      return "同じ物件コードがすでに登録されています。物件コードを変更して、もう一度作成してください。";
+    }
     return "同じ物件コードがすでに登録されています。物件コードを変更して、もう一度作成してください。";
   }
 

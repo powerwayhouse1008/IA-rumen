@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type ImageSlotKey =
@@ -820,6 +820,10 @@ export default function Page() {
     managerName: initialDraft?.adminQr?.managerName ?? initialDraft?.contactInfo?.staffName ?? "",
     managerEmail: initialDraft?.adminQr?.managerEmail ?? initialDraft?.contactInfo?.companyEmail ?? "",
   });
+  const lastQrIdentityRef = useRef({
+    propertyCode: initialDraft?.adminQr?.propertyCode?.trim() ?? "",
+    propertyId: initialDraft?.adminQr?.propertyId?.trim() ?? "",
+  });
   const [qrCounterRefreshKey, setQrCounterRefreshKey] = useState(0);
   
   function resetToNewDraft() {
@@ -874,6 +878,7 @@ export default function Page() {
     setMansionDetails(createEmptyFields(INITIAL_MANSION_DETAILS));
     setRentalDetails(createEmptyFields(INITIAL_RENTAL_DETAILS));
     setAdminQrForm(clearedAdminQrForm);
+    lastQrIdentityRef.current = { propertyCode: "", propertyId: "" };
     setContactInfo(NEW_DRAFT_CONTACT_INFO);
     setSaveMessage("");
     setSaveMessageTone("success");
@@ -929,7 +934,12 @@ useEffect(() => {
       setHouseDetails({ ...(payload.houseDetails as typeof INITIAL_HOUSE_DETAILS | undefined ?? INITIAL_HOUSE_DETAILS) });
       setMansionDetails({ ...(payload.mansionDetails as typeof INITIAL_MANSION_DETAILS | undefined ?? INITIAL_MANSION_DETAILS) });
       setRentalDetails({ ...(payload.rentalDetails as typeof INITIAL_RENTAL_DETAILS | undefined ?? INITIAL_RENTAL_DETAILS) });
-      setAdminQrForm({ ...(payload.adminQr as AdminQrForm | undefined ?? DEFAULT_ADMIN_QR_FORM) });
+      const nextAdminQrForm = { ...(payload.adminQr as AdminQrForm | undefined ?? DEFAULT_ADMIN_QR_FORM) };
+      setAdminQrForm(nextAdminQrForm);
+      lastQrIdentityRef.current = {
+        propertyCode: nextAdminQrForm.propertyCode?.trim() ?? "",
+        propertyId: nextAdminQrForm.propertyId?.trim() ?? "",
+      };
       if (payload.adminQr?.propertyCode) {
         advanceSharedQrCounterAfter(payload.adminQr.propertyCode);
         setQrCounterRefreshKey((value) => value + 1);
@@ -1241,7 +1251,13 @@ useEffect(() => {
     if (manualPropertyCode) {
       advanceSharedQrCounterAfter(propertyCode);
     }
-    const propertyId = adminQrForm.propertyId?.trim() || crypto.randomUUID();
+    const previousQrIdentity = lastQrIdentityRef.current;
+    const currentPropertyId = adminQrForm.propertyId?.trim() ?? "";
+    const shouldReusePropertyId =
+      Boolean(currentPropertyId) &&
+      previousQrIdentity.propertyCode === propertyCode &&
+      previousQrIdentity.propertyId === currentPropertyId;
+    const propertyId = shouldReusePropertyId ? currentPropertyId : crypto.randomUUID();
     const inquiryUrl = `https://qr.powerway.house/inquiry?property_id=${encodeURIComponent(propertyId)}&via=qrcode`;
     const qrServiceUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(inquiryUrl)}`;
     const proxiedQrUrl = `/api/image-proxy?url=${encodeURIComponent(qrServiceUrl)}`;
@@ -1290,6 +1306,7 @@ useEffect(() => {
     }
 
     setAdminQrForm(nextForm);
+    lastQrIdentityRef.current = { propertyCode, propertyId };
     setData((prev) => ({
       ...prev,
       name: nextForm.buildingName,
