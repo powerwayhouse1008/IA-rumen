@@ -2657,17 +2657,19 @@ const getEditableImageProps = useCallback(
                 </div>
               </div>
 
-              <div className="grid h-[106px] grid-cols-[1fr_210px_330px] items-center gap-3 border-t px-4" style={{ borderColor: theme.section, color: theme.brand }}>
-                <div className="leading-tight">
-                  <div className="mb-1 text-[11px] font-semibold [overflow-wrap:anywhere]">{contact.licenseNo}</div>
-                  <div className="text-[25px] font-bold leading-tight">{contact.companyName}</div>
-                  <div className="mt-1 text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
+              <div className="grid h-[106px] grid-cols-[1fr_430px] items-center gap-4 border-t px-4" style={{ borderColor: theme.section, color: theme.brand }}>
+                <div className="grid grid-cols-[1fr_215px] items-center gap-3 leading-tight">
+                  <div>
+                    <div className="mb-1 text-[11px] font-semibold [overflow-wrap:anywhere]">{contact.licenseNo}</div>
+                    <div className="text-[25px] font-bold leading-tight">{contact.companyName}</div>
+                    <div className="mt-1 text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
+                  </div>
+                  <div className="text-left text-[18px] font-bold leading-tight" style={{ color: theme.brand }}>
+                    <div>TEL {contact.companyPhone}</div>
+                    <div className="mt-1 text-[14px]">FAX {contact.companyFax}</div>
+                  </div>
                 </div>
-                <div className="text-center text-[19px] font-bold" style={{ color: theme.brand }}>
-                  <div>TEL {contact.companyPhone}</div>
-                  <div className="text-[14px]">FAX {contact.companyFax}</div>
-                </div>
-                <div className="grid h-[86px] grid-cols-[112px_1fr_78px] items-center gap-2 p-2 text-white" style={{ backgroundColor: theme.brand }}>
+                <div className="grid h-[88px] grid-cols-[112px_1fr_78px_118px] items-center gap-2 p-2 text-white" style={{ backgroundColor: theme.brand }}>
                   <div className="space-y-1">
                     {["物件確認", "資料請求", "内見申込"].map((label) => (
                       <div key={label} className="bg-white px-1.5 py-0.5 text-center text-[18px] font-black leading-tight" style={{ color: theme.brand }}>
@@ -2675,7 +2677,7 @@ const getEditableImageProps = useCallback(
                       </div>
                     ))}
                   </div>
-                  <div className="text-center text-[13px] font-black leading-tight">
+                  <div className="text-center text-[12px] font-black leading-tight">
                     <div>お電話不要</div>
                     <div className="mt-1">こちらの</div>
                     <div>QRコードから</div>
@@ -2688,6 +2690,12 @@ const getEditableImageProps = useCallback(
                     ) : (
                       <div className="flex h-[72px] w-[72px] items-center justify-center bg-white text-[10px] text-zinc-500">QR</div>
                     )}
+                  </div>
+                  <div className="text-[10px] font-semibold leading-tight [overflow-wrap:anywhere]">
+                    <div>取引態様: {contact.transactionType || "-"}</div>
+                    <div>手数料: {contact.fee || "-"}</div>
+                    <div>担当: {contact.staffName || "-"}</div>
+                    <div>E-mail: {contact.companyEmail || "-"}</div>
                   </div>
                 </div>
               </div>
