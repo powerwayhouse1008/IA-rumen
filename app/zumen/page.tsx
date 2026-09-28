@@ -858,6 +858,65 @@ function AutoFitText({
   );
 }
 
+function AutoFitBlockText({
+  text,
+  minSize,
+  maxSize,
+  className,
+  style,
+}: {
+  text: string;
+  minSize: number;
+  maxSize: number;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  const textRef = useRef<HTMLDivElement | null>(null);
+  const [fontSize, setFontSize] = useState(maxSize);
+
+  useLayoutEffect(() => {
+    const node = textRef.current;
+    if (!node) return;
+
+    const fitText = () => {
+      let nextSize = maxSize;
+      node.style.fontSize = `${nextSize}px`;
+
+      while (
+        nextSize > minSize &&
+        (node.scrollHeight > node.clientHeight || node.scrollWidth > node.clientWidth)
+      ) {
+        nextSize -= 0.5;
+        node.style.fontSize = `${nextSize}px`;
+      }
+
+      setFontSize(nextSize);
+    };
+
+    fitText();
+
+    const resizeObserver = new ResizeObserver(fitText);
+    resizeObserver.observe(node);
+    return () => resizeObserver.disconnect();
+  }, [text, minSize, maxSize]);
+
+  return (
+    <div
+      ref={textRef}
+      className={className}
+      style={{
+        ...style,
+        fontSize: `${fontSize}px`,
+        whiteSpace: "pre-wrap",
+        overflowWrap: "anywhere",
+      }}
+      title={text}
+    >
+      {text}
+    </div>
+  );
+}
+
 function ZumenPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -2628,7 +2687,7 @@ const getEditableImageProps = useCallback(
                       </div>
                       <div className="mt-2 border-t border-zinc-400 pt-1 text-[11px] font-semibold leading-[1.25]">
                         <div className="font-extrabold">備考</div>
-                        <AutoFitText
+                        <AutoFitBlockText
                           text={displayRemarks}
                           minSize={6}
                           maxSize={11}
