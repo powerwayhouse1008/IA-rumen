@@ -2550,7 +2550,10 @@ const getEditableImageProps = useCallback(
           </>
         ) : template === "royal" ? (
           <>
-            <div className="relative h-full bg-white font-serif">
+            <div
+              className="relative h-full bg-white"
+              style={{ fontFamily: '"Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif' }}
+            >
               <div className="grid h-[82px] grid-cols-[245px_1fr_280px] items-center text-white" style={{ backgroundColor: theme.brand }}>
                 <div className="relative flex h-full items-center overflow-hidden pl-8 text-[26px] font-bold">
                   <div className="absolute -left-20 -top-24 h-56 w-72 rounded-full border-r-[10px] border-white/50 bg-black/20" />
@@ -2610,7 +2613,7 @@ const getEditableImageProps = useCallback(
                         ))}
                       </div>
                       <div className="mt-2 border-t border-zinc-400 pt-1 text-[9px] leading-[1.2]">
-                        <div className="font-bold">新規リノベーション内容</div>
+                        <div className="font-bold">備考</div>
                         <div className="line-clamp-3 whitespace-pre-wrap">{featureRows.length > 0 ? featureRows.join("・") : displayRemarks}</div>
                       </div>
                     </div>
@@ -2654,34 +2657,37 @@ const getEditableImageProps = useCallback(
                 </div>
               </div>
 
-              <div className="grid h-[106px] grid-cols-[300px_1fr_210px_230px] items-center border-t px-4" style={{ borderColor: theme.section, color: theme.brand }}>
-                <div>
-                  <img
-                    src="/powerway-house-logo.svg"
-                    alt={contact.companyName || "company logo"}
-                    className="h-[54px] w-[180px] object-contain object-left"
-                  />
-                  <div className="text-[11px]">{contact.licenseNo}</div>
-                </div>
-                <div>
+              <div className="grid h-[106px] grid-cols-[1fr_210px_330px] items-center gap-3 border-t px-4" style={{ borderColor: theme.section, color: theme.brand }}>
+                <div className="leading-tight">
+                  <div className="mb-1 text-[11px] font-semibold [overflow-wrap:anywhere]">{contact.licenseNo}</div>
                   <div className="text-[25px] font-bold leading-tight">{contact.companyName}</div>
-                  <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
+                  <div className="mt-1 text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                 </div>
                 <div className="text-center text-[19px] font-bold" style={{ color: theme.brand }}>
                   <div>TEL {contact.companyPhone}</div>
                   <div className="text-[14px]">FAX {contact.companyFax}</div>
                 </div>
-                <div className="grid grid-cols-[78px_1fr] items-center gap-2 text-[11px]">
-                  {data.imgQr ? (
-                    <img src={toExportableImageSrc(data.imgQr)} alt="QR" className="h-[74px] w-[74px] object-contain" crossOrigin="anonymous" referrerPolicy="no-referrer" />
-                  ) : (
-                    <div className="flex h-[74px] w-[74px] items-center justify-center border border-zinc-300 text-zinc-500">QR</div>
-                  )}
-                  <div className="leading-tight">
-                    <div>取引態様: {contact.transactionType || "-"}</div>
-                    <div>手数料: {contact.fee || "-"}</div>
-                    <div>担当: {contact.staffName || "-"}</div>
-                    <div>E-mail: {contact.companyEmail}</div>
+                <div className="grid h-[86px] grid-cols-[112px_1fr_78px] items-center gap-2 p-2 text-white" style={{ backgroundColor: theme.brand }}>
+                  <div className="space-y-1">
+                    {["物件確認", "資料請求", "内見申込"].map((label) => (
+                      <div key={label} className="bg-white px-1.5 py-0.5 text-center text-[18px] font-black leading-tight" style={{ color: theme.brand }}>
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-center text-[13px] font-black leading-tight">
+                    <div>お電話不要</div>
+                    <div className="mt-1">こちらの</div>
+                    <div>QRコードから</div>
+                    <div>お問合せ</div>
+                    <div>いただけます</div>
+                  </div>
+                  <div className="flex justify-end">
+                    {data.imgQr ? (
+                      <img src={toExportableImageSrc(data.imgQr)} alt="QR" className="h-[72px] w-[72px] bg-white object-contain p-1" crossOrigin="anonymous" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="flex h-[72px] w-[72px] items-center justify-center bg-white text-[10px] text-zinc-500">QR</div>
+                    )}
                   </div>
                 </div>
               </div>
