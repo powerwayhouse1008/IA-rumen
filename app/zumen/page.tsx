@@ -1480,18 +1480,8 @@ function ZumenPageContent() {
 
   const featureRows = data?.featureTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
   const salesRows = data?.salesTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
-  const rawRoyalCatchCopy = data?.catchCopy?.trim() ?? "";
-  const royalCatchCopyParts = rawRoyalCatchCopy
-    .split(/\r?\n|×|・|\/|、|,/)
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .slice(0, 3);
-  const royalCatchCopyItems =
-    royalCatchCopyParts.length > 1 || rawRoyalCatchCopy.length <= 18
-      ? royalCatchCopyParts
-      : Array.from({ length: Math.min(3, Math.ceil(rawRoyalCatchCopy.length / 18)) }, (_, index) =>
-          rawRoyalCatchCopy.slice(index * 18, (index + 1) * 18)
-        ).filter(Boolean);
+  const royalTopInfoItems =
+    salesRows.length > 0 ? salesRows.slice(0, 3) : ["日照良好", "リフォーム済", "2駅2路線利用可"];
 
   const inputLifeInfoRows = useMemo(() => {
     return (data?.lifeInformation ?? "")
@@ -2558,10 +2548,16 @@ const getEditableImageProps = useCallback(
 
                 <div className="pt-1">
                   <div className="mb-7 grid grid-cols-[1fr_24px_1fr_24px_1fr] items-center text-center">
-                    {(royalCatchCopyItems.length > 0 ? royalCatchCopyItems : [data.catchCopy || ""]).map((tag, index) => (
+                    {royalTopInfoItems.map((tag, index) => (
                       <div key={`${tag}-${index}`} className="contents">
-                        <div className="border-2 border-sky-300 bg-sky-50 px-2 py-3 text-[20px] font-bold leading-tight text-[#12395b] shadow">
-                          {tag.replace(/^#\s*/, "")}
+                        <div className="flex h-[78px] items-center justify-center border-2 border-sky-300 bg-sky-50 px-3 py-2 text-[#12395b] shadow">
+                          <AutoFitText
+                            text={tag.replace(/^#\s*/, "")}
+                            minSize={16}
+                            maxSize={25}
+                            className="w-full text-center font-extrabold"
+                            style={{ maxHeight: "64px", overflow: "hidden" }}
+                          />
                         </div>
                         {index < 2 ? <div className="text-[26px] text-zinc-700">×</div> : null}
                       </div>
