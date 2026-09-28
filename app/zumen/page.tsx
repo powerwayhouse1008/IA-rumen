@@ -2573,7 +2573,7 @@ const getEditableImageProps = useCallback(
 
               <div className="grid h-[532px] grid-cols-[312px_478px_1fr] gap-4 px-4 pt-2">
                 <div>
-                  <ImgBox src={data.imgMain} label="MAIN" h={224} fit="cover" {...getEditableImageProps("imgMain")} />
+                  <ImgBox src={data.imgMain} label="MAIN" h={224} fit="contain" {...getEditableImageProps("imgMain")} />
                   <div className="mt-7 border-2 bg-white p-1" style={{ borderColor: theme.brand }}>
                     <ImgBox src={data.imgMap ?? data.imgSub3} label="MAP" h={200} showCenterLogo={Boolean(data.imgMap)} {...getEditableImageProps(data.imgMap ? "imgMap" : "imgSub3")} />
                     <div className="mt-1 px-2 py-1 text-[12px] font-bold text-white" style={{ backgroundColor: theme.brand }}>現地案内図</div>
@@ -2612,9 +2612,9 @@ const getEditableImageProps = useCallback(
                           </div>
                         ))}
                       </div>
-                      <div className="mt-2 border-t border-zinc-400 pt-1 text-[9px] leading-[1.2]">
-                        <div className="font-bold">備考</div>
-                        <div className="line-clamp-3 whitespace-pre-wrap">{featureRows.length > 0 ? featureRows.join("・") : displayRemarks}</div>
+                      <div className="mt-2 border-t border-zinc-400 pt-1 text-[11px] font-semibold leading-[1.25]">
+                        <div className="font-extrabold">備考</div>
+                        <div className="line-clamp-3 whitespace-pre-wrap font-bold">{featureRows.length > 0 ? featureRows.join("・") : displayRemarks}</div>
                       </div>
                     </div>
 
@@ -2672,12 +2672,12 @@ const getEditableImageProps = useCallback(
                 <div className="grid h-[88px] grid-cols-[112px_1fr_78px_118px] items-center gap-2 p-2 text-white" style={{ backgroundColor: theme.brand }}>
                   <div className="space-y-1">
                     {["物件確認", "資料請求", "内見申込"].map((label) => (
-                      <div key={label} className="bg-white px-1.5 py-0.5 text-center text-[18px] font-black leading-tight" style={{ color: theme.brand }}>
+                      <div key={label} className="bg-white px-1.5 py-0.5 text-center text-[17px] font-black leading-[1.05]" style={{ color: theme.brand }}>
                         {label}
                       </div>
                     ))}
                   </div>
-                  <div className="text-center text-[12px] font-black leading-tight">
+                  <div className="text-center text-[11px] font-black leading-[1.08]">
                     <div>お電話不要</div>
                     <div className="mt-1">こちらの</div>
                     <div>QRコードから</div>
