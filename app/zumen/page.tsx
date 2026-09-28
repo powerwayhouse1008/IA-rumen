@@ -34,7 +34,7 @@ type ThemeColorKey =
   | "charcoal-gold"
   | "sky-blue";
 
-type TemplateKey = "classic" | "pop" | "chic";
+type TemplateKey = "classic" | "pop" | "chic" | "royal";
 type ImageFormat = "png" | "jpeg";
 
 const TEMPLATE_OPTIONS: Array<{
@@ -60,6 +60,12 @@ const TEMPLATE_OPTIONS: Array<{
     title: "CHIC",
     subtitle: "シックで上品なデザイン",
     swatches: ["#5f0f40", "#9a031e", "#d17b0f", "#1e1b4b", "#3f6212", "#3f3f46"],
+  },
+  {
+    key: "royal",
+    title: "ROYAL",
+    subtitle: "深いブルーの売マンション風レイアウト",
+    swatches: ["#002f5f", "#00659b", "#d3ae55", "#d7efff", "#b5121b", "#f8f4e8"],
   },
 ];
 
@@ -2504,6 +2510,147 @@ const getEditableImageProps = useCallback(
                     <div className="text-right whitespace-nowrap">手数料</div>
                     <div>：</div>
                     <div>{contact.fee || "-"}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : template === "royal" ? (
+          <>
+            <div className="relative h-full bg-white font-serif">
+              <div className="grid h-[82px] grid-cols-[245px_1fr_280px] items-center bg-[#00345f] text-white">
+                <div className="relative flex h-full items-center overflow-hidden pl-8 text-[26px] font-bold">
+                  <div className="absolute -left-20 -top-24 h-56 w-72 rounded-full border-r-[10px] border-[#d3ae55] bg-[#001f3f]" />
+                  <span className="relative">{data.propertyType || "売マンション"}</span>
+                </div>
+                <AutoFitText
+                  text={data.name}
+                  minSize={24}
+                  maxSize={38}
+                  className="text-center font-bold"
+                  style={{ maxHeight: "58px", overflow: "hidden" }}
+                />
+                <div className="border-l border-white/25 text-center text-[15px] font-semibold tracking-[0.18em]">
+                  ROYAL CORPO
+                </div>
+              </div>
+
+              <div className="grid h-[543px] grid-cols-[300px_470px_1fr] gap-4 px-4 pt-10">
+                <div>
+                  <ImgBox src={data.imgMain} label="MAIN" h={205} fit="cover" {...getEditableImageProps("imgMain")} />
+                  <div className="mt-10 border-2 border-[#00659b] bg-white p-1">
+                    <ImgBox src={data.imgMap ?? data.imgSub3} label="MAP" h={185} showCenterLogo={Boolean(data.imgMap)} {...getEditableImageProps(data.imgMap ? "imgMap" : "imgSub3")} />
+                    <div className="mt-1 bg-[#00659b] px-2 py-1 text-[12px] font-bold text-white">現地案内図</div>
+                  </div>
+                </div>
+
+                <div className="pt-1">
+                  <div className="mb-7 grid grid-cols-[1fr_24px_1fr_24px_1fr] items-center text-center">
+                    {(data.salesTags && data.salesTags.length > 0 ? data.salesTags.slice(0, 3) : ["日照良好", "リフォーム済", "2駅2路線利用可"]).map((tag, index) => (
+                      <div key={`${tag}-${index}`} className="contents">
+                        <div className="border-2 border-sky-300 bg-sky-50 px-2 py-3 text-[20px] font-bold leading-tight text-[#12395b] shadow">
+                          {tag.replace(/^#\s*/, "")}
+                        </div>
+                        {index < 2 ? <div className="text-[26px] text-zinc-700">×</div> : null}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-[1fr_84px] gap-3">
+                    <div>
+                      <div className="mb-1 text-[15px] font-bold text-[#173b63]">Outline</div>
+                      <div className="space-y-0.5 text-[11px] leading-[1.28]">
+                        {[...summaryRows, ...managementRows, ...facilityRows].slice(0, 14).map((row, index) => (
+                          <div key={`${row.label}-${index}`} className="grid grid-cols-[82px_1fr] border-b border-zinc-300 pb-0.5">
+                            <div className="font-bold">■ {row.label}</div>
+                            <div className="[overflow-wrap:anywhere]">{row.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-2 border-t border-zinc-400 pt-1 text-[10px] leading-[1.25]">
+                        <div className="font-bold">新規リノベーション内容</div>
+                        <div className="line-clamp-3 whitespace-pre-wrap">{featureRows.length > 0 ? featureRows.join("・") : displayRemarks}</div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex h-[84px] w-[84px] -translate-x-1 items-center justify-center rounded-full bg-[#00659b] p-2 text-center text-[13px] font-bold leading-tight text-white ring-4 ring-[#d3ae55]">
+                        新規<br />リノベーション<br />実施済
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 text-center text-[9px] font-bold text-[#00659b]">
+                        {featureRows.slice(0, 6).map((item) => (
+                          <div key={item} className="flex h-12 items-center justify-center border border-[#00659b] bg-sky-50 px-1 leading-tight">
+                            {item}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 border-y border-zinc-400 py-2">
+                    <div className="flex items-end justify-center gap-3">
+                      <div className="text-[34px] font-bold leading-none">{layoutLabel}</div>
+                      <div className="text-[15px] leading-tight">
+                        <div>専有面積 / {isMansion ? data.mansionDetails?.exclusiveArea : data.houseDetails?.exclusiveArea || "-"}㎡</div>
+                        <div>バルコニー / {isMansion ? data.mansionDetails?.balconyArea || "-" : "-"}㎡</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-1 flex items-center justify-between">
+                    <div className="flex items-end gap-2 text-[#c9151e]">
+                      <div className="text-[18px] font-bold text-black">販売価格</div>
+                      <div className="text-[64px] font-bold leading-none">{Number(data.price || 0).toLocaleString()}</div>
+                      <div className="mb-2 text-[22px] font-bold">万円</div>
+                    </div>
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#c9151e] text-center text-[15px] font-bold leading-tight text-white shadow">
+                      即入居<br />可
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative border-l-[18px] border-zinc-700 pl-3">
+                  <ImgBox src={data.imgPlan} label="PLAN" h={518} fit="contain" {...getEditableImageProps("imgPlan")} />
+                  <div className="absolute right-[-10px] top-0 h-full bg-[#00345f] px-1 pt-52 text-[11px] font-bold [writing-mode:vertical-rl] text-white">
+                    図面と現況が相違する場合は現況を優先します
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid h-[72px] grid-cols-[150px_1fr_1fr] items-center bg-[#00345f] px-4 text-white">
+                <div className="border-b border-white pb-1 text-[18px]">Access</div>
+                <div className="border-l border-white/40 px-5 text-[19px] font-bold leading-tight">
+                  {data.access || "-"}<span className="mx-2 text-[14px]">駅まで徒歩</span><span className="text-[44px] text-[#d3ae55]">{data.walk || "-"}</span><span className="text-[18px]">分</span>
+                </div>
+                <div className="border-l border-white/40 px-5 text-[18px] font-bold leading-tight">
+                  {(data.access2 || data.access3 || transportInlineText || "-").split("\n")[0]}
+                </div>
+              </div>
+
+              <div className="grid h-[94px] grid-cols-[300px_1fr_210px_230px] items-center border-t border-[#d3ae55] px-4 text-[#12395b]">
+                <div>
+                  <div className="text-[40px] font-bold leading-none">AIOS</div>
+                  <div className="text-[11px]">{contact.licenseNo}</div>
+                </div>
+                <div>
+                  <div className="text-[25px] font-bold leading-tight">{contact.companyName}</div>
+                  <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
+                </div>
+                <div className="text-center text-[19px] font-bold text-[#c9151e]">
+                  <div>TEL {contact.companyPhone}</div>
+                  <div className="text-[14px] text-[#12395b]">FAX {contact.companyFax}</div>
+                </div>
+                <div className="grid grid-cols-[78px_1fr] items-center gap-2 text-[11px]">
+                  {data.imgQr ? (
+                    <img src={toExportableImageSrc(data.imgQr)} alt="QR" className="h-[74px] w-[74px] object-contain" crossOrigin="anonymous" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="flex h-[74px] w-[74px] items-center justify-center border border-zinc-300 text-zinc-500">QR</div>
+                  )}
+                  <div className="leading-tight">
+                    <div>取引態様: {contact.transactionType || "-"}</div>
+                    <div>手数料: {contact.fee || "-"}</div>
+                    <div>担当: {contact.staffName || "-"}</div>
+                    <div>E-mail: {contact.companyEmail}</div>
                   </div>
                 </div>
               </div>
