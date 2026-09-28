@@ -1480,6 +1480,18 @@ function ZumenPageContent() {
 
   const featureRows = data?.featureTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
   const salesRows = data?.salesTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
+  const rawRoyalCatchCopy = data?.catchCopy?.trim() ?? "";
+  const royalCatchCopyParts = rawRoyalCatchCopy
+    .split(/\r?\n|×|・|\/|、|,/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+  const royalCatchCopyItems =
+    royalCatchCopyParts.length > 1 || rawRoyalCatchCopy.length <= 18
+      ? royalCatchCopyParts
+      : Array.from({ length: Math.min(3, Math.ceil(rawRoyalCatchCopy.length / 18)) }, (_, index) =>
+          rawRoyalCatchCopy.slice(index * 18, (index + 1) * 18)
+        ).filter(Boolean);
 
   const inputLifeInfoRows = useMemo(() => {
     return (data?.lifeInformation ?? "")
@@ -2546,7 +2558,7 @@ const getEditableImageProps = useCallback(
 
                 <div className="pt-1">
                   <div className="mb-7 grid grid-cols-[1fr_24px_1fr_24px_1fr] items-center text-center">
-                    {(data.salesTags && data.salesTags.length > 0 ? data.salesTags.slice(0, 3) : ["日照良好", "リフォーム済", "2駅2路線利用可"]).map((tag, index) => (
+                    {(royalCatchCopyItems.length > 0 ? royalCatchCopyItems : [data.catchCopy || ""]).map((tag, index) => (
                       <div key={`${tag}-${index}`} className="contents">
                         <div className="border-2 border-sky-300 bg-sky-50 px-2 py-3 text-[20px] font-bold leading-tight text-[#12395b] shadow">
                           {tag.replace(/^#\s*/, "")}
@@ -2620,7 +2632,7 @@ const getEditableImageProps = useCallback(
               <div className="grid h-[62px] grid-cols-[150px_1fr_1fr] items-center bg-[#00345f] px-4 text-white">
                 <div className="border-b border-white pb-1 text-[18px]">Access</div>
                 <div className="border-l border-white/40 px-5 text-[19px] font-bold leading-tight">
-                  {data.access || "-"}<span className="mx-2 text-[14px]">駅まで徒歩</span><span className="text-[36px] text-[#d3ae55]">{data.walk || "-"}</span><span className="text-[18px]">分</span>
+                  {data.access || "-"}
                 </div>
                 <div className="border-l border-white/40 px-5 text-[18px] font-bold leading-tight">
                   {(data.access2 || data.access3 || transportInlineText || "-").split("\n")[0]}
@@ -2629,7 +2641,11 @@ const getEditableImageProps = useCallback(
 
               <div className="grid h-[106px] grid-cols-[300px_1fr_210px_230px] items-center border-t border-[#d3ae55] px-4 text-[#12395b]">
                 <div>
-                  <div className="text-[40px] font-bold leading-none">AIOS</div>
+                  <img
+                    src="/powerway-house-logo.svg"
+                    alt={contact.companyName || "company logo"}
+                    className="h-[54px] w-[180px] object-contain object-left"
+                  />
                   <div className="text-[11px]">{contact.licenseNo}</div>
                 </div>
                 <div>
