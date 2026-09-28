@@ -1488,8 +1488,22 @@ function ZumenPageContent() {
 
   const featureRows = data?.featureTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
   const salesRows = data?.salesTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
+  const rawRoyalCatchCopy = data?.catchCopy?.trim() ?? "";
+  const royalCatchCopyParts = rawRoyalCatchCopy
+    .split(/\r?\n|×|・|\/|、|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
   const royalTopInfoItems =
-    salesRows.length > 0 ? salesRows.slice(0, 3) : ["日照良好", "リフォーム済", "2駅2路線利用可"];
+    royalCatchCopyParts.length > 1
+      ? royalCatchCopyParts.slice(0, 3)
+      : rawRoyalCatchCopy
+        ? Array.from(
+            { length: Math.min(3, Math.ceil(rawRoyalCatchCopy.length / 12)) },
+            (_, index) => rawRoyalCatchCopy.slice(index * 12, (index + 1) * 12)
+          ).filter(Boolean)
+        : salesRows.length > 0
+          ? salesRows.slice(0, 3)
+          : ["日照良好", "リフォーム済", "2駅2路線利用可"];
   const royalOutlineRows = [
     ...summaryRows,
     ...managementRows,
@@ -2614,7 +2628,13 @@ const getEditableImageProps = useCallback(
                       </div>
                       <div className="mt-2 border-t border-zinc-400 pt-1 text-[11px] font-semibold leading-[1.25]">
                         <div className="font-extrabold">備考</div>
-                        <div className="line-clamp-3 whitespace-pre-wrap font-bold">{featureRows.length > 0 ? featureRows.join("・") : displayRemarks}</div>
+                        <AutoFitText
+                          text={displayRemarks}
+                          minSize={6}
+                          maxSize={11}
+                          className="h-[76px] whitespace-pre-wrap font-bold"
+                          style={{ overflow: "hidden", lineHeight: 1.25 }}
+                        />
                       </div>
                     </div>
 
