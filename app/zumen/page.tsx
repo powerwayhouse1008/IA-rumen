@@ -865,6 +865,14 @@ function ZumenPageContent() {
   const shouldExportPdf = searchParams.get("export") === "pdf";
   const viewMode = searchParams.get("view") === "saved" ? "saved" : "preview";
   const draftIdFromQuery = searchParams.get("draftId");
+  const templateFromQuery = searchParams.get("template");
+  const initialTemplateFromQuery: TemplateKey | null =
+    templateFromQuery === "classic" ||
+    templateFromQuery === "pop" ||
+    templateFromQuery === "chic" ||
+    templateFromQuery === "royal"
+      ? templateFromQuery
+      : null;
   const isSavedDraftsView = viewMode === "saved";
 
   const [data, setData] = useState<ZumenData | null>(null);
@@ -878,7 +886,7 @@ function ZumenPageContent() {
 
   const [sheetScale, setSheetScale] = useState(1);
   const [selectedTheme, setSelectedTheme] = useState<ThemeColorKey>("sunset-red");
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>(initialTemplateFromQuery);
   const [isExporting, setIsExporting] = useState(false);
   const [imageFormat, setImageFormat] = useState<ImageFormat>("png");
   const [exportError, setExportError] = useState<string | null>(null);
@@ -2537,7 +2545,7 @@ const getEditableImageProps = useCallback(
                 </div>
               </div>
 
-              <div className="grid h-[532px] grid-cols-[312px_478px_1fr] gap-4 px-4 pt-8">
+              <div className="grid h-[532px] grid-cols-[312px_478px_1fr] gap-4 px-4 pt-2">
                 <div>
                   <ImgBox src={data.imgMain} label="MAIN" h={224} fit="cover" {...getEditableImageProps("imgMain")} />
                   <div className="mt-7 border-2 border-[#00659b] bg-white p-1">
@@ -2546,20 +2554,20 @@ const getEditableImageProps = useCallback(
                   </div>
                 </div>
 
-                <div className="pt-1">
-                  <div className="mb-7 grid grid-cols-[1fr_24px_1fr_24px_1fr] items-center text-center">
+                <div className="pt-0">
+                  <div className="mb-3 mt-1 grid grid-cols-[1fr_20px_1fr_20px_1fr] items-center text-center">
                     {royalTopInfoItems.map((tag, index) => (
                       <div key={`${tag}-${index}`} className="contents">
-                        <div className="flex h-[78px] items-center justify-center border-2 border-sky-300 bg-sky-50 px-3 py-2 text-[#12395b] shadow">
+                        <div className="flex h-[39px] items-center justify-center border-2 border-sky-300 bg-sky-50 px-2 py-1 text-[#12395b] shadow">
                           <AutoFitText
                             text={tag.replace(/^#\s*/, "")}
-                            minSize={16}
-                            maxSize={25}
+                            minSize={10}
+                            maxSize={18}
                             className="w-full text-center font-extrabold"
-                            style={{ maxHeight: "64px", overflow: "hidden" }}
+                            style={{ maxHeight: "31px", overflow: "hidden" }}
                           />
                         </div>
-                        {index < 2 ? <div className="text-[26px] text-zinc-700">×</div> : null}
+                        {index < 2 ? <div className="text-[22px] text-zinc-700">×</div> : null}
                       </div>
                     ))}
                   </div>
