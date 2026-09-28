@@ -1490,6 +1490,29 @@ function ZumenPageContent() {
   const salesRows = data?.salesTags?.map((item) => item.replace(/^#\s*/, "")) ?? [];
   const royalTopInfoItems =
     salesRows.length > 0 ? salesRows.slice(0, 3) : ["日照良好", "リフォーム済", "2駅2路線利用可"];
+  const royalOutlineRows = [
+    ...summaryRows,
+    ...managementRows,
+    ...facilityRows,
+    ...(isMansion && data?.mansionDetails
+      ? [
+          { label: "敷地面積", value: data.mansionDetails.landArea ? `${data.mansionDetails.landArea}㎡` : "-" },
+          { label: "用途地域", value: data.mansionDetails.zoning || "-" },
+          { label: "分譲会社", value: data.mansionDetails.developer || "-" },
+          { label: "施工会社", value: data.mansionDetails.constructor || "-" },
+          { label: "管理形態", value: data.mansionDetails.managementStyle || "-" },
+          { label: "月額合計", value: data.mansionDetails.monthlyTotal ? `${data.mansionDetails.monthlyTotal}円` : "-" },
+        ]
+      : []),
+    ...(isHouse && data?.houseDetails
+      ? [
+          { label: "地目", value: data.houseDetails.lot || "-" },
+          { label: "私道", value: data.houseDetails.privateRoad || "-" },
+          { label: "接道", value: data.houseDetails.roadSurface || "-" },
+          { label: "駐車場", value: data.houseDetails.parking || "-" },
+        ]
+      : []),
+  ];
 
   const inputLifeInfoRows = useMemo(() => {
     return (data?.lifeInformation ?? "")
@@ -2528,9 +2551,9 @@ const getEditableImageProps = useCallback(
         ) : template === "royal" ? (
           <>
             <div className="relative h-full bg-white font-serif">
-              <div className="grid h-[82px] grid-cols-[245px_1fr_280px] items-center bg-[#00345f] text-white">
+              <div className="grid h-[82px] grid-cols-[245px_1fr_280px] items-center text-white" style={{ backgroundColor: theme.brand }}>
                 <div className="relative flex h-full items-center overflow-hidden pl-8 text-[26px] font-bold">
-                  <div className="absolute -left-20 -top-24 h-56 w-72 rounded-full border-r-[10px] border-[#d3ae55] bg-[#001f3f]" />
+                  <div className="absolute -left-20 -top-24 h-56 w-72 rounded-full border-r-[10px] border-white/50 bg-black/20" />
                   <span className="relative">{data.propertyType || "売マンション"}</span>
                 </div>
                 <AutoFitText
@@ -2548,9 +2571,9 @@ const getEditableImageProps = useCallback(
               <div className="grid h-[532px] grid-cols-[312px_478px_1fr] gap-4 px-4 pt-2">
                 <div>
                   <ImgBox src={data.imgMain} label="MAIN" h={224} fit="cover" {...getEditableImageProps("imgMain")} />
-                  <div className="mt-7 border-2 border-[#00659b] bg-white p-1">
+                  <div className="mt-7 border-2 bg-white p-1" style={{ borderColor: theme.brand }}>
                     <ImgBox src={data.imgMap ?? data.imgSub3} label="MAP" h={200} showCenterLogo={Boolean(data.imgMap)} {...getEditableImageProps(data.imgMap ? "imgMap" : "imgSub3")} />
-                    <div className="mt-1 bg-[#00659b] px-2 py-1 text-[12px] font-bold text-white">現地案内図</div>
+                    <div className="mt-1 px-2 py-1 text-[12px] font-bold text-white" style={{ backgroundColor: theme.brand }}>現地案内図</div>
                   </div>
                 </div>
 
@@ -2558,7 +2581,10 @@ const getEditableImageProps = useCallback(
                   <div className="mb-3 mt-1 grid grid-cols-[1fr_20px_1fr_20px_1fr] items-center text-center">
                     {royalTopInfoItems.map((tag, index) => (
                       <div key={`${tag}-${index}`} className="contents">
-                        <div className="flex h-[39px] items-center justify-center border-2 border-sky-300 bg-sky-50 px-2 py-1 text-[#12395b] shadow">
+                        <div
+                          className="flex h-[39px] items-center justify-center border-2 px-2 py-1 shadow"
+                          style={{ borderColor: theme.section, backgroundColor: theme.label, color: theme.brand }}
+                        >
                           <AutoFitText
                             text={tag.replace(/^#\s*/, "")}
                             minSize={10}
@@ -2572,11 +2598,11 @@ const getEditableImageProps = useCallback(
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-[1fr_88px] gap-3">
+                  <div>
                     <div>
-                      <div className="mb-1 text-[15px] font-bold text-[#173b63]">Outline</div>
-                      <div className="space-y-0.5 text-[10px] leading-[1.22]">
-                        {[...summaryRows, ...managementRows, ...facilityRows].slice(0, 13).map((row, index) => (
+                      <div className="mb-1 text-[15px] font-bold" style={{ color: theme.brand }}>Outline</div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9px] leading-[1.18]">
+                        {royalOutlineRows.slice(0, 24).map((row, index) => (
                           <div key={`${row.label}-${index}`} className="grid grid-cols-[82px_1fr] border-b border-zinc-300 pb-0.5">
                             <div className="font-bold">■ {row.label}</div>
                             <div className="[overflow-wrap:anywhere]">{row.value}</div>
@@ -2589,18 +2615,6 @@ const getEditableImageProps = useCallback(
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="flex h-[84px] w-[84px] -translate-x-1 items-center justify-center rounded-full bg-[#00659b] p-2 text-center text-[13px] font-bold leading-tight text-white ring-4 ring-[#d3ae55]">
-                        新規<br />リノベーション<br />実施済
-                      </div>
-                      <div className="grid grid-cols-2 gap-1 text-center text-[9px] font-bold text-[#00659b]">
-                        {featureRows.slice(0, 6).map((item) => (
-                          <div key={item} className="flex h-12 items-center justify-center border border-[#00659b] bg-sky-50 px-1 leading-tight">
-                            {item}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   </div>
 
                   <div className="mt-3 border-y border-zinc-400 py-1.5">
@@ -2614,26 +2628,23 @@ const getEditableImageProps = useCallback(
                   </div>
 
                   <div className="mt-1 flex items-center justify-between">
-                    <div className="flex items-end gap-2 text-[#c9151e]">
+                    <div className="flex items-end gap-2" style={{ color: theme.brand }}>
                       <div className="text-[16px] font-bold text-black">販売価格</div>
                       <div className="text-[54px] font-bold leading-none">{Number(data.price || 0).toLocaleString()}</div>
                       <div className="mb-1.5 text-[20px] font-bold">万円</div>
-                    </div>
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#c9151e] text-center text-[13px] font-bold leading-tight text-white shadow">
-                      即入居<br />可
                     </div>
                   </div>
                 </div>
 
                 <div className="relative border-l-[18px] border-zinc-700 pl-3">
                   <ImgBox src={data.imgPlan} label="PLAN" h={506} fit="contain" {...getEditableImageProps("imgPlan")} />
-                  <div className="absolute right-[-10px] top-0 h-full bg-[#00345f] px-1 pt-52 text-[11px] font-bold [writing-mode:vertical-rl] text-white">
+                  <div className="absolute right-[-10px] top-0 h-full px-1 pt-52 text-[11px] font-bold [writing-mode:vertical-rl] text-white" style={{ backgroundColor: theme.brand }}>
                     図面と現況が相違する場合は現況を優先します
                   </div>
                 </div>
               </div>
 
-              <div className="grid h-[62px] grid-cols-[150px_1fr_1fr] items-center bg-[#00345f] px-4 text-white">
+              <div className="grid h-[62px] grid-cols-[150px_1fr_1fr] items-center px-4 text-white" style={{ backgroundColor: theme.brand }}>
                 <div className="border-b border-white pb-1 text-[18px]">Access</div>
                 <div className="border-l border-white/40 px-5 text-[19px] font-bold leading-tight">
                   {data.access || "-"}
@@ -2643,7 +2654,7 @@ const getEditableImageProps = useCallback(
                 </div>
               </div>
 
-              <div className="grid h-[106px] grid-cols-[300px_1fr_210px_230px] items-center border-t border-[#d3ae55] px-4 text-[#12395b]">
+              <div className="grid h-[106px] grid-cols-[300px_1fr_210px_230px] items-center border-t px-4" style={{ borderColor: theme.section, color: theme.brand }}>
                 <div>
                   <img
                     src="/powerway-house-logo.svg"
@@ -2656,9 +2667,9 @@ const getEditableImageProps = useCallback(
                   <div className="text-[25px] font-bold leading-tight">{contact.companyName}</div>
                   <div className="text-[10px] [overflow-wrap:anywhere]">{contact.companyAddress}</div>
                 </div>
-                <div className="text-center text-[19px] font-bold text-[#c9151e]">
+                <div className="text-center text-[19px] font-bold" style={{ color: theme.brand }}>
                   <div>TEL {contact.companyPhone}</div>
-                  <div className="text-[14px] text-[#12395b]">FAX {contact.companyFax}</div>
+                  <div className="text-[14px]">FAX {contact.companyFax}</div>
                 </div>
                 <div className="grid grid-cols-[78px_1fr] items-center gap-2 text-[11px]">
                   {data.imgQr ? (
