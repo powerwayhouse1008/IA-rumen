@@ -2604,11 +2604,11 @@ const getEditableImageProps = useCallback(
                   <div>
                     <div>
                       <div className="mb-1 text-[15px] font-bold" style={{ color: theme.brand }}>Outline</div>
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9px] leading-[1.18]">
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] font-semibold leading-[1.25]">
                         {royalOutlineRows.slice(0, 24).map((row, index) => (
-                          <div key={`${row.label}-${index}`} className="grid grid-cols-[82px_1fr] border-b border-zinc-300 pb-0.5">
-                            <div className="font-bold">■ {row.label}</div>
-                            <div className="[overflow-wrap:anywhere]">{row.value}</div>
+                          <div key={`${row.label}-${index}`} className="grid grid-cols-[92px_1fr] border-b border-zinc-300 pb-0.5">
+                            <div className="font-extrabold">■ {row.label}</div>
+                            <div className="font-bold [overflow-wrap:anywhere]">{row.value}</div>
                           </div>
                         ))}
                       </div>
