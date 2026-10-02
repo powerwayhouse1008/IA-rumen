@@ -2331,14 +2331,19 @@ function ZumenPageContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedDraft),
       })
-        .then(() => {
+        .then(async (response) => {
+          if (!response.ok) {
+            const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+            throw new Error(errorPayload?.error || `Supabase同期エラー (${response.status})`);
+          }
           setTransformSaveTone("success");
           setTransformSaveMessage(source === "manual" ? "保存しました。" : "自動保存しました。");
         })
         .catch((error) => {
           console.error("failed to sync zumen payload:", error);
           setTransformSaveTone("warning");
-          setTransformSaveMessage("ローカル保存済み（Supabase同期は未完了）。");
+          const detail = error instanceof Error ? error.message : "詳細不明";
+          setTransformSaveMessage(`ローカル保存済み。Supabase同期未完了: ${detail}`);
         });
 
       return true;
@@ -2403,13 +2408,17 @@ function ZumenPageContent() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(draft),
         });
-        if (!response.ok) throw new Error("draft sync failed");
+        if (!response.ok) {
+          const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(errorPayload?.error || `Supabase同期エラー (${response.status})`);
+        }
         setTransformSaveTone("success");
         setTransformSaveMessage("保存しました。");
       } catch (error) {
         console.error("failed to sync zumen draft:", error);
         setTransformSaveTone("warning");
-        setTransformSaveMessage("ローカルに保存しました。Supabase同期は未完了です。");
+        const detail = error instanceof Error ? error.message : "詳細不明";
+        setTransformSaveMessage(`ローカルに保存しました。Supabase同期未完了: ${detail}`);
       }
     },
     [data, imageTransforms, savedDrafts, selectedDraftId, selectedTheme],
@@ -2456,9 +2465,9 @@ function ZumenPageContent() {
         { x: 728, y: 216, width: 382, height: 386 },
       ],
       pop: [
-       { x: 3, y: 205, width: 374, height: 330 },
-        { x: 400, y: 300, width: 402, height: 232 },
-        { x: 805, y: 217, width: 302, height: 318 },
+        { x: 3, y: 205, width: 374, height: 330 },
+        { x: 390, y: 300, width: 402, height: 232 },
+        { x: 805, y: 215, width: 302, height: 318 },
       ],
       chic: [
         { x: 3, y: 74, width: 252, height: 482 },
