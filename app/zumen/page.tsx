@@ -1163,6 +1163,7 @@ function FreeTextLayer({
   onSelect,
   onChange,
   onDelete,
+  onTextChange,
 }: {
   texts: FreeText[];
   editable: boolean;
@@ -1171,6 +1172,7 @@ function FreeTextLayer({
   onSelect: (id: string | null) => void;
   onChange: (text: FreeText) => void;
   onDelete: (id: string) => void;
+  onTextChange: (id: string, text: string) => void;
 }) {
   const scalePointerDelta = (current: number, start: number) => (current - start) / Math.max(sheetScale, 0.01);
   if (texts.length === 0) return null;
@@ -1181,6 +1183,10 @@ function FreeTextLayer({
         const selected = editable && selectedId === item.id;
         const startMove = (event: ReactPointerEvent<HTMLDivElement>) => {
           if (!editable) return;
+          if ((event.target as HTMLElement).closest("[data-free-text-editor='true']")) {
+            onSelect(item.id);
+            return;
+          }
           event.preventDefault();
           event.stopPropagation();
           event.currentTarget.setPointerCapture(event.pointerId);
@@ -1221,7 +1227,16 @@ function FreeTextLayer({
             }}
             onPointerDown={startMove}
           >
-            {item.text}
+            <span
+              data-free-text-editor="true"
+              contentEditable={editable}
+              suppressContentEditableWarning
+              className="block min-w-6 outline-none"
+              onFocus={() => onSelect(item.id)}
+              onBlur={(event) => onTextChange(item.id, event.currentTarget.innerText)}
+            >
+              {item.text}
+            </span>
             {selected ? (
               <button
                 type="button"
@@ -2691,6 +2706,15 @@ function ZumenPageContent() {
     updateFreeImages(arrangeFreeImages(data.freeImages, activeTemplate), "auto");
   }, [activeTemplate, arrangeFreeImages, data?.freeImages, updateFreeImages]);
 
+  useEffect(() => {
+    const selectedText = data?.freeTexts?.find((item) => item.id === selectedFreeTextId);
+    if (!selectedText) return;
+    setNewFreeText(selectedText.text);
+    setNewFreeTextColor(selectedText.color);
+    setNewFreeTextFont(selectedText.fontFamily);
+    setNewFreeTextSize(selectedText.fontSize);
+  }, [data?.freeTexts, selectedFreeTextId]);
+
   const addFreeText = useCallback(() => {
     if (!data || !newFreeText.trim()) return;
     const text: FreeText = {
@@ -2713,6 +2737,30 @@ function ZumenPageContent() {
       persistZumenPayload({ ...data, freeTexts: (data.freeTexts ?? []).map((item) => (item.id === text.id ? text : item)) }, "auto");
     },
     [data, persistZumenPayload],
+  );
+
+  const updateFreeTextContent = useCallback(
+    (id: string, text: string) => {
+      if (!data) return;
+      persistZumenPayload({
+        ...data,
+        freeTexts: (data.freeTexts ?? []).map((item) => (item.id === id ? { ...item, text } : item)),
+      }, "auto");
+    },
+    [data, persistZumenPayload],
+  );
+
+  const updateSelectedFreeTextStyle = useCallback(
+    (updates: Partial<Pick<FreeText, "color" | "fontFamily" | "fontSize">>) => {
+      if (!data || !selectedFreeTextId) return;
+      persistZumenPayload({
+        ...data,
+        freeTexts: (data.freeTexts ?? []).map((item) =>
+          item.id === selectedFreeTextId ? { ...item, ...updates } : item,
+        ),
+      }, "manual");
+    },
+    [data, persistZumenPayload, selectedFreeTextId],
   );
 
   const deleteFreeText = useCallback(
@@ -2743,13 +2791,6 @@ function ZumenPageContent() {
   const updateImageMinScale = useCallback((slot: ImageSlotKey, value: number) => {
     setImageMinScales((prev) => ({ ...prev, [slot]: value }));
   }, []);
-
-  const resetImageTransforms = useCallback(() => {
-    setImageTransforms(createDefaultImageTransforms());
-    setImageMinScales(DEFAULT_IMAGE_MIN_SCALES);
-  }, []);
-   
- 
 
     const deleteImageSlot = useCallback(
     (slot: ImageSlotKey) => {
@@ -3701,6 +3742,7 @@ const getEditableImageProps = useCallback(
           onSelect={setSelectedFreeTextId}
           onChange={updateFreeText}
           onDelete={deleteFreeText}
+          onTextChange={updateFreeTextContent}
         />
       </div>
     );
@@ -3916,42 +3958,58 @@ const getEditableImageProps = useCallback(
          className={`rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm md:p-4 `}
         >
           {!isSavedDraftsView && activeTemplate ? (
-            <div className="mb-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                <span className="font-semibold">画像編集:</span> 画像をクリックして選択し、マウスでドラッグして位置を調整できます。選択した画像はマウスホイールで拡大・縮小でき、四隅のハンドルで縦横を自由に伸縮できます。枠はレイアウトの目安だけなので、枠外まで自由に配置できます。画像を用紙外へドラッグして離すと自動削除します。
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="cursor-pointer rounded-md border border-indigo-300 bg-white px-3 py-1 text-xs font-semibold text-indigo-700">
-                    画像追加
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="sr-only"
-                      onChange={handleFreeImageUpload}
-                    />
-                  </label>
-                  <button type="button" onClick={autoTuneImageTransforms} className="rounded-md border border-sky-300 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">AI自動調整・配置</button>
-                  <button type="button" onClick={() => void saveZumenDraft("overwrite")} className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">保存</button>
-                  <button type="button" onClick={() => void saveZumenDraft("named")} className="rounded-md border border-teal-300 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">名前を付けて保存</button>
-                  <button type="button" onClick={resetImageTransforms} className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs">リセット</button>
-                </div>
-              </div>
-              </div>
-          ) : null}
-          {!isSavedDraftsView && activeTemplate ? (
-            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3">
-              <input value={newFreeText} onChange={(event) => setNewFreeText(event.target.value)} className="h-8 min-w-[220px] rounded-md border border-rose-200 bg-white px-2 text-xs text-zinc-800" />
-              <input type="color" value={newFreeTextColor} onChange={(event) => setNewFreeTextColor(event.target.value)} className="h-8 w-10 rounded border border-rose-200 bg-white" aria-label="text color" />
-              <select value={newFreeTextFont} onChange={(event) => setNewFreeTextFont(event.target.value)} className="h-8 rounded-md border border-rose-200 bg-white px-2 text-xs text-zinc-800">
-                <option value={'"Noto Sans JP", "Yu Gothic", Meiryo, sans-serif'}>Gothic</option>
-                <option value={'"Hiragino Mincho ProN", "Yu Mincho", serif'}>Mincho</option>
+            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm">
+              <label className="cursor-pointer rounded-md border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+                画像追加
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  onChange={handleFreeImageUpload}
+                />
+              </label>
+              <button type="button" onClick={autoTuneImageTransforms} className="rounded-md border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700">AI自動調整・配置</button>
+              <input value={newFreeText} onChange={(event) => setNewFreeText(event.target.value)} className="h-8 min-w-[200px] rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800" />
+              <input
+                type="color"
+                value={newFreeTextColor}
+                onChange={(event) => {
+                  setNewFreeTextColor(event.target.value);
+                  updateSelectedFreeTextStyle({ color: event.target.value });
+                }}
+                className="h-8 w-10 rounded border border-zinc-300 bg-white"
+                aria-label="文字色"
+              />
+              <select
+                value={newFreeTextFont}
+                onChange={(event) => {
+                  setNewFreeTextFont(event.target.value);
+                  updateSelectedFreeTextStyle({ fontFamily: event.target.value });
+                }}
+                className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800"
+              >
+                <option value={'"Noto Sans JP", "Yu Gothic", Meiryo, sans-serif'}>ゴシック</option>
+                <option value={'"Hiragino Mincho ProN", "Yu Mincho", serif'}>明朝</option>
                 <option value={'Impact, "Arial Black", sans-serif'}>Impact</option>
                 <option value={'"Trebuchet MS", "Noto Sans JP", sans-serif'}>Modern</option>
               </select>
-              <input type="number" min={12} max={72} value={newFreeTextSize} onChange={(event) => setNewFreeTextSize(Number(event.target.value))} className="h-8 w-16 rounded-md border border-rose-200 bg-white px-2 text-xs text-zinc-800" aria-label="text size" />
-              <button type="button" onClick={addFreeText} className="rounded-md border border-rose-300 bg-white px-3 py-1 text-xs font-semibold text-rose-700">文字追加</button>
+              <input
+                type="number"
+                min={12}
+                max={72}
+                value={newFreeTextSize}
+                onChange={(event) => {
+                  const nextSize = Number(event.target.value);
+                  setNewFreeTextSize(nextSize);
+                  updateSelectedFreeTextStyle({ fontSize: nextSize });
+                }}
+                className="h-8 w-16 rounded-md border border-zinc-300 bg-white px-2 text-xs text-zinc-800"
+                aria-label="文字サイズ"
+              />
+              <button type="button" onClick={addFreeText} className="rounded-md border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700">文字追加</button>
+              <button type="button" onClick={() => void saveZumenDraft("overwrite")} className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">保存</button>
+              <button type="button" onClick={() => void saveZumenDraft("named")} className="rounded-md border border-teal-300 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700">名前を付けて保存</button>
             </div>
           ) : null}
           {transformSaveMessage ? (
