@@ -2451,8 +2451,9 @@ function ZumenPageContent() {
   const arrangeFreeImages = useCallback((images: FreeImage[], template: TemplateKey | null) => {
     const zonesByTemplate: Record<TemplateKey, Array<{ x: number; y: number; width: number; height: number }>> = {
       classic: [
-        { x: 30, y: 84, width: 240, height: 470 },
-        { x: 290, y: 106, width: 518, height: 584 },
+        { x: 22, y: 256, width: 290, height: 170 },
+        { x: 330, y: 220, width: 406, height: 382 },
+        { x: 750, y: 218, width: 382, height: 386 },
       ],
       pop: [
         { x: 22, y: 254, width: 290, height: 172 },
