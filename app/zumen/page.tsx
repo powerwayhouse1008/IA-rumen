@@ -420,6 +420,52 @@ function toExportableImageSrc(src?: string) {
   return normalizedSrc;
 }
 
+type UploadedImageResult = {
+  publicUrl: string;
+};
+
+function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve({ width: image.naturalWidth, height: image.naturalHeight });
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("画像サイズを読み取れませんでした。"));
+    };
+    image.src = objectUrl;
+  });
+}
+
+async function uploadImageToSupabase(file: File): Promise<string> {
+  const extFromName = file.name.includes(".") ? file.name.split(".").pop()?.toLowerCase() : undefined;
+  const mimeExt = file.type.split("/")[1]?.toLowerCase();
+  const extension = extFromName || mimeExt || "jpg";
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("extension", extension);
+
+  const response = await fetch("/api/zumen-images", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(errorPayload?.error || `画像アップロードエラー (${response.status})`);
+  }
+
+  const payload = (await response.json()) as UploadedImageResult;
+  if (!payload.publicUrl) {
+    throw new Error("アップロード画像URLが返されませんでした。");
+  }
+
+  return payload.publicUrl;
+}
+
 function ImgBox({
   src,
   label,
@@ -765,6 +811,30 @@ function saveStoredDraftsToLocal(drafts: StoredDraft[]) {
   } catch (error) {
     console.error("saveStoredDraftsToLocal error:", error);
   }
+}
+
+function createSupabaseSafePayload(payload: ZumenData): ZumenData {
+  const stripDataUrlDeep = (value: unknown): unknown => {
+    if (typeof value === "string") {
+      return value.startsWith("data:") ? "" : value;
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => stripDataUrlDeep(item));
+    }
+
+    if (value && typeof value === "object") {
+      const nextObject: Record<string, unknown> = {};
+      for (const [key, childValue] of Object.entries(value as Record<string, unknown>)) {
+        nextObject[key] = stripDataUrlDeep(childValue);
+      }
+      return nextObject;
+    }
+
+    return value;
+  };
+
+  return stripDataUrlDeep(payload) as ZumenData;
 }
 
 const A4_RATIO = Math.SQRT2;
@@ -2323,13 +2393,17 @@ function ZumenPageContent() {
       if (!target) return false;
 
       const updatedDraft: StoredDraft = { ...target, payload };
+      const supabaseDraft: StoredDraft = {
+        ...updatedDraft,
+        payload: createSupabaseSafePayload(updatedDraft.payload),
+      };
       const nextDrafts = savedDrafts.map((draft) => (draft.id === selectedDraftId ? updatedDraft : draft));
       setSavedDrafts(nextDrafts);
       saveStoredDraftsToLocal(nextDrafts);
       void fetch("/api/zumen-drafts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedDraft),
+        body: JSON.stringify(supabaseDraft),
       })
         .then(async (response) => {
           if (!response.ok) {
@@ -2387,6 +2461,10 @@ function ZumenPageContent() {
         themeColor: selectedTheme,
       };
       const draft: StoredDraft = { id: draftId, savedAt, payload };
+      const supabaseDraft: StoredDraft = {
+        ...draft,
+        payload: createSupabaseSafePayload(draft.payload),
+      };
       const currentDrafts = savedDrafts.length ? savedDrafts : loadStoredDraftsFromLocal();
       const nextDrafts = [draft, ...currentDrafts.filter((item) => item.id !== draftId)];
 
@@ -2406,7 +2484,7 @@ function ZumenPageContent() {
         const response = await fetch("/api/zumen-drafts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(draft),
+          body: JSON.stringify(supabaseDraft),
         });
         if (!response.ok) {
           const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -2428,32 +2506,23 @@ function ZumenPageContent() {
     return Promise.all(
       Array.from(files)
         .filter((file) => file.type.startsWith("image/"))
-        .map(
-          (file, index) =>
-            new Promise<FreeImage>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => {
-                const image = new Image();
-                image.onload = () => {
-                  const maxWidth = 190;
-                  const maxHeight = 140;
-                  const ratio = Math.min(maxWidth / image.naturalWidth, maxHeight / image.naturalHeight, 1);
-                  resolve({
-                    id: `free-${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
-                    src: String(reader.result),
-                    x: 24 + index * 18,
-                    y: 24 + index * 18,
-                    width: Math.max(72, Math.round(image.naturalWidth * ratio)),
-                    height: Math.max(54, Math.round(image.naturalHeight * ratio)),
-                  });
-                };
-                image.onerror = () => reject(new Error("Cannot read image size"));
-                image.src = String(reader.result);
-              };
-              reader.onerror = () => reject(new Error("Cannot read image file"));
-              reader.readAsDataURL(file);
-            }),
-        ),
+        .map(async (file, index) => {
+          const [{ width, height }, src] = await Promise.all([
+            getImageDimensions(file),
+            uploadImageToSupabase(file),
+          ]);
+          const maxWidth = 190;
+          const maxHeight = 140;
+          const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
+          return {
+            id: `free-${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
+            src,
+            x: 24 + index * 18,
+            y: 24 + index * 18,
+            width: Math.max(72, Math.round(width * ratio)),
+            height: Math.max(54, Math.round(height * ratio)),
+          };
+        }),
     );
   }, []);
 

@@ -10,7 +10,7 @@ const supabaseKey =
   getEnvOrEmpty("SUPABASE_SERVICE_ROLE_KEY") ||
   getEnvOrEmpty("SUPABASE_ANON_KEY") ||
   getEnvOrEmpty("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  const draftsTable = getEnvOrEmpty("SUPABASE_ZUMEN_DRAFTS_TABLE") || "zumen_drafts";
+const draftsTable = getEnvOrEmpty("SUPABASE_ZUMEN_DRAFTS_TABLE") || "zumen_drafts";
 
 type DraftRecord = {
   id: string;
@@ -22,7 +22,7 @@ type DraftRecord = {
 
 function ensureSupabaseConfig() {
   if (!supabaseUrl || !supabaseKey) {
-    return "Supabaseの接続設定が未設定です。管理者に環境変数を確認してください。";
+    return "Supabase接続設定が未設定です。SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY を確認してください。";
   }
 
   return null;
@@ -32,24 +32,28 @@ function toFriendlySupabaseError(errorText: string, status?: number) {
   const message = errorText.trim();
 
   if (/duplicate key|unique/i.test(message)) {
-    return "同じ保存データがすでに存在します。保存名を変更するか、時間をおいて再度お試しください。";
+    return "同じ保存データがすでに存在します。保存名を変更してもう一度お試しください。";
   }
 
   if (/Could not find|missing column|column/i.test(message)) {
-    return "Supabaseの保存先テーブルに必要な列がありません。管理者にテーブル設定の確認を依頼してください。";
+    return "Supabase の drafts テーブルに必要な列がありません。id、payload、saved_at を確認してください。";
   }
 
-  if (/table|relation/i.test(message)) {
-    return "Supabaseの保存先テーブルが見つかりません。管理者にテーブル名の設定を確認してください。";
+  if (/table|relation/i.test(message) || status === 404) {
+    return `Supabase の保存テーブル「${draftsTable}」が見つかりません。テーブル名を確認してください。`;
   }
 
   if (/permission|jwt|not authorized|unauthorized/i.test(message) || status === 401 || status === 403) {
-    return "Supabaseへの保存権限がありません。管理者にAPIキーまたはRLS設定の確認を依頼してください。";
+    return "Supabase への保存権限がありません。SUPABASE_SERVICE_ROLE_KEY または RLS 設定を確認してください。";
+  }
+
+  if (/payload too large|too large|413/i.test(message) || status === 413) {
+    return "保存データが大きすぎます。画像は Supabase Storage にアップロードして、draft には URL だけを保存してください。";
   }
 
   return status
-    ? `Supabaseとの通信に失敗しました。時間をおいて再度お試しください。（ステータス: ${status}）`
-    : "Supabaseとの通信に失敗しました。時間をおいて再度お試しください。";
+    ? `Supabase同期に失敗しました。ステータス: ${status} / 詳細: ${message || "不明"}`
+    : `Supabase同期に失敗しました。詳細: ${message || "不明"}`;
 }
 
 async function supabaseRequest<T>(path: string, init?: RequestInit): Promise<{ data: T | null; error: string | null }> {
@@ -86,8 +90,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const draftId = searchParams.get("draftId")?.trim();
   const query = draftId
-    ? `${draftsTable}?select=id,payload,saved_at&id=eq.${encodeURIComponent(draftId)}&limit=1`
-    : `${draftsTable}?select=id,payload,saved_at&order=saved_at.desc`;
+    ? `${draftsTable}?select=id,payload,saved_at,updated_at&id=eq.${encodeURIComponent(draftId)}&limit=1`
+    : `${draftsTable}?select=id,payload,saved_at,updated_at&order=saved_at.desc`;
 
   const { data, error } = await supabaseRequest<DraftRecord[]>(query);
 
@@ -131,7 +135,6 @@ export async function POST(req: NextRequest) {
       "無題の図面";
 
     const now = new Date().toISOString();
-
     const row = {
       id,
       payload: {
@@ -152,7 +155,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
-       return NextResponse.json({ error }, { status: 500 });
+      return NextResponse.json({ error }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -163,10 +166,8 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "unknown error",
-      },
-      { status: 500 }
+      { error: error instanceof Error ? error.message : "unknown error" },
+      { status: 500 },
     );
   }
 }
