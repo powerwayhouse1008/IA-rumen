@@ -2456,17 +2456,17 @@ function ZumenPageContent() {
         { x: 728, y: 216, width: 382, height: 386 },
       ],
       pop: [
-        { x: 22, y: 254, width: 290, height: 172 },
-        { x: 330, y: 220, width: 405, height: 382 },
-        { x: 750, y: 218, width: 382, height: 386 },
+        { x: 26, y: 218, width: 374, height: 330 },
+        { x: 418, y: 307, width: 402, height: 232 },
+        { x: 834, y: 222, width: 302, height: 318 },
       ],
       chic: [
         { x: 3, y: 74, width: 252, height: 482 },
         { x: 265, y: 111, width: 528, height: 578 },
       ],
       royal: [
-        { x: 6, y: 92, width: 336, height: 250 },
-        { x: 862, y: 92, width: 230, height: 524 },
+          { x: 6, y: 91, width: 336, height: 250 },
+        { x: 860, y: 92, width: 230, height: 524 },
       ],
     };
     const zones = zonesByTemplate[template ?? "classic"];
