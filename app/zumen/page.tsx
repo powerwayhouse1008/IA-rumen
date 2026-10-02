@@ -209,8 +209,6 @@ const IMAGE_SLOT_LABELS: Record<ImageSlotKey, string> = {
   imgSub6: "Sub 6",
   imgMap: "MAP",
 };
-const FREE_IMAGE_SLOT_ORDER: ImageSlotKey[] = ["imgMain", "imgPlan", "imgSub1", "imgSub2", "imgSub3", "imgSub4", "imgSub5", "imgSub6"];
-
 const DEFAULT_IMAGE_TRANSFORM: ImageTransform = {
   scale: 1,
   scaleX: 1,
@@ -952,7 +950,10 @@ function FreeImageLayer({
           window.addEventListener("pointerup", handlePointerUp, { once: true });
         };
 
-        const startResize = (event: ReactPointerEvent<HTMLButtonElement>) => {
+        const startResize = (
+          event: ReactPointerEvent<HTMLButtonElement>,
+          direction: { x: -1 | 0 | 1; y: -1 | 0 | 1 },
+        ) => {
           if (!editable) return;
           event.preventDefault();
           event.stopPropagation();
@@ -964,13 +965,25 @@ function FreeImageLayer({
           const startImage = image;
 
           const handlePointerMove = (moveEvent: PointerEvent) => {
-            onChange(
-              clampFreeImage({
-                ...startImage,
-                width: Math.round(startImage.width + scalePointerDelta(moveEvent.clientX, startX)),
-                height: Math.round(startImage.height + scalePointerDelta(moveEvent.clientY, startY)),
-              }),
-            );
+            const dx = scalePointerDelta(moveEvent.clientX, startX);
+            const dy = scalePointerDelta(moveEvent.clientY, startY);
+            const nextImage = { ...startImage };
+
+            if (direction.x === 1) {
+              nextImage.width = Math.round(startImage.width + dx);
+            } else if (direction.x === -1) {
+              nextImage.x = Math.round(startImage.x + dx);
+              nextImage.width = Math.round(startImage.width - dx);
+            }
+
+            if (direction.y === 1) {
+              nextImage.height = Math.round(startImage.height + dy);
+            } else if (direction.y === -1) {
+              nextImage.y = Math.round(startImage.y + dy);
+              nextImage.height = Math.round(startImage.height - dy);
+            }
+
+            onChange(clampFreeImage(nextImage));
           };
 
           const handlePointerUp = () => {
@@ -981,6 +994,22 @@ function FreeImageLayer({
           window.addEventListener("pointermove", handlePointerMove);
           window.addEventListener("pointerup", handlePointerUp, { once: true });
         };
+
+        const resizeHandles: Array<{
+          key: string;
+          direction: { x: -1 | 0 | 1; y: -1 | 0 | 1 };
+          className: string;
+          cursor: string;
+        }> = [
+          { key: "top-left", direction: { x: -1, y: -1 }, className: "-left-2 -top-2", cursor: "cursor-nwse-resize" },
+          { key: "top", direction: { x: 0, y: -1 }, className: "left-1/2 -top-2 -translate-x-1/2", cursor: "cursor-ns-resize" },
+          { key: "top-right", direction: { x: 1, y: -1 }, className: "-right-2 -top-2", cursor: "cursor-nesw-resize" },
+          { key: "right", direction: { x: 1, y: 0 }, className: "-right-2 top-1/2 -translate-y-1/2", cursor: "cursor-ew-resize" },
+          { key: "bottom-right", direction: { x: 1, y: 1 }, className: "-bottom-2 -right-2", cursor: "cursor-nwse-resize" },
+          { key: "bottom", direction: { x: 0, y: 1 }, className: "-bottom-2 left-1/2 -translate-x-1/2", cursor: "cursor-ns-resize" },
+          { key: "bottom-left", direction: { x: -1, y: 1 }, className: "-bottom-2 -left-2", cursor: "cursor-nesw-resize" },
+          { key: "left", direction: { x: -1, y: 0 }, className: "-left-2 top-1/2 -translate-y-1/2", cursor: "cursor-ew-resize" },
+        ];
 
         return (
           <div
@@ -1009,7 +1038,12 @@ function FreeImageLayer({
               <div data-html2canvas-ignore="true">
                 <button
                   type="button"
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
                   onClick={(event) => {
+                    event.preventDefault();
                     event.stopPropagation();
                     onDelete(image.id);
                   }}
@@ -1018,12 +1052,15 @@ function FreeImageLayer({
                 >
                   x
                 </button>
-                <button
-                  type="button"
-                  onPointerDown={startResize}
-                  className="absolute -bottom-2 -right-2 h-6 w-6 rounded-full border border-white bg-sky-600 shadow"
-                  aria-label="Resize free image"
-                />
+                {resizeHandles.map((handle) => (
+                  <button
+                    key={handle.key}
+                    type="button"
+                    onPointerDown={(event) => startResize(event, handle.direction)}
+                    className={`absolute h-4 w-4 rounded-full border border-white bg-sky-600 shadow ${handle.className} ${handle.cursor}`}
+                    aria-label={`Resize free image ${handle.key}`}
+                  />
+                ))}
               </div>
             ) : null}
           </div>
@@ -1103,7 +1140,12 @@ function FreeTextLayer({
               <button
                 type="button"
                 data-html2canvas-ignore="true"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
                 onClick={(event) => {
+                  event.preventDefault();
                   event.stopPropagation();
                   onDelete(item.id);
                 }}
@@ -2435,6 +2477,13 @@ function ZumenPageContent() {
     setTransformSaveMessage("AI da sap xep anh tu do tranh khung chu chinh.");
   }, [activeTemplate, arrangeFreeImages, data, updateFreeImages]);
 
+  useEffect(() => {
+    if (!data?.freeImages?.length || !activeTemplate) return;
+    const looksUnarranged = data.freeImages.every((image, index) => image.x === 24 + index * 12 && image.y === 24 + index * 12);
+    if (!looksUnarranged) return;
+    updateFreeImages(arrangeFreeImages(data.freeImages, activeTemplate), "auto");
+  }, [activeTemplate, arrangeFreeImages, data?.freeImages, updateFreeImages]);
+
   const addFreeText = useCallback(() => {
     if (!data || !newFreeText.trim()) return;
     const text: FreeText = {
@@ -2625,9 +2674,7 @@ const getEditableImageProps = useCallback(
 
   const renderSheet = (template: TemplateKey) => {
     if (!data) return null;
-    const freeImages = data.freeImages ?? [];
-    const getSlotImage = (slot: ImageSlotKey) => data[slot] || freeImages[FREE_IMAGE_SLOT_ORDER.indexOf(slot)]?.src;
-    const overlayFreeImages = arrangeFreeImages(freeImages.slice(FREE_IMAGE_SLOT_ORDER.length), template);
+    const overlayFreeImages = data.freeImages ?? [];
 
     return (
       <div
@@ -2725,7 +2772,7 @@ const getEditableImageProps = useCallback(
                 </div>
 
                 <div className="mt-2">
-                 <ImgBox src={getSlotImage("imgMain")} label="メイン写真" h={180} {...getEditableImageProps("imgMain")} />
+                 <ImgBox src={data.imgMain} label="メイン写真" h={180} {...getEditableImageProps("imgMain")} />
                 </div>
 
                 <div className="mt-2 space-y-1 text-xs">
@@ -2741,16 +2788,16 @@ const getEditableImageProps = useCallback(
               </div>
 
               <div className="border-r border-black p-2">
-                 <ImgBox src={getSlotImage("imgPlan")} label="間取り図" h={320} fit="contain" {...getEditableImageProps("imgPlan")} />
+                 <ImgBox src={data.imgPlan} label="間取り図" h={320} fit="contain" {...getEditableImageProps("imgPlan")} />
               </div>
 
               <div className="p-2">
                 <div className="grid grid-cols-2 gap-2">
-                  <ImgBox src={getSlotImage("imgSub1")} label="サブ画像1" h={180} {...getEditableImageProps("imgSub1")} />
-                  <ImgBox src={getSlotImage("imgSub2")} label="サブ画像2" h={180} {...getEditableImageProps("imgSub2")} />
+                  <ImgBox src={data.imgSub1} label="サブ画像1" h={180} {...getEditableImageProps("imgSub1")} />
+                  <ImgBox src={data.imgSub2} label="サブ画像2" h={180} {...getEditableImageProps("imgSub2")} />
                 </div>
                 <div className="mt-2">
-               <ImgBox src={getSlotImage("imgSub3")} label="現地案内図" h={170} {...getEditableImageProps("imgSub3")} />
+               <ImgBox src={data.imgSub3} label="現地案内図" h={170} {...getEditableImageProps("imgSub3")} />
                 </div>
 
                 {featureRows.length > 0 && (
@@ -2943,10 +2990,10 @@ const getEditableImageProps = useCallback(
 
             <div className="grid grid-cols-[380px_420px_323px] border-b border-black">
               <div className="border-r border-black p-2" style={{ backgroundColor: theme.brand }}>
-                <ImgBox src={getSlotImage("imgMain")} label="メイン画像" h={220} {...getEditableImageProps("imgMain")} />
+                <ImgBox src={data.imgMain} label="メイン画像" h={220} {...getEditableImageProps("imgMain")} />
                 <div className="mt-2 grid grid-cols-2 gap-2">
-                  <ImgBox src={getSlotImage("imgSub1")} label="サブ1" h={85} {...getEditableImageProps("imgSub1")} />
-                  <ImgBox src={getSlotImage("imgSub2")} label="サブ2" h={85} {...getEditableImageProps("imgSub2")} />
+                  <ImgBox src={data.imgSub1} label="サブ1" h={85} {...getEditableImageProps("imgSub1")} />
+                  <ImgBox src={data.imgSub2} label="サブ2" h={85} {...getEditableImageProps("imgSub2")} />
                 </div>
               </div>
 
@@ -2958,13 +3005,13 @@ const getEditableImageProps = useCallback(
                   <div className="text-xs">□専有面積/75㎡(22.68坪)</div>
                   <div className="text-xs">□バルコニー面積/10㎡(3.02坪)</div>
                   <div className="mt-2">
-                    <ImgBox src={getSlotImage("imgPlan")} label="間取り" h={205} fit="contain" {...getEditableImageProps("imgPlan")} />
+                    <ImgBox src={data.imgPlan} label="間取り" h={205} fit="contain" {...getEditableImageProps("imgPlan")} />
                   </div>
                 </div>
               </div>
 
               <div className="p-2">
-                <ImgBox src={getSlotImage("imgSub3")} label="拡大図" h={130} {...getEditableImageProps("imgSub3")} />
+                <ImgBox src={data.imgSub3} label="拡大図" h={130} {...getEditableImageProps("imgSub3")} />
 
                 {featureRows.length > 0 && (
                   <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
@@ -3093,7 +3140,7 @@ const getEditableImageProps = useCallback(
 
               <div className="grid h-[532px] grid-cols-[312px_478px_1fr] gap-4 px-4 pt-2">
                 <div>
-                  <ImgBox src={getSlotImage("imgMain")} label="MAIN" h={224} fit="contain" {...getEditableImageProps("imgMain")} />
+                  <ImgBox src={data.imgMain} label="MAIN" h={224} fit="contain" {...getEditableImageProps("imgMain")} />
                   <div className="mt-7 border-2 bg-white p-1" style={{ borderColor: theme.brand }}>
                     <ImgBox src={data.imgMap ?? data.imgSub3} label="MAP" h={200} showCenterLogo={Boolean(data.imgMap)} {...getEditableImageProps(data.imgMap ? "imgMap" : "imgSub3")} />
                     <div className="mt-1 px-2 py-1 text-[12px] font-bold text-white" style={{ backgroundColor: theme.brand }}>現地案内図</div>
@@ -3166,7 +3213,7 @@ const getEditableImageProps = useCallback(
                 </div>
 
                 <div className="relative border-l-[18px] border-zinc-700 pl-3">
-                  <ImgBox src={getSlotImage("imgPlan")} label="PLAN" h={506} fit="contain" {...getEditableImageProps("imgPlan")} />
+                  <ImgBox src={data.imgPlan} label="PLAN" h={506} fit="contain" {...getEditableImageProps("imgPlan")} />
                   <div className="absolute right-[-10px] top-0 h-full px-1 pt-52 text-[11px] font-bold [writing-mode:vertical-rl] text-white" style={{ backgroundColor: theme.brand }}>
                     図面と現況が相違する場合は現況を優先します
                   </div>
@@ -3269,13 +3316,13 @@ const getEditableImageProps = useCallback(
 
             <div className="grid grid-cols-[260px_1fr_320px]">
               <div className="border-r border-black p-2">
-               <ImgBox src={getSlotImage("imgMain")} label="外観画像（左上）" h={210} {...getEditableImageProps("imgMain")} />
+               <ImgBox src={data.imgMain} label="外観画像（左上）" h={210} {...getEditableImageProps("imgMain")} />
                 <div className="mt-2 grid grid-cols-[calc(50%+0.1cm)_calc(50%-0.1cm)] gap-2">
-                   <ImgBox src={getSlotImage("imgSub1")} label="共用（左中）" h={118} {...getEditableImageProps("imgSub1")} />
-                  <ImgBox src={getSlotImage("imgSub2")} label="室内（左中）" h={118} {...getEditableImageProps("imgSub2")} />
+                   <ImgBox src={data.imgSub1} label="共用（左中）" h={118} {...getEditableImageProps("imgSub1")} />
+                  <ImgBox src={data.imgSub2} label="室内（左中）" h={118} {...getEditableImageProps("imgSub2")} />
                 </div>
                <div className="mt-2">
-                   <ImgBox src={getSlotImage("imgSub3")} label="追加画像（左下）" h={120} {...getEditableImageProps("imgSub3")} />
+                   <ImgBox src={data.imgSub3} label="追加画像（左下）" h={120} {...getEditableImageProps("imgSub3")} />
                 </div>
                 <div className="mt-3 text-[10px] leading-5">
                   {lifeInfoRows.slice(0, 6).map((row) => (
@@ -3297,16 +3344,16 @@ const getEditableImageProps = useCallback(
                 >
                   {data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}
                 </div>
-                <ImgBox src={getSlotImage("imgPlan")} label="間取り図（中央上）" h={320} fit="contain" {...getEditableImageProps("imgPlan")} />
+                <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={320} fit="contain" {...getEditableImageProps("imgPlan")} />
                 <div className="mt-2 grid grid-cols-2 gap-2">
                    <ImgBox
-                    src={getSlotImage("imgSub4")}
+                    src={data.imgSub4}
                     {...getEditableImageProps("imgSub4")}
                     label="リビング（中央下左）"
                     h={template === "chic" ? 244 : 168}
                   />
                   <ImgBox
-                    src={getSlotImage("imgSub5")}
+                    src={data.imgSub5}
                     {...getEditableImageProps("imgSub5")}
                     label="キッチン（中央下右）"
                     h={template === "chic" ? 244 : 168}
