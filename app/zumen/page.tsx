@@ -2451,50 +2451,103 @@ function ZumenPageContent() {
   const arrangeFreeImages = useCallback((images: FreeImage[], template: TemplateKey | null) => {
     const zonesByTemplate: Record<TemplateKey, Array<{ x: number; y: number; width: number; height: number }>> = {
       classic: [
-        { x: 18, y: 335, width: 820, height: 230 },
-        { x: 860, y: 210, width: 230, height: 330 },
+        { x: 30, y: 84, width: 240, height: 470 },
+        { x: 290, y: 106, width: 518, height: 584 },
       ],
       pop: [
-        { x: 20, y: 392, width: 585, height: 220 },
-        { x: 640, y: 250, width: 455, height: 310 },
+        { x: 22, y: 254, width: 290, height: 172 },
+        { x: 330, y: 220, width: 405, height: 382 },
+        { x: 750, y: 218, width: 382, height: 386 },
       ],
       chic: [
-        { x: 16, y: 472, width: 585, height: 190 },
-        { x: 278, y: 112, width: 505, height: 180 },
+        { x: 24, y: 228, width: 370, height: 312 },
+        { x: 406, y: 316, width: 404, height: 224 },
+        { x: 824, y: 224, width: 306, height: 320 },
       ],
       royal: [
-        { x: 20, y: 326, width: 275, height: 205 },
-        { x: 330, y: 95, width: 420, height: 190 },
+        { x: 8, y: 94, width: 336, height: 250 },
+        { x: 872, y: 98, width: 230, height: 524 },
       ],
     };
     const zones = zonesByTemplate[template ?? "classic"];
     const gap = 8;
 
-    return images.map((image, index) => {
-      const zone = zones[index % zones.length];
-      const columns = Math.max(1, Math.ceil(Math.sqrt(images.length / zones.length)));
-      const rows = Math.max(1, Math.ceil(images.length / (zones.length * columns)));
-      const cellWidth = (zone.width - gap * (columns - 1)) / columns;
-      const cellHeight = (zone.height - gap * (rows - 1)) / rows;
-      const localIndex = Math.floor(index / zones.length);
-      const col = localIndex % columns;
-      const row = Math.floor(localIndex / columns) % rows;
-      const ratio = image.width / Math.max(image.height, 1);
-      let width = Math.min(cellWidth, cellHeight * ratio);
-      let height = width / ratio;
-      if (height > cellHeight) {
-        height = cellHeight;
-        width = height * ratio;
+    if (images.length === 0) return [];
+
+    const zoneAreas = zones.map((zone) => zone.width * zone.height);
+    const totalArea = zoneAreas.reduce((sum, area) => sum + area, 0);
+    const counts: number[] = zones.map((_, index) => (index < images.length ? 1 : 0));
+    let remaining = images.length - counts.reduce((sum, count) => sum + count, 0);
+
+    while (remaining > 0) {
+      let bestZoneIndex = 0;
+      let bestScore = -Infinity;
+      zones.forEach((_, index) => {
+        const score = zoneAreas[index] / Math.max(counts[index] + 1, 1) + (zoneAreas[index] / totalArea) * 1000;
+        if (score > bestScore) {
+          bestScore = score;
+          bestZoneIndex = index;
+        }
+      });
+      counts[bestZoneIndex] += 1;
+      remaining -= 1;
+    }
+
+    const arranged: FreeImage[] = [];
+    let imageIndex = 0;
+
+    zones.forEach((zone, zoneIndex) => {
+      const count = counts[zoneIndex];
+      if (count <= 0) return;
+
+      const zoneImages = images.slice(imageIndex, imageIndex + count);
+      imageIndex += count;
+
+      let bestGrid = { columns: 1, rows: count, cellArea: 0 };
+      for (let columns = 1; columns <= count; columns += 1) {
+        const rows = Math.ceil(count / columns);
+        const cellWidth = (zone.width - gap * (columns - 1)) / columns;
+        const cellHeight = (zone.height - gap * (rows - 1)) / rows;
+        const cellArea = cellWidth * cellHeight;
+        if (cellArea > bestGrid.cellArea) {
+          bestGrid = { columns, rows, cellArea };
+        }
       }
 
-      return clampFreeImage({
-        ...image,
-        width: Math.round(Math.max(54, width)),
-        height: Math.round(Math.max(42, height)),
-        x: Math.round(zone.x + col * (cellWidth + gap) + (cellWidth - width) / 2),
-        y: Math.round(zone.y + row * (cellHeight + gap) + (cellHeight - height) / 2),
+      const cellWidth = (zone.width - gap * (bestGrid.columns - 1)) / bestGrid.columns;
+      const cellHeight = (zone.height - gap * (bestGrid.rows - 1)) / bestGrid.rows;
+      const usedRows = Math.ceil(count / bestGrid.columns);
+      const gridHeight = usedRows * cellHeight + Math.max(0, usedRows - 1) * gap;
+      const startY = zone.y + Math.max(0, (zone.height - gridHeight) / 2);
+
+      zoneImages.forEach((image, localIndex) => {
+        const row = Math.floor(localIndex / bestGrid.columns);
+        const col = localIndex % bestGrid.columns;
+        const itemsInRow = row === usedRows - 1 ? count - row * bestGrid.columns : bestGrid.columns;
+        const rowWidth = itemsInRow * cellWidth + Math.max(0, itemsInRow - 1) * gap;
+        const startX = zone.x + Math.max(0, (zone.width - rowWidth) / 2);
+        const ratio = image.width / Math.max(image.height, 1);
+        let width = Math.min(cellWidth, cellHeight * ratio);
+        let height = width / ratio;
+
+        if (height > cellHeight) {
+          height = cellHeight;
+          width = height * ratio;
+        }
+
+        arranged.push(
+          clampFreeImage({
+            ...image,
+            width: Math.round(Math.max(54, width)),
+            height: Math.round(Math.max(42, height)),
+            x: Math.round(startX + col * (cellWidth + gap) + (cellWidth - width) / 2),
+            y: Math.round(startY + row * (cellHeight + gap) + (cellHeight - height) / 2),
+          }),
+        );
       });
     });
+
+    return arranged;
   }, []);
 
   const updateFreeImages = useCallback(
