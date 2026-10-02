@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  ChangeEvent,
   CSSProperties,
   PointerEvent as ReactPointerEvent,
   RefObject,
@@ -175,6 +176,15 @@ type ImageTransform = {
   scaleY: number;
   offsetX: number;
   offsetY: number;
+};
+
+type FreeImage = {
+  id: string;
+  src: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 const IMAGE_SLOT_LABELS: Record<ImageSlotKey, string> = {
@@ -359,6 +369,7 @@ type ZumenData = {
   draftId?: string;
   draftSavedAt?: string;
   imageTransforms?: Partial<Record<ImageSlotKey, Partial<ImageTransform>>>;
+  freeImages?: FreeImage[];
   themeColor?: ThemeColorKey;
   contactInfo?: {
     companyName: string;
@@ -858,6 +869,157 @@ function AutoFitText({
   );
 }
 
+function clampFreeImage(image: FreeImage): FreeImage {
+  const minSize = 36;
+  const width = Math.max(minSize, Math.min(EXPORT_SHEET_WIDTH, image.width));
+  const height = Math.max(minSize, Math.min(EXPORT_SHEET_HEIGHT, image.height));
+  return {
+    ...image,
+    width,
+    height,
+    x: Math.max(0, Math.min(EXPORT_SHEET_WIDTH - width, image.x)),
+    y: Math.max(0, Math.min(EXPORT_SHEET_HEIGHT - height, image.y)),
+  };
+}
+
+function FreeImageLayer({
+  images,
+  editable,
+  sheetScale,
+  selectedId,
+  onSelect,
+  onChange,
+  onDelete,
+}: {
+  images: FreeImage[];
+  editable: boolean;
+  sheetScale: number;
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+  onChange: (image: FreeImage) => void;
+  onDelete: (id: string) => void;
+}) {
+  if (images.length === 0) return null;
+
+  const scalePointerDelta = (current: number, start: number) => (current - start) / Math.max(sheetScale, 0.01);
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-30">
+      {images.map((rawImage) => {
+        const image = clampFreeImage(rawImage);
+        const selected = editable && selectedId === image.id;
+
+        const startMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+          if (!editable) return;
+          event.preventDefault();
+          event.stopPropagation();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          onSelect(image.id);
+
+          const startX = event.clientX;
+          const startY = event.clientY;
+          const startImage = image;
+
+          const handlePointerMove = (moveEvent: PointerEvent) => {
+            onChange(
+              clampFreeImage({
+                ...startImage,
+                x: Math.round(startImage.x + scalePointerDelta(moveEvent.clientX, startX)),
+                y: Math.round(startImage.y + scalePointerDelta(moveEvent.clientY, startY)),
+              }),
+            );
+          };
+
+          const handlePointerUp = () => {
+            window.removeEventListener("pointermove", handlePointerMove);
+            window.removeEventListener("pointerup", handlePointerUp);
+          };
+
+          window.addEventListener("pointermove", handlePointerMove);
+          window.addEventListener("pointerup", handlePointerUp, { once: true });
+        };
+
+        const startResize = (event: ReactPointerEvent<HTMLButtonElement>) => {
+          if (!editable) return;
+          event.preventDefault();
+          event.stopPropagation();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          onSelect(image.id);
+
+          const startX = event.clientX;
+          const startY = event.clientY;
+          const startImage = image;
+
+          const handlePointerMove = (moveEvent: PointerEvent) => {
+            onChange(
+              clampFreeImage({
+                ...startImage,
+                width: Math.round(startImage.width + scalePointerDelta(moveEvent.clientX, startX)),
+                height: Math.round(startImage.height + scalePointerDelta(moveEvent.clientY, startY)),
+              }),
+            );
+          };
+
+          const handlePointerUp = () => {
+            window.removeEventListener("pointermove", handlePointerMove);
+            window.removeEventListener("pointerup", handlePointerUp);
+          };
+
+          window.addEventListener("pointermove", handlePointerMove);
+          window.addEventListener("pointerup", handlePointerUp, { once: true });
+        };
+
+        return (
+          <div
+            key={image.id}
+            className={`pointer-events-auto absolute touch-none bg-white/5 ${
+              selected ? "ring-2 ring-sky-500" : editable ? "ring-1 ring-transparent hover:ring-sky-300" : ""
+            }`}
+            style={{
+              left: image.x,
+              top: image.y,
+              width: image.width,
+              height: image.height,
+            }}
+            onPointerDown={startMove}
+          >
+            <img
+              src={toExportableImageSrc(image.src)}
+              alt="free image"
+              className="h-full w-full select-none object-contain"
+              draggable={false}
+              crossOrigin="anonymous"
+              referrerPolicy="no-referrer"
+            />
+
+            {selected ? (
+              <div data-html2canvas-ignore="true">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDelete(image.id);
+                  }}
+                  className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow"
+                  aria-label="Delete free image"
+                >
+                  x
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={startResize}
+                  className="absolute -bottom-2 -right-2 h-6 w-6 rounded-full border border-white bg-sky-600 shadow"
+                  aria-label="Resize free image"
+                />
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function AutoFitBlockText({
   text,
   minSize,
@@ -952,6 +1114,7 @@ function ZumenPageContent() {
   const [imageTransforms, setImageTransforms] = useState<Record<ImageSlotKey, ImageTransform>>(
     createDefaultImageTransforms
   );
+  const [selectedFreeImageId, setSelectedFreeImageId] = useState<string | null>(null);
    const [, setImageMinScales] = useState<Record<ImageSlotKey, number>>(DEFAULT_IMAGE_MIN_SCALES);
 
   const [debugCanvasUrl, setDebugCanvasUrl] = useState<string | null>(null);
@@ -2026,6 +2189,147 @@ function ZumenPageContent() {
     [savedDrafts, selectedDraftId],
   );
 
+  const readFreeImageFiles = useCallback((files: FileList | File[]) => {
+    return Promise.all(
+      Array.from(files)
+        .filter((file) => file.type.startsWith("image/"))
+        .map(
+          (file, index) =>
+            new Promise<FreeImage>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const image = new Image();
+                image.onload = () => {
+                  const maxWidth = 190;
+                  const maxHeight = 140;
+                  const ratio = Math.min(maxWidth / image.naturalWidth, maxHeight / image.naturalHeight, 1);
+                  resolve({
+                    id: `free-${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
+                    src: String(reader.result),
+                    x: 24 + index * 18,
+                    y: 24 + index * 18,
+                    width: Math.max(72, Math.round(image.naturalWidth * ratio)),
+                    height: Math.max(54, Math.round(image.naturalHeight * ratio)),
+                  });
+                };
+                image.onerror = () => reject(new Error("Cannot read image size"));
+                image.src = String(reader.result);
+              };
+              reader.onerror = () => reject(new Error("Cannot read image file"));
+              reader.readAsDataURL(file);
+            }),
+        ),
+    );
+  }, []);
+
+  const arrangeFreeImages = useCallback((images: FreeImage[], template: TemplateKey | null) => {
+    const zonesByTemplate: Record<TemplateKey, Array<{ x: number; y: number; width: number; height: number }>> = {
+      classic: [
+        { x: 18, y: 335, width: 820, height: 230 },
+        { x: 860, y: 210, width: 230, height: 330 },
+      ],
+      pop: [
+        { x: 20, y: 392, width: 585, height: 220 },
+        { x: 640, y: 250, width: 455, height: 310 },
+      ],
+      chic: [
+        { x: 16, y: 472, width: 585, height: 190 },
+        { x: 278, y: 112, width: 505, height: 180 },
+      ],
+      royal: [
+        { x: 20, y: 326, width: 275, height: 205 },
+        { x: 330, y: 95, width: 420, height: 190 },
+      ],
+    };
+    const zones = zonesByTemplate[template ?? "classic"];
+    const gap = 8;
+
+    return images.map((image, index) => {
+      const zone = zones[index % zones.length];
+      const columns = Math.max(1, Math.ceil(Math.sqrt(images.length / zones.length)));
+      const rows = Math.max(1, Math.ceil(images.length / (zones.length * columns)));
+      const cellWidth = (zone.width - gap * (columns - 1)) / columns;
+      const cellHeight = (zone.height - gap * (rows - 1)) / rows;
+      const localIndex = Math.floor(index / zones.length);
+      const col = localIndex % columns;
+      const row = Math.floor(localIndex / columns) % rows;
+      const ratio = image.width / Math.max(image.height, 1);
+      let width = Math.min(cellWidth, cellHeight * ratio);
+      let height = width / ratio;
+      if (height > cellHeight) {
+        height = cellHeight;
+        width = height * ratio;
+      }
+
+      return clampFreeImage({
+        ...image,
+        width: Math.round(Math.max(54, width)),
+        height: Math.round(Math.max(42, height)),
+        x: Math.round(zone.x + col * (cellWidth + gap) + (cellWidth - width) / 2),
+        y: Math.round(zone.y + row * (cellHeight + gap) + (cellHeight - height) / 2),
+      });
+    });
+  }, []);
+
+  const updateFreeImages = useCallback(
+    (images: FreeImage[], source: "auto" | "manual" = "auto") => {
+      if (!data) return;
+      persistZumenPayload({ ...data, freeImages: images.map(clampFreeImage) }, source);
+    },
+    [data, persistZumenPayload],
+  );
+
+  const handleFreeImageUpload = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      if (!data || !activeTemplate) return;
+      const files = event.target.files;
+      if (!files?.length) return;
+
+      try {
+        const nextImages = await readFreeImageFiles(files);
+        const arranged = arrangeFreeImages([...(data.freeImages ?? []), ...nextImages], activeTemplate);
+        persistZumenPayload({ ...data, freeImages: arranged }, "manual");
+        setSelectedFreeImageId(nextImages[0]?.id ?? null);
+        setTransformSaveTone("success");
+        setTransformSaveMessage(`Da them ${nextImages.length} anh tu do.`);
+      } catch (error) {
+        console.error("free image upload failed:", error);
+        setTransformSaveTone("error");
+        setTransformSaveMessage("Khong the them anh. Hay thu file anh khac.");
+      } finally {
+        event.target.value = "";
+      }
+    },
+    [activeTemplate, arrangeFreeImages, data, persistZumenPayload, readFreeImageFiles],
+  );
+
+  const updateFreeImage = useCallback(
+    (image: FreeImage) => {
+      if (!data) return;
+      updateFreeImages((data.freeImages ?? []).map((item) => (item.id === image.id ? image : item)));
+    },
+    [data, updateFreeImages],
+  );
+
+  const deleteFreeImage = useCallback(
+    (id: string) => {
+      if (!data) return;
+      updateFreeImages((data.freeImages ?? []).filter((item) => item.id !== id), "manual");
+      setSelectedFreeImageId(null);
+      setTransformSaveTone("success");
+      setTransformSaveMessage("Da xoa anh tu do.");
+    },
+    [data, updateFreeImages],
+  );
+
+  const autoArrangeFreeImages = useCallback(() => {
+    if (!data || !activeTemplate) return;
+    const arranged = arrangeFreeImages(data.freeImages ?? [], activeTemplate);
+    updateFreeImages(arranged, "manual");
+    setTransformSaveTone("success");
+    setTransformSaveMessage("AI da sap xep anh tu do tranh khung chu chinh.");
+  }, [activeTemplate, arrangeFreeImages, data, updateFreeImages]);
+
   const updateImageTransform = useCallback(
     (slot: ImageSlotKey, transform: ImageTransform) => {
       setImageTransforms((prev) => ({
@@ -2119,7 +2423,7 @@ function ZumenPageContent() {
       tunedCount += 1;
     });
 
-    if (!tunedCount) {
+    if (!tunedCount && !(data?.freeImages?.length)) {
       setTransformSaveTone("warning");
       setTransformSaveMessage("Dang doc anh, hay thu lai sau mot chut.");
       return;
@@ -2128,11 +2432,12 @@ function ZumenPageContent() {
     setImageTransforms(nextTransforms);
     rememberImageTransformPreferences(nextTransforms);
     setTransformSaveTone("success");
-    setTransformSaveMessage("AI da tu can chinh hinh anh va ghi nho cach chinh.");
+    const nextFreeImages = arrangeFreeImages(data?.freeImages ?? [], activeTemplate);
+    setTransformSaveMessage("AI da tu can chinh va sap xep hinh anh.");
     if (data) {
-      persistZumenPayload({ ...data, imageTransforms: nextTransforms }, "manual");
+      persistZumenPayload({ ...data, imageTransforms: nextTransforms, freeImages: nextFreeImages }, "manual");
     }
-  }, [data, imageTransforms, persistZumenPayload]);
+  }, [activeTemplate, arrangeFreeImages, data, imageTransforms, persistZumenPayload]);
 
 const getEditableImageProps = useCallback(
     (slot: ImageSlotKey) => ({
@@ -2196,6 +2501,7 @@ const getEditableImageProps = useCallback(
           margin: `${PAPER_MARGIN_PX}px`,
           boxSizing: "border-box",
           overflow: "hidden",
+          position: "relative",
         }}
       >
         {template === "classic" ? (
@@ -2988,6 +3294,15 @@ const getEditableImageProps = useCallback(
             </div>
           </>
         )}
+        <FreeImageLayer
+          images={data.freeImages ?? []}
+          editable={!isSavedDraftsView}
+          sheetScale={sheetScale}
+          selectedId={selectedFreeImageId}
+          onSelect={setSelectedFreeImageId}
+          onChange={updateFreeImage}
+          onDelete={deleteFreeImage}
+        />
       </div>
     );
   };
@@ -3208,7 +3523,18 @@ const getEditableImageProps = useCallback(
                 <span className="font-semibold">画像編集:</span> 画像をクリックして選択し、マウスでドラッグして位置を調整できます。選択した画像はマウスホイールで拡大・縮小でき、四隅のハンドルで縦横を自由に伸縮できます。枠はレイアウトの目安だけなので、枠外まで自由に配置できます。画像を用紙外へドラッグして離すと自動削除します。
                 </div>
                 <div className="flex items-center gap-2">
+                  <label className="cursor-pointer rounded-md border border-indigo-300 bg-white px-3 py-1 text-xs font-semibold text-indigo-700">
+                    Them anh
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="sr-only"
+                      onChange={handleFreeImageUpload}
+                    />
+                  </label>
                   <button type="button" onClick={autoTuneImageTransforms} className="rounded-md border border-sky-300 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">AI auto</button>
+                  <button type="button" onClick={autoArrangeFreeImages} className="rounded-md border border-indigo-300 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">AI arrange</button>
                   <button type="button" onClick={saveImageTransforms} className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs text-emerald-700">保存</button>
                   <button type="button" onClick={resetImageTransforms} className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs">リセット</button>
                 </div>
