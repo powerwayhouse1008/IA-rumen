@@ -346,7 +346,24 @@ function loadStoredDrafts(): StoredDraft[] {
 
   try {
     const raw = localStorage.getItem(ZUMEN_DRAFTS_STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      const currentRaw = localStorage.getItem("zumenData");
+      if (!currentRaw) return [];
+      const payload = JSON.parse(currentRaw) as DraftPayload;
+      if (!payload || typeof payload !== "object") return [];
+      const id = payload.draftId || `recovered-${Date.now()}`;
+      const savedAt = payload.draftSavedAt || new Date().toISOString();
+      return [{
+        id,
+        savedAt,
+        payload: {
+          ...payload,
+          draftId: id,
+          draftTitle: payload.draftTitle || payload.name || "復元データ",
+          draftSavedAt: savedAt,
+        },
+      }];
+    }
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return parsed as StoredDraft[];
@@ -662,14 +679,6 @@ function saveDraftToCollection(payload: DraftPayload, draftId?: string): { local
         continue;
       }
       draftsToPersist = draftsToPersist.slice(0, -1);
-    }
-  }
-
-  if (!localSaved) {
-    try {
-      localStorage.removeItem(ZUMEN_DRAFTS_STORAGE_KEY);
-    } catch {
-      // no-op
     }
   }
 

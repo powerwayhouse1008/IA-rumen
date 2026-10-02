@@ -803,7 +803,24 @@ function loadStoredDraftsFromLocal(): StoredDraft[] {
 
   try {
     const raw = localStorage.getItem(ZUMEN_DRAFTS_STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      const currentRaw = localStorage.getItem("zumenData");
+      if (!currentRaw) return [];
+      const payload = JSON.parse(currentRaw) as ZumenData;
+      if (!payload || typeof payload !== "object") return [];
+      const id = payload.draftId || `recovered-${Date.now()}`;
+      const savedAt = payload.draftSavedAt || new Date().toISOString();
+      return [{
+        id,
+        savedAt,
+        payload: {
+          ...payload,
+          draftId: id,
+          draftTitle: payload.draftTitle || payload.name || "復元データ",
+          draftSavedAt: savedAt,
+        },
+      }];
+    }
 
     const parsed = JSON.parse(raw) as StoredDraft[];
     if (!Array.isArray(parsed)) return [];
@@ -818,7 +835,6 @@ function saveStoredDraftsToLocal(drafts: StoredDraft[]) {
 
   try {
     if (drafts.length === 0) {
-      localStorage.removeItem(ZUMEN_DRAFTS_STORAGE_KEY);
       return;
     }
     localStorage.setItem(ZUMEN_DRAFTS_STORAGE_KEY, JSON.stringify(drafts));

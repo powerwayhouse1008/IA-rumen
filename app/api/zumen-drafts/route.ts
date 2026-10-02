@@ -17,7 +17,6 @@ type DraftRecord = {
   draft_title?: string | null;
   payload: Record<string, unknown> | null;
   saved_at: string | null;
-  updated_at?: string | null;
 };
 
 function ensureSupabaseConfig() {
@@ -95,8 +94,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const draftId = searchParams.get("draftId")?.trim();
   const query = draftId
-    ? `${draftsTable}?select=id,payload,saved_at,updated_at&id=eq.${encodeURIComponent(draftId)}&limit=1`
-    : `${draftsTable}?select=id,payload,saved_at,updated_at&order=saved_at.desc`;
+    ? `${draftsTable}?select=id,payload,saved_at&id=eq.${encodeURIComponent(draftId)}&limit=1`
+    : `${draftsTable}?select=id,payload,saved_at&order=saved_at.desc`;
 
   const { data, error } = await supabaseRequest<DraftRecord[]>(query);
 
@@ -107,7 +106,7 @@ export async function GET(req: NextRequest) {
   const drafts =
     data?.map((item) => ({
       id: item.id,
-      savedAt: item.updated_at ?? item.saved_at,
+      savedAt: item.saved_at,
       payload: {
         ...(item.payload || {}),
         draftTitle:
