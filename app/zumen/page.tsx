@@ -2462,7 +2462,7 @@ function ZumenPageContent() {
       ],
       chic: [
         { x: 5, y: 77, width: 254, height: 482 },
-        { x: 267, y: 111width: 528, height: 578 },
+        { x: 267, y: 111, width: 528, height: 578 },
       ],
       royal: [
         { x: 8, y: 94, width: 336, height: 250 },
