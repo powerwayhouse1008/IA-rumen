@@ -2461,8 +2461,8 @@ function ZumenPageContent() {
         { x: 750, y: 218, width: 382, height: 386 },
       ],
       chic: [
-        { x: 64, y: 98, width: 254, height: 482 },
-        { x: 326, y: 132, width: 530, height: 546 },
+        { x: 24, y: 86, width: 254, height: 482 },
+        { x: 286, y: 120, width: 528, height: 578 },
       ],
       royal: [
         { x: 8, y: 94, width: 336, height: 250 },
