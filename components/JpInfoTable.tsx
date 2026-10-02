@@ -146,8 +146,8 @@ export const InfoTable = memo(function InfoTable({
   const labelWidth = compactForChic ? CHIC_LABEL_WIDTH : LABEL_WIDTH;
   const rowHeight = compactForChic || compact ? 18 : 20;
   const cellPaddingClass = compactForChic ? "px-1.5" : "px-2";
-  const tableTextClass = compactForChic ? "text-[9px]" : "text-[10px]";
-  const cellMaxFontSize = compactForChic ? 9 : 10;
+  const tableTextClass = compactForChic ? "text-[10px]" : "text-[10px]";
+  const cellMaxFontSize = compactForChic ? 10.5 : 10;
   const labelCapacity = compactForChic ? 7.8 : 8.8;
   const halfValueCapacity = compactForChic ? 8.5 : 10.5;
   const fullValueCapacity = compactForChic ? 28 : 34;
@@ -189,7 +189,7 @@ export const InfoTable = memo(function InfoTable({
           maxFontSize={cellMaxFontSize}
           capacity={capacity}
           rowHeight={currentRowHeight}
-          className={options.label ? "font-bold" : undefined}
+          className={options.label ? "font-extrabold" : compactForChic ? "font-bold" : undefined}
           multiline={!options.label && options.multiline}
         />
       </div>
