@@ -2456,9 +2456,9 @@ function ZumenPageContent() {
         { x: 728, y: 216, width: 382, height: 386 },
       ],
       pop: [
-        { x: 26, y: 218, width: 374, height: 330 },
-        { x: 418, y: 307, width: 402, height: 232 },
-        { x: 834, y: 222, width: 302, height: 318 },
+       { x: 3, y: 205, width: 374, height: 330 },
+        { x: 420, y: 305, width: 402, height: 232 },
+        { x: 820, y: 219, width: 302, height: 318 },
       ],
       chic: [
         { x: 3, y: 74, width: 252, height: 482 },
