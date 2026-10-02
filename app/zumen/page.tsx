@@ -187,17 +187,29 @@ type FreeImage = {
   height: number;
 };
 
+type FreeText = {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  fontSize: number;
+  color: string;
+  fontFamily: string;
+  fontWeight: "500" | "700" | "900";
+};
+
 const IMAGE_SLOT_LABELS: Record<ImageSlotKey, string> = {
-  imgMain: "メイン画像",
-  imgPlan: "間取り",
-  imgSub1: "サブ1",
-  imgSub2: "サブ2",
-  imgSub3: "サブ3",
-  imgSub4: "サブ4",
-  imgSub5: "サブ5",
-  imgSub6: "サブ6",
+  imgMain: "Main",
+  imgPlan: "Plan",
+  imgSub1: "Sub 1",
+  imgSub2: "Sub 2",
+  imgSub3: "Sub 3",
+  imgSub4: "Sub 4",
+  imgSub5: "Sub 5",
+  imgSub6: "Sub 6",
   imgMap: "MAP",
 };
+const FREE_IMAGE_SLOT_ORDER: ImageSlotKey[] = ["imgMain", "imgPlan", "imgSub1", "imgSub2", "imgSub3", "imgSub4", "imgSub5", "imgSub6"];
 
 const DEFAULT_IMAGE_TRANSFORM: ImageTransform = {
   scale: 1,
@@ -370,6 +382,7 @@ type ZumenData = {
   draftSavedAt?: string;
   imageTransforms?: Partial<Record<ImageSlotKey, Partial<ImageTransform>>>;
   freeImages?: FreeImage[];
+  freeTexts?: FreeText[];
   themeColor?: ThemeColorKey;
   contactInfo?: {
     companyName: string;
@@ -1020,6 +1033,93 @@ function FreeImageLayer({
   );
 }
 
+function FreeTextLayer({
+  texts,
+  editable,
+  sheetScale,
+  selectedId,
+  onSelect,
+  onChange,
+  onDelete,
+}: {
+  texts: FreeText[];
+  editable: boolean;
+  sheetScale: number;
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+  onChange: (text: FreeText) => void;
+  onDelete: (id: string) => void;
+}) {
+  const scalePointerDelta = (current: number, start: number) => (current - start) / Math.max(sheetScale, 0.01);
+  if (texts.length === 0) return null;
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-40">
+      {texts.map((item) => {
+        const selected = editable && selectedId === item.id;
+        const startMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+          if (!editable) return;
+          event.preventDefault();
+          event.stopPropagation();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          onSelect(item.id);
+          const startX = event.clientX;
+          const startY = event.clientY;
+          const startItem = item;
+          const move = (moveEvent: PointerEvent) => {
+            onChange({
+              ...startItem,
+              x: Math.max(0, Math.min(EXPORT_SHEET_WIDTH - 40, Math.round(startItem.x + scalePointerDelta(moveEvent.clientX, startX)))),
+              y: Math.max(0, Math.min(EXPORT_SHEET_HEIGHT - 20, Math.round(startItem.y + scalePointerDelta(moveEvent.clientY, startY)))),
+            });
+          };
+          const up = () => {
+            window.removeEventListener("pointermove", move);
+            window.removeEventListener("pointerup", up);
+          };
+          window.addEventListener("pointermove", move);
+          window.addEventListener("pointerup", up, { once: true });
+        };
+
+        return (
+          <div
+            key={item.id}
+            className={`pointer-events-auto absolute max-w-[420px] cursor-move whitespace-pre-wrap rounded px-1 py-0.5 leading-tight ${
+              selected ? "ring-2 ring-sky-500" : editable ? "ring-1 ring-transparent hover:ring-sky-300" : ""
+            }`}
+            style={{
+              left: item.x,
+              top: item.y,
+              color: item.color,
+              fontSize: item.fontSize,
+              fontFamily: item.fontFamily,
+              fontWeight: item.fontWeight,
+              textShadow: "0 1px 2px rgba(255,255,255,0.9)",
+            }}
+            onPointerDown={startMove}
+          >
+            {item.text}
+            {selected ? (
+              <button
+                type="button"
+                data-html2canvas-ignore="true"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDelete(item.id);
+                }}
+                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow"
+                aria-label="Delete free text"
+              >
+                x
+              </button>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function AutoFitBlockText({
   text,
   minSize,
@@ -1115,6 +1215,11 @@ function ZumenPageContent() {
     createDefaultImageTransforms
   );
   const [selectedFreeImageId, setSelectedFreeImageId] = useState<string | null>(null);
+  const [selectedFreeTextId, setSelectedFreeTextId] = useState<string | null>(null);
+  const [newFreeText, setNewFreeText] = useState("おすすめポイント");
+  const [newFreeTextColor, setNewFreeTextColor] = useState("#b30000");
+  const [newFreeTextFont, setNewFreeTextFont] = useState('"Noto Sans JP", "Yu Gothic", Meiryo, sans-serif');
+  const [newFreeTextSize, setNewFreeTextSize] = useState(30);
    const [, setImageMinScales] = useState<Record<ImageSlotKey, number>>(DEFAULT_IMAGE_MIN_SCALES);
 
   const [debugCanvasUrl, setDebugCanvasUrl] = useState<string | null>(null);
@@ -2330,6 +2435,39 @@ function ZumenPageContent() {
     setTransformSaveMessage("AI da sap xep anh tu do tranh khung chu chinh.");
   }, [activeTemplate, arrangeFreeImages, data, updateFreeImages]);
 
+  const addFreeText = useCallback(() => {
+    if (!data || !newFreeText.trim()) return;
+    const text: FreeText = {
+      id: `text-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      text: newFreeText.trim(),
+      x: 90,
+      y: 92,
+      fontSize: newFreeTextSize,
+      color: newFreeTextColor,
+      fontFamily: newFreeTextFont,
+      fontWeight: "900",
+    };
+    persistZumenPayload({ ...data, freeTexts: [...(data.freeTexts ?? []), text] }, "manual");
+    setSelectedFreeTextId(text.id);
+  }, [data, newFreeText, newFreeTextColor, newFreeTextFont, newFreeTextSize, persistZumenPayload]);
+
+  const updateFreeText = useCallback(
+    (text: FreeText) => {
+      if (!data) return;
+      persistZumenPayload({ ...data, freeTexts: (data.freeTexts ?? []).map((item) => (item.id === text.id ? text : item)) }, "auto");
+    },
+    [data, persistZumenPayload],
+  );
+
+  const deleteFreeText = useCallback(
+    (id: string) => {
+      if (!data) return;
+      persistZumenPayload({ ...data, freeTexts: (data.freeTexts ?? []).filter((item) => item.id !== id) }, "manual");
+      setSelectedFreeTextId(null);
+    },
+    [data, persistZumenPayload],
+  );
+
   const updateImageTransform = useCallback(
     (slot: ImageSlotKey, transform: ImageTransform) => {
       setImageTransforms((prev) => ({
@@ -2487,6 +2625,9 @@ const getEditableImageProps = useCallback(
 
   const renderSheet = (template: TemplateKey) => {
     if (!data) return null;
+    const freeImages = data.freeImages ?? [];
+    const getSlotImage = (slot: ImageSlotKey) => data[slot] || freeImages[FREE_IMAGE_SLOT_ORDER.indexOf(slot)]?.src;
+    const overlayFreeImages = arrangeFreeImages(freeImages.slice(FREE_IMAGE_SLOT_ORDER.length), template);
 
     return (
       <div
@@ -2584,7 +2725,7 @@ const getEditableImageProps = useCallback(
                 </div>
 
                 <div className="mt-2">
-                 <ImgBox src={data.imgMain} label="メイン写真" h={180} {...getEditableImageProps("imgMain")} />
+                 <ImgBox src={getSlotImage("imgMain")} label="メイン写真" h={180} {...getEditableImageProps("imgMain")} />
                 </div>
 
                 <div className="mt-2 space-y-1 text-xs">
@@ -2600,16 +2741,16 @@ const getEditableImageProps = useCallback(
               </div>
 
               <div className="border-r border-black p-2">
-                 <ImgBox src={data.imgPlan} label="間取り図" h={320} fit="contain" {...getEditableImageProps("imgPlan")} />
+                 <ImgBox src={getSlotImage("imgPlan")} label="間取り図" h={320} fit="contain" {...getEditableImageProps("imgPlan")} />
               </div>
 
               <div className="p-2">
                 <div className="grid grid-cols-2 gap-2">
-                  <ImgBox src={data.imgSub1} label="サブ画像1" h={180} {...getEditableImageProps("imgSub1")} />
-                  <ImgBox src={data.imgSub2} label="サブ画像2" h={180} {...getEditableImageProps("imgSub2")} />
+                  <ImgBox src={getSlotImage("imgSub1")} label="サブ画像1" h={180} {...getEditableImageProps("imgSub1")} />
+                  <ImgBox src={getSlotImage("imgSub2")} label="サブ画像2" h={180} {...getEditableImageProps("imgSub2")} />
                 </div>
                 <div className="mt-2">
-               <ImgBox src={data.imgSub3} label="現地案内図" h={170} {...getEditableImageProps("imgSub3")} />
+               <ImgBox src={getSlotImage("imgSub3")} label="現地案内図" h={170} {...getEditableImageProps("imgSub3")} />
                 </div>
 
                 {featureRows.length > 0 && (
@@ -2802,10 +2943,10 @@ const getEditableImageProps = useCallback(
 
             <div className="grid grid-cols-[380px_420px_323px] border-b border-black">
               <div className="border-r border-black p-2" style={{ backgroundColor: theme.brand }}>
-                <ImgBox src={data.imgMain} label="メイン画像" h={220} {...getEditableImageProps("imgMain")} />
+                <ImgBox src={getSlotImage("imgMain")} label="メイン画像" h={220} {...getEditableImageProps("imgMain")} />
                 <div className="mt-2 grid grid-cols-2 gap-2">
-                  <ImgBox src={data.imgSub1} label="サブ1" h={85} {...getEditableImageProps("imgSub1")} />
-                  <ImgBox src={data.imgSub2} label="サブ2" h={85} {...getEditableImageProps("imgSub2")} />
+                  <ImgBox src={getSlotImage("imgSub1")} label="サブ1" h={85} {...getEditableImageProps("imgSub1")} />
+                  <ImgBox src={getSlotImage("imgSub2")} label="サブ2" h={85} {...getEditableImageProps("imgSub2")} />
                 </div>
               </div>
 
@@ -2817,13 +2958,13 @@ const getEditableImageProps = useCallback(
                   <div className="text-xs">□専有面積/75㎡(22.68坪)</div>
                   <div className="text-xs">□バルコニー面積/10㎡(3.02坪)</div>
                   <div className="mt-2">
-                    <ImgBox src={data.imgPlan} label="間取り" h={205} fit="contain" {...getEditableImageProps("imgPlan")} />
+                    <ImgBox src={getSlotImage("imgPlan")} label="間取り" h={205} fit="contain" {...getEditableImageProps("imgPlan")} />
                   </div>
                 </div>
               </div>
 
               <div className="p-2">
-                <ImgBox src={data.imgSub3} label="拡大図" h={130} {...getEditableImageProps("imgSub3")} />
+                <ImgBox src={getSlotImage("imgSub3")} label="拡大図" h={130} {...getEditableImageProps("imgSub3")} />
 
                 {featureRows.length > 0 && (
                   <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
@@ -2952,7 +3093,7 @@ const getEditableImageProps = useCallback(
 
               <div className="grid h-[532px] grid-cols-[312px_478px_1fr] gap-4 px-4 pt-2">
                 <div>
-                  <ImgBox src={data.imgMain} label="MAIN" h={224} fit="contain" {...getEditableImageProps("imgMain")} />
+                  <ImgBox src={getSlotImage("imgMain")} label="MAIN" h={224} fit="contain" {...getEditableImageProps("imgMain")} />
                   <div className="mt-7 border-2 bg-white p-1" style={{ borderColor: theme.brand }}>
                     <ImgBox src={data.imgMap ?? data.imgSub3} label="MAP" h={200} showCenterLogo={Boolean(data.imgMap)} {...getEditableImageProps(data.imgMap ? "imgMap" : "imgSub3")} />
                     <div className="mt-1 px-2 py-1 text-[12px] font-bold text-white" style={{ backgroundColor: theme.brand }}>現地案内図</div>
@@ -3025,7 +3166,7 @@ const getEditableImageProps = useCallback(
                 </div>
 
                 <div className="relative border-l-[18px] border-zinc-700 pl-3">
-                  <ImgBox src={data.imgPlan} label="PLAN" h={506} fit="contain" {...getEditableImageProps("imgPlan")} />
+                  <ImgBox src={getSlotImage("imgPlan")} label="PLAN" h={506} fit="contain" {...getEditableImageProps("imgPlan")} />
                   <div className="absolute right-[-10px] top-0 h-full px-1 pt-52 text-[11px] font-bold [writing-mode:vertical-rl] text-white" style={{ backgroundColor: theme.brand }}>
                     図面と現況が相違する場合は現況を優先します
                   </div>
@@ -3128,13 +3269,13 @@ const getEditableImageProps = useCallback(
 
             <div className="grid grid-cols-[260px_1fr_320px]">
               <div className="border-r border-black p-2">
-               <ImgBox src={data.imgMain} label="外観画像（左上）" h={210} {...getEditableImageProps("imgMain")} />
+               <ImgBox src={getSlotImage("imgMain")} label="外観画像（左上）" h={210} {...getEditableImageProps("imgMain")} />
                 <div className="mt-2 grid grid-cols-[calc(50%+0.1cm)_calc(50%-0.1cm)] gap-2">
-                   <ImgBox src={data.imgSub1} label="共用（左中）" h={118} {...getEditableImageProps("imgSub1")} />
-                  <ImgBox src={data.imgSub2} label="室内（左中）" h={118} {...getEditableImageProps("imgSub2")} />
+                   <ImgBox src={getSlotImage("imgSub1")} label="共用（左中）" h={118} {...getEditableImageProps("imgSub1")} />
+                  <ImgBox src={getSlotImage("imgSub2")} label="室内（左中）" h={118} {...getEditableImageProps("imgSub2")} />
                 </div>
                <div className="mt-2">
-                   <ImgBox src={data.imgSub3} label="追加画像（左下）" h={120} {...getEditableImageProps("imgSub3")} />
+                   <ImgBox src={getSlotImage("imgSub3")} label="追加画像（左下）" h={120} {...getEditableImageProps("imgSub3")} />
                 </div>
                 <div className="mt-3 text-[10px] leading-5">
                   {lifeInfoRows.slice(0, 6).map((row) => (
@@ -3156,16 +3297,16 @@ const getEditableImageProps = useCallback(
                 >
                   {data.catchCopy || "徒歩圏内に学校や公園！ 毎日が便利で快適な住環境の分譲地"}
                 </div>
-                <ImgBox src={data.imgPlan} label="間取り図（中央上）" h={320} fit="contain" {...getEditableImageProps("imgPlan")} />
+                <ImgBox src={getSlotImage("imgPlan")} label="間取り図（中央上）" h={320} fit="contain" {...getEditableImageProps("imgPlan")} />
                 <div className="mt-2 grid grid-cols-2 gap-2">
                    <ImgBox
-                    src={data.imgSub4}
+                    src={getSlotImage("imgSub4")}
                     {...getEditableImageProps("imgSub4")}
                     label="リビング（中央下左）"
                     h={template === "chic" ? 244 : 168}
                   />
                   <ImgBox
-                    src={data.imgSub5}
+                    src={getSlotImage("imgSub5")}
                     {...getEditableImageProps("imgSub5")}
                     label="キッチン（中央下右）"
                     h={template === "chic" ? 244 : 168}
@@ -3295,13 +3436,22 @@ const getEditableImageProps = useCallback(
           </>
         )}
         <FreeImageLayer
-          images={data.freeImages ?? []}
+          images={overlayFreeImages}
           editable={!isSavedDraftsView}
           sheetScale={sheetScale}
           selectedId={selectedFreeImageId}
           onSelect={setSelectedFreeImageId}
           onChange={updateFreeImage}
           onDelete={deleteFreeImage}
+        />
+        <FreeTextLayer
+          texts={data.freeTexts ?? []}
+          editable={!isSavedDraftsView}
+          sheetScale={sheetScale}
+          selectedId={selectedFreeTextId}
+          onSelect={setSelectedFreeTextId}
+          onChange={updateFreeText}
+          onDelete={deleteFreeText}
         />
       </div>
     );
@@ -3540,6 +3690,20 @@ const getEditableImageProps = useCallback(
                 </div>
               </div>
               </div>
+          ) : null}
+          {!isSavedDraftsView && activeTemplate ? (
+            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3">
+              <input value={newFreeText} onChange={(event) => setNewFreeText(event.target.value)} className="h-8 min-w-[220px] rounded-md border border-rose-200 bg-white px-2 text-xs text-zinc-800" />
+              <input type="color" value={newFreeTextColor} onChange={(event) => setNewFreeTextColor(event.target.value)} className="h-8 w-10 rounded border border-rose-200 bg-white" aria-label="text color" />
+              <select value={newFreeTextFont} onChange={(event) => setNewFreeTextFont(event.target.value)} className="h-8 rounded-md border border-rose-200 bg-white px-2 text-xs text-zinc-800">
+                <option value={'"Noto Sans JP", "Yu Gothic", Meiryo, sans-serif'}>Gothic</option>
+                <option value={'"Hiragino Mincho ProN", "Yu Mincho", serif'}>Mincho</option>
+                <option value={'Impact, "Arial Black", sans-serif'}>Impact</option>
+                <option value={'"Trebuchet MS", "Noto Sans JP", sans-serif'}>Modern</option>
+              </select>
+              <input type="number" min={12} max={72} value={newFreeTextSize} onChange={(event) => setNewFreeTextSize(Number(event.target.value))} className="h-8 w-16 rounded-md border border-rose-200 bg-white px-2 text-xs text-zinc-800" aria-label="text size" />
+              <button type="button" onClick={addFreeText} className="rounded-md border border-rose-300 bg-white px-3 py-1 text-xs font-semibold text-rose-700">Them chu</button>
+            </div>
           ) : null}
           {transformSaveMessage ? (
             <div

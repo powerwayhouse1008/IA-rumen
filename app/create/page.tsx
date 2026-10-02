@@ -31,6 +31,15 @@ const DEFAULT_IMAGE_TRANSFORM: ImageTransform = {
   offsetY: 0,
 };
 
+type FreeImage = {
+  id: string;
+  src: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 type ZumenData = {
   price: string;
   name: string;
@@ -54,6 +63,7 @@ type ZumenData = {
   imgSub6?: string;
   imgQr?: string;
   imgMap?: string;
+  freeImages?: FreeImage[];
   imageTransforms?: Partial<Record<ImageSlotKey, Partial<ImageTransform>>>;
   draftTitle?: string;
   themeColor?: ThemeColorKey;
@@ -1197,6 +1207,43 @@ useEffect(() => {
     }
   }
 
+  async function onPickFreeImages(files?: FileList | null) {
+    if (!files?.length) return;
+
+    try {
+      const uploadedImages = await Promise.all(
+        Array.from(files)
+          .filter((file) => file.type.startsWith("image/"))
+          .map(async (file, index) => ({
+            id: `free-${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
+            src: await uploadImageToSupabase(file),
+            x: 24 + index * 12,
+            y: 24 + index * 12,
+            width: 180,
+            height: 130,
+          })),
+      );
+
+      setData((prev) => ({
+        ...prev,
+        freeImages: [...(prev.freeImages ?? []), ...uploadedImages],
+      }));
+      setSaveMessage(`Da them ${uploadedImages.length} anh vao danh sach.`);
+      setSaveMessageTone("success");
+    } catch (error) {
+      console.error("multi image upload error:", error);
+      setSaveMessage("Khong the upload anh. Hay kiem tra ket noi hoac Supabase Storage.");
+      setSaveMessageTone("error");
+    }
+  }
+
+  function removeFreeImage(id: string) {
+    setData((prev) => ({
+      ...prev,
+      freeImages: (prev.freeImages ?? []).filter((image) => image.id !== id),
+    }));
+  }
+
   function reserveNextSharedPropertyCode() {
     const current = getNextSharedQrNumber();
     if (typeof window !== "undefined") {
@@ -1340,9 +1387,21 @@ useEffect(() => {
 
   async function buildPayload() {
     const generatedMap = await createAddressMap(data.address);
+    const legacyFreeImages = (["imgMain", "imgPlan", "imgSub1", "imgSub2", "imgSub3", "imgSub4", "imgSub5", "imgSub6"] as const)
+      .map((key, index) => data[key] ? ({
+        id: `legacy-${key}`,
+        src: data[key] as string,
+        x: 24 + index * 12,
+        y: 24 + index * 12,
+        width: 180,
+        height: 130,
+      }) : null)
+      .filter((image): image is FreeImage => Boolean(image));
+    const freeImages = (data.freeImages?.length ? data.freeImages : legacyFreeImages);
 
     const payload = {
       ...data,
+      freeImages,
       imgMap: generatedMap ?? data.imgMap,
       imgQr: data.imgQr,
       catchCopy,
@@ -1918,8 +1977,45 @@ useEffect(() => {
                       住所から現地MAP生成
                     </button>
                   </div>
+                  <div className="mb-3 rounded-md border border-zinc-200 bg-white p-3">
+                    <div className="mb-2 text-xs font-semibold text-zinc-700">物件写真リスト（複数画像アップロード）</div>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => {
+                        void onPickFreeImages(e.target.files);
+                        e.currentTarget.value = "";
+                      }}
+                    />
+                    <div className="mt-3 grid max-h-80 gap-2 overflow-auto sm:grid-cols-2">
+                      {(data.freeImages ?? []).length > 0 ? (
+                        (data.freeImages ?? []).map((image, index) => (
+                          <div key={image.id} className="flex items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-2">
+                            <div className="h-16 w-20 shrink-0 overflow-hidden rounded border border-zinc-200 bg-white">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={image.src} alt={`image-${index + 1}`} className="h-full w-full object-contain" />
+                            </div>
+                            <div className="min-w-0 flex-1 text-xs text-zinc-600">Image {index + 1}</div>
+                            <button
+                              type="button"
+                              onClick={() => removeFreeImage(image.id)}
+                              className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700"
+                            >
+                              Xoa
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="rounded-md border border-dashed border-zinc-300 p-6 text-center text-xs text-zinc-400 sm:col-span-2">
+                          No images
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {uploadItems.map(({ key, label }) => (
+                    {uploadItems.filter((item) => item.key === "imgMap").map(({ key, label }) => (
                       <div key={key} className="rounded-md border border-zinc-200 bg-white p-2">
                         <div className="mb-2 text-xs text-zinc-600">{label}</div>
                         <Input type="file" accept="image/*" onChange={(e) => onPick(key, e.target.files?.[0])} />
