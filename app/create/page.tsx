@@ -1228,11 +1228,11 @@ useEffect(() => {
         ...prev,
         freeImages: [...(prev.freeImages ?? []), ...uploadedImages],
       }));
-      setSaveMessage(`Da them ${uploadedImages.length} anh vao danh sach.`);
+      setSaveMessage(`${uploadedImages.length}枚の画像をリストに追加しました。`);
       setSaveMessageTone("success");
     } catch (error) {
       console.error("multi image upload error:", error);
-      setSaveMessage("Khong the upload anh. Hay kiem tra ket noi hoac Supabase Storage.");
+      setSaveMessage("画像をアップロードできませんでした。通信状態またはSupabase Storageをご確認ください。");
       setSaveMessageTone("error");
     }
   }
@@ -2002,7 +2002,7 @@ useEffect(() => {
                               onClick={() => removeFreeImage(image.id)}
                               className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700"
                             >
-                              Xoa
+                                削除
                             </button>
                           </div>
                         ))

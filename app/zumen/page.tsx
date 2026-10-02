@@ -1013,6 +1013,7 @@ function FreeImageLayer({
 
         return (
           <div
+            data-free-image-item="true"
             key={image.id}
             className={`pointer-events-auto absolute touch-none bg-white/5 ${
               selected ? "ring-2 ring-sky-500" : editable ? "ring-1 ring-transparent hover:ring-sky-300" : ""
@@ -1120,6 +1121,7 @@ function FreeTextLayer({
 
         return (
           <div
+            data-free-text-item="true"
             key={item.id}
             className={`pointer-events-auto absolute max-w-[420px] cursor-move whitespace-pre-wrap rounded px-1 py-0.5 leading-tight ${
               selected ? "ring-2 ring-sky-500" : editable ? "ring-1 ring-transparent hover:ring-sky-300" : ""
@@ -2060,6 +2062,14 @@ function ZumenPageContent() {
       frame.style.boxShadow = "none";
       frame.style.outline = "none";
     });
+    const clonedFreeItems = Array.from(clone.querySelectorAll<HTMLElement>("[data-free-image-item], [data-free-text-item]"));
+    clonedFreeItems.forEach((item) => {
+      item.classList.remove("ring-1", "ring-2", "ring-sky-300", "ring-sky-500", "hover:ring-sky-300", "bg-white/5");
+      item.style.boxShadow = "none";
+      item.style.outline = "none";
+      item.style.borderColor = "transparent";
+      item.style.background = "transparent";
+    });
     const clonedImages = Array.from(clone.querySelectorAll("img"));
     clonedImages.forEach((img) => {
       const src = img.getAttribute("src") ?? img.currentSrc ?? img.src ?? "";
@@ -2292,7 +2302,7 @@ function ZumenPageContent() {
       setIsExporting(false);
     }
   }, [captureSheet, activeTemplate]);
-   const persistZumenPayload = useCallback(
+  const persistZumenPayload = useCallback(
     (payload: ZumenData, source: "auto" | "manual" = "auto") => {
       setData(payload);
 
@@ -2334,6 +2344,75 @@ function ZumenPageContent() {
       return true;
     },
     [savedDrafts, selectedDraftId],
+  );
+
+  const saveZumenDraft = useCallback(
+    async (mode: "overwrite" | "named") => {
+      if (!data) return;
+
+      const now = new Date();
+      const savedAt = now.toISOString();
+      const displaySavedAt = now.toLocaleString("ja-JP");
+      const currentTitle = (data.draftTitle || data.name || "").trim();
+      let nextTitle = currentTitle;
+      let nextDraftId = mode === "overwrite" ? (selectedDraftId || data.draftId) : undefined;
+
+      if (mode === "named" || !nextTitle) {
+        const inputTitle = window.prompt("保存名を入力してください", nextTitle || data.name || "無題の図面");
+        if (inputTitle === null) return;
+        nextTitle = inputTitle.trim();
+        if (!nextTitle) {
+          setTransformSaveTone("error");
+          setTransformSaveMessage("保存名を入力してください。");
+          return;
+        }
+
+        if (mode === "named") {
+          nextDraftId = undefined;
+        }
+      }
+
+      const draftId = nextDraftId || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const payload: ZumenData = {
+        ...data,
+        draftId,
+        draftTitle: nextTitle,
+        draftSavedAt: displaySavedAt,
+        imageTransforms,
+        themeColor: selectedTheme,
+      };
+      const draft: StoredDraft = { id: draftId, savedAt, payload };
+      const currentDrafts = savedDrafts.length ? savedDrafts : loadStoredDraftsFromLocal();
+      const nextDrafts = [draft, ...currentDrafts.filter((item) => item.id !== draftId)];
+
+      setSelectedDraftId(draftId);
+      setSavedDrafts(nextDrafts);
+      saveStoredDraftsToLocal(nextDrafts);
+      setData(payload);
+
+      try {
+        localStorage.setItem("zumenData", JSON.stringify(payload));
+        (window as Window & { __zumenPayload?: ZumenData }).__zumenPayload = payload;
+      } catch (error) {
+        console.error("failed to save zumen payload locally:", error);
+      }
+
+      try {
+        const response = await fetch("/api/zumen-drafts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(draft),
+        });
+        if (!response.ok) throw new Error("draft sync failed");
+        setTransformSaveTone("success");
+        setTransformSaveMessage("保存しました。");
+      } catch (error) {
+        console.error("failed to sync zumen draft:", error);
+        setTransformSaveTone("warning");
+        setTransformSaveMessage("ローカルに保存しました。Supabase同期は未完了です。");
+      }
+    },
+    [data, imageTransforms, savedDrafts, selectedDraftId, selectedTheme],
   );
 
   const readFreeImageFiles = useCallback((files: FileList | File[]) => {
@@ -2438,11 +2517,11 @@ function ZumenPageContent() {
         persistZumenPayload({ ...data, freeImages: arranged }, "manual");
         setSelectedFreeImageId(nextImages[0]?.id ?? null);
         setTransformSaveTone("success");
-        setTransformSaveMessage(`Da them ${nextImages.length} anh tu do.`);
+        setTransformSaveMessage(`${nextImages.length}枚の画像を追加しました。`);
       } catch (error) {
         console.error("free image upload failed:", error);
         setTransformSaveTone("error");
-        setTransformSaveMessage("Khong the them anh. Hay thu file anh khac.");
+        setTransformSaveMessage("画像を追加できませんでした。別の画像ファイルをお試しください。");
       } finally {
         event.target.value = "";
       }
@@ -2464,18 +2543,11 @@ function ZumenPageContent() {
       updateFreeImages((data.freeImages ?? []).filter((item) => item.id !== id), "manual");
       setSelectedFreeImageId(null);
       setTransformSaveTone("success");
-      setTransformSaveMessage("Da xoa anh tu do.");
+      setTransformSaveMessage("画像を削除しました。");
     },
     [data, updateFreeImages],
   );
 
-  const autoArrangeFreeImages = useCallback(() => {
-    if (!data || !activeTemplate) return;
-    const arranged = arrangeFreeImages(data.freeImages ?? [], activeTemplate);
-    updateFreeImages(arranged, "manual");
-    setTransformSaveTone("success");
-    setTransformSaveMessage("AI da sap xep anh tu do tranh khung chu chinh.");
-  }, [activeTemplate, arrangeFreeImages, data, updateFreeImages]);
 
   useEffect(() => {
     if (!data?.freeImages?.length || !activeTemplate) return;
@@ -2580,11 +2652,6 @@ function ZumenPageContent() {
     [data, imageTransforms, persistZumenPayload],
   );
 
-  const saveImageTransforms = useCallback(() => {
-    rememberImageTransformPreferences(imageTransforms);
-    persistImageTransforms("manual");
-  }, [imageTransforms, persistImageTransforms]);
-
   const autoTuneImageTransforms = useCallback(() => {
     const sheet = sheetRef.current;
     if (!sheet) return;
@@ -2612,7 +2679,7 @@ function ZumenPageContent() {
 
     if (!tunedCount && !(data?.freeImages?.length)) {
       setTransformSaveTone("warning");
-      setTransformSaveMessage("Dang doc anh, hay thu lai sau mot chut.");
+      setTransformSaveMessage("画像を読み込み中です。少し待ってからもう一度お試しください。");
       return;
     }
 
@@ -2620,7 +2687,7 @@ function ZumenPageContent() {
     rememberImageTransformPreferences(nextTransforms);
     setTransformSaveTone("success");
     const nextFreeImages = arrangeFreeImages(data?.freeImages ?? [], activeTemplate);
-    setTransformSaveMessage("AI da tu can chinh va sap xep hinh anh.");
+    setTransformSaveMessage("AIが画像を自動調整・配置しました。");
     if (data) {
       persistZumenPayload({ ...data, imageTransforms: nextTransforms, freeImages: nextFreeImages }, "manual");
     }
@@ -3721,7 +3788,7 @@ const getEditableImageProps = useCallback(
                 </div>
                 <div className="flex items-center gap-2">
                   <label className="cursor-pointer rounded-md border border-indigo-300 bg-white px-3 py-1 text-xs font-semibold text-indigo-700">
-                    Them anh
+                    画像追加
                     <input
                       type="file"
                       accept="image/*"
@@ -3730,9 +3797,9 @@ const getEditableImageProps = useCallback(
                       onChange={handleFreeImageUpload}
                     />
                   </label>
-                  <button type="button" onClick={autoTuneImageTransforms} className="rounded-md border border-sky-300 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">AI auto</button>
-                  <button type="button" onClick={autoArrangeFreeImages} className="rounded-md border border-indigo-300 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">AI arrange</button>
-                  <button type="button" onClick={saveImageTransforms} className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs text-emerald-700">保存</button>
+                  <button type="button" onClick={autoTuneImageTransforms} className="rounded-md border border-sky-300 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">AI自動調整・配置</button>
+                  <button type="button" onClick={() => void saveZumenDraft("overwrite")} className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">保存</button>
+                  <button type="button" onClick={() => void saveZumenDraft("named")} className="rounded-md border border-teal-300 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">名前を付けて保存</button>
                   <button type="button" onClick={resetImageTransforms} className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs">リセット</button>
                 </div>
               </div>
@@ -3749,7 +3816,7 @@ const getEditableImageProps = useCallback(
                 <option value={'"Trebuchet MS", "Noto Sans JP", sans-serif'}>Modern</option>
               </select>
               <input type="number" min={12} max={72} value={newFreeTextSize} onChange={(event) => setNewFreeTextSize(Number(event.target.value))} className="h-8 w-16 rounded-md border border-rose-200 bg-white px-2 text-xs text-zinc-800" aria-label="text size" />
-              <button type="button" onClick={addFreeText} className="rounded-md border border-rose-300 bg-white px-3 py-1 text-xs font-semibold text-rose-700">Them chu</button>
+              <button type="button" onClick={addFreeText} className="rounded-md border border-rose-300 bg-white px-3 py-1 text-xs font-semibold text-rose-700">文字追加</button>
             </div>
           ) : null}
           {transformSaveMessage ? (
