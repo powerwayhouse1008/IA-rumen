@@ -1029,7 +1029,7 @@ function FreeImageLayer({
             <img
               src={toExportableImageSrc(image.src)}
               alt="free image"
-              className="h-full w-full select-none object-contain"
+              className="h-full w-full select-none object-cover"
               draggable={false}
               crossOrigin="anonymous"
               referrerPolicy="no-referrer"
@@ -2460,9 +2460,8 @@ function ZumenPageContent() {
         { x: 750, y: 218, width: 382, height: 386 },
       ],
       chic: [
-        { x: 24, y: 228, width: 370, height: 312 },
-        { x: 406, y: 316, width: 404, height: 224 },
-        { x: 824, y: 224, width: 306, height: 320 },
+        { x: 24, y: 86, width: 254, height: 482 },
+        { x: 286, y: 120, width: 528, height: 578 },
       ],
       royal: [
         { x: 8, y: 94, width: 336, height: 250 },
@@ -2514,34 +2513,26 @@ function ZumenPageContent() {
         }
       }
 
-      const cellWidth = (zone.width - gap * (bestGrid.columns - 1)) / bestGrid.columns;
       const cellHeight = (zone.height - gap * (bestGrid.rows - 1)) / bestGrid.rows;
       const usedRows = Math.ceil(count / bestGrid.columns);
-      const gridHeight = usedRows * cellHeight + Math.max(0, usedRows - 1) * gap;
-      const startY = zone.y + Math.max(0, (zone.height - gridHeight) / 2);
+      const startY = zone.y;
 
       zoneImages.forEach((image, localIndex) => {
         const row = Math.floor(localIndex / bestGrid.columns);
         const col = localIndex % bestGrid.columns;
         const itemsInRow = row === usedRows - 1 ? count - row * bestGrid.columns : bestGrid.columns;
-        const rowWidth = itemsInRow * cellWidth + Math.max(0, itemsInRow - 1) * gap;
-        const startX = zone.x + Math.max(0, (zone.width - rowWidth) / 2);
-        const ratio = image.width / Math.max(image.height, 1);
-        let width = Math.min(cellWidth, cellHeight * ratio);
-        let height = width / ratio;
-
-        if (height > cellHeight) {
-          height = cellHeight;
-          width = height * ratio;
-        }
+        const currentCellWidth = (zone.width - gap * (itemsInRow - 1)) / itemsInRow;
+        const startX = zone.x;
+        const width = currentCellWidth;
+        const height = cellHeight;
 
         arranged.push(
           clampFreeImage({
             ...image,
             width: Math.round(Math.max(54, width)),
             height: Math.round(Math.max(42, height)),
-            x: Math.round(startX + col * (cellWidth + gap) + (cellWidth - width) / 2),
-            y: Math.round(startY + row * (cellHeight + gap) + (cellHeight - height) / 2),
+            x: Math.round(startX + col * (currentCellWidth + gap)),
+            y: Math.round(startY + row * (cellHeight + gap)),
           }),
         );
       });
