@@ -2452,8 +2452,8 @@ function ZumenPageContent() {
     const zonesByTemplate: Record<TemplateKey, Array<{ x: number; y: number; width: number; height: number }>> = {
       classic: [
         { x: 3, y: 254, width: 290, height: 170 },
-        { x: 311, y: 218, width: 406, height: 382 },
-        { x: 731, y: 216, width: 382, height: 386 },
+        { x: 308, y: 218, width: 406, height: 382 },
+        { x: 728, y: 216, width: 382, height: 386 },
       ],
       pop: [
         { x: 22, y: 254, width: 290, height: 172 },
