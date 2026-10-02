@@ -82,7 +82,12 @@ async function supabaseRequest<T>(path: string, init?: RequestInit): Promise<{ d
     return { data: null, error: null };
   }
 
-  const data = (await response.json()) as T;
+  const text = await response.text();
+  if (!text.trim()) {
+    return { data: null, error: null };
+  }
+
+  const data = JSON.parse(text) as T;
   return { data, error: null };
 }
 

@@ -454,8 +454,7 @@ async function uploadImageToSupabase(file: File): Promise<string> {
   });
 
   if (!response.ok) {
-    const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(errorPayload?.error || `画像アップロードエラー (${response.status})`);
+    throw new Error(await readResponseError(response, `画像アップロードエラー (${response.status})`));
   }
 
   const payload = (await response.json()) as UploadedImageResult;
@@ -464,6 +463,21 @@ async function uploadImageToSupabase(file: File): Promise<string> {
   }
 
   return payload.publicUrl;
+}
+
+async function readResponseError(response: Response, fallback: string) {
+  const text = await response.text().catch(() => "");
+  if (!text.trim()) return fallback;
+
+  try {
+    const payload = JSON.parse(text) as { error?: unknown; message?: unknown };
+    if (typeof payload.error === "string") return payload.error;
+    if (typeof payload.message === "string") return payload.message;
+  } catch {
+    // Use plain text below.
+  }
+
+  return text;
 }
 
 function ImgBox({
@@ -2407,8 +2421,7 @@ function ZumenPageContent() {
       })
         .then(async (response) => {
           if (!response.ok) {
-            const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
-            throw new Error(errorPayload?.error || `Supabase同期エラー (${response.status})`);
+            throw new Error(await readResponseError(response, `Supabase同期エラー (${response.status})`));
           }
           setTransformSaveTone("success");
           setTransformSaveMessage(source === "manual" ? "保存しました。" : "自動保存しました。");
@@ -2487,8 +2500,7 @@ function ZumenPageContent() {
           body: JSON.stringify(supabaseDraft),
         });
         if (!response.ok) {
-          const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
-          throw new Error(errorPayload?.error || `Supabase同期エラー (${response.status})`);
+          throw new Error(await readResponseError(response, `Supabase同期エラー (${response.status})`));
         }
         setTransformSaveTone("success");
         setTransformSaveMessage("保存しました。");
