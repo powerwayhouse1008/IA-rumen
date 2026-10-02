@@ -2465,8 +2465,8 @@ function ZumenPageContent() {
         { x: 265, y: 111, width: 528, height: 578 },
       ],
       royal: [
-        { x: 6, y: 93, width: 336, height: 250 },
-        { x: 862, y: 94, width: 230, height: 524 },
+        { x: 6, y: 92, width: 336, height: 250 },
+        { x: 862, y: 92, width: 230, height: 524 },
       ],
     };
     const zones = zonesByTemplate[template ?? "classic"];
