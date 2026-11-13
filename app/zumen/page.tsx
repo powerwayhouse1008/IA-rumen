@@ -1543,7 +1543,11 @@ function ZumenPageContent() {
       .map((line) => normalizeLine(line))
       .filter((line): line is string => Boolean(line));
 
-    return lines.length > 0 ? lines : ["-"];
+    const uniqueLines = lines.filter(
+      (line, index) => lines.findIndex((candidate) => candidate === line) === index
+    );
+
+    return uniqueLines.length > 0 ? uniqueLines : ["-"];
   }, [data]);
   const transportInlineText = useMemo(() => transportLines.join(" / "), [transportLines]);
   const transportMultilineText = useMemo(() => transportLines.join("\n"), [transportLines]);
@@ -1990,7 +1994,12 @@ function ZumenPageContent() {
         : salesRows.length > 0
           ? salesRows.slice(0, 3)
           : ["日照良好", "リフォーム済", "2駅2路線利用可"];
-  const royalOutlineRows = [
+  const royalOutlineSourceRows: Array<{
+    label: string;
+    value: string;
+    label2?: string;
+    value2?: string;
+  }> = [
     ...summaryRows,
     ...managementRows,
     ...facilityRows,
@@ -2013,6 +2022,18 @@ function ZumenPageContent() {
         ]
       : []),
   ];
+  const royalOutlineRows = royalOutlineSourceRows
+    .flatMap((row) => [
+      { label: row.label, value: row.value },
+      ...(row.label2 ? [{ label: row.label2, value: row.value2 || "" }] : []),
+    ])
+    .filter((row) => {
+      const value = row.value.trim();
+      return value !== "" && value !== "-";
+    })
+    .filter(
+      (row, index, rows) => rows.findIndex((candidate) => candidate.label === row.label) === index
+    );
 
   const inputLifeInfoRows = useMemo(() => {
     return (data?.lifeInformation ?? "")
@@ -3380,7 +3401,7 @@ const getEditableImageProps = useCallback(
               className="relative h-full bg-white"
               style={{ fontFamily: '"Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif' }}
             >
-              <div className="grid h-[82px] grid-cols-[245px_1fr_280px] items-center text-white" style={{ backgroundColor: theme.brand }}>
+              <div className="grid h-[82px] grid-cols-[245px_1fr] items-center text-white" style={{ backgroundColor: theme.brand }}>
                 <div className="relative flex h-full items-center overflow-hidden pl-8 text-[26px] font-bold">
                   <div className="absolute -left-20 -top-24 h-56 w-72 rounded-full border-r-[10px] border-white/50 bg-black/20" />
                   <span className="relative">{data.propertyType || "売マンション"}</span>
@@ -3392,9 +3413,6 @@ const getEditableImageProps = useCallback(
                   className="text-center font-bold"
                   style={{ maxHeight: "58px", overflow: "hidden" }}
                 />
-                <div className="border-l border-white/25 text-center text-[15px] font-semibold tracking-[0.18em]">
-                  ROYAL CORPO
-                </div>
               </div>
 
               <div className="grid h-[532px] grid-cols-[312px_478px_1fr] gap-4 px-4 pt-2">
@@ -3432,7 +3450,10 @@ const getEditableImageProps = useCallback(
                       <div className="mb-1 text-[15px] font-bold" style={{ color: theme.brand }}>Outline</div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] font-semibold leading-[1.25]">
                         {royalOutlineRows.slice(0, 24).map((row, index) => (
-                          <div key={`${row.label}-${index}`} className="grid grid-cols-[92px_1fr] border-b border-zinc-300 pb-0.5">
+                          <div
+                            key={`${row.label}-${index}`}
+                            className={`grid grid-cols-[92px_1fr] border-b border-zinc-300 pb-0.5 ${row.label === "所在地" ? "col-span-2" : ""}`}
+                          >
                             <div className="font-extrabold">■ {row.label}</div>
                             <div className="font-bold [overflow-wrap:anywhere]">{row.value}</div>
                           </div>
@@ -3457,7 +3478,11 @@ const getEditableImageProps = useCallback(
                       <div className="text-[31px] font-bold leading-none">{layoutLabel}</div>
                       <div className="text-[13px] leading-tight">
                         <div>専有面積 / {isMansion ? data.mansionDetails?.exclusiveArea : data.houseDetails?.exclusiveArea || "-"}㎡</div>
-                        <div>バルコニー / {isMansion ? data.mansionDetails?.balconyArea || "-" : "-"}㎡</div>
+                        <div>
+                          {isHouse ? "敷地面積" : "バルコニー"} / {isHouse
+                            ? data.houseDetails?.landArea || "-"
+                            : data.mansionDetails?.balconyArea || "-"}㎡
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -3482,10 +3507,10 @@ const getEditableImageProps = useCallback(
               <div className="grid h-[62px] grid-cols-[150px_1fr_1fr] items-center px-4 text-white" style={{ backgroundColor: theme.brand }}>
                 <div className="border-b border-white pb-1 text-[18px]">Access</div>
                 <div className="border-l border-white/40 px-5 text-[19px] font-bold leading-tight">
-                  {data.access || "-"}
+                  {transportLines[0] || "-"}
                 </div>
                 <div className="border-l border-white/40 px-5 text-[18px] font-bold leading-tight">
-                  {(data.access2 || data.access3 || transportInlineText || "-").split("\n")[0]}
+                  {transportLines[1] === "-" ? "" : transportLines[1] || ""}
                 </div>
               </div>
 
