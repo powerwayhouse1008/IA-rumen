@@ -2590,7 +2590,11 @@ function ZumenPageContent() {
     );
   }, []);
 
-  const arrangeFreeImages = useCallback((images: FreeImage[], template: TemplateKey | null) => {
+  const arrangeFreeImages = useCallback((
+    images: FreeImage[],
+    template: TemplateKey | null,
+    randomize = false,
+  ) => {
     const zonesByTemplate: Record<TemplateKey, Array<{ x: number; y: number; width: number; height: number }>> = {
       classic: [
         { x: 3, y: 254, width: 290, height: 170 },
@@ -2611,8 +2615,21 @@ function ZumenPageContent() {
         { x: 860, y: 92, width: 230, height: 524 },
       ],
     };
-    const zones = zonesByTemplate[template ?? "classic"];
-    const gap = 8;
+    const baseZones = zonesByTemplate[template ?? "classic"];
+    const gap = randomize ? [6, 10, 14][Math.floor(Math.random() * 3)] : 8;
+    const inset = randomize ? [0, 5, 10][Math.floor(Math.random() * 3)] : 0;
+    const zones = baseZones.map((zone) => ({
+      x: zone.x + inset,
+      y: zone.y + inset,
+      width: Math.max(54, zone.width - inset * 2),
+      height: Math.max(42, zone.height - inset * 2),
+    }));
+    const arrangedImages = randomize
+      ? images
+          .map((image) => ({ image, order: Math.random() }))
+          .sort((a, b) => a.order - b.order)
+          .map(({ image }) => image)
+      : images;
 
     if (images.length === 0) return [];
 
@@ -2642,19 +2659,22 @@ function ZumenPageContent() {
       const count = counts[zoneIndex];
       if (count <= 0) return;
 
-      const zoneImages = images.slice(imageIndex, imageIndex + count);
+      const zoneImages = arrangedImages.slice(imageIndex, imageIndex + count);
       imageIndex += count;
 
-      let bestGrid = { columns: 1, rows: count, cellArea: 0 };
+      const gridCandidates: Array<{ columns: number; rows: number; cellArea: number }> = [];
       for (let columns = 1; columns <= count; columns += 1) {
         const rows = Math.ceil(count / columns);
         const cellWidth = (zone.width - gap * (columns - 1)) / columns;
         const cellHeight = (zone.height - gap * (rows - 1)) / rows;
         const cellArea = cellWidth * cellHeight;
-        if (cellArea > bestGrid.cellArea) {
-          bestGrid = { columns, rows, cellArea };
-        }
+        gridCandidates.push({ columns, rows, cellArea });
       }
+      gridCandidates.sort((a, b) => b.cellArea - a.cellArea);
+      const candidatePool = randomize
+        ? gridCandidates.slice(0, Math.min(3, gridCandidates.length))
+        : gridCandidates.slice(0, 1);
+      const bestGrid = candidatePool[Math.floor(Math.random() * candidatePool.length)];
 
       const cellHeight = (zone.height - gap * (bestGrid.rows - 1)) / bestGrid.rows;
       const usedRows = Math.ceil(count / bestGrid.columns);
@@ -2899,8 +2919,23 @@ function ZumenPageContent() {
     setImageTransforms(nextTransforms);
     rememberImageTransformPreferences(nextTransforms);
     setTransformSaveTone("success");
-    const nextFreeImages = arrangeFreeImages(data?.freeImages ?? [], activeTemplate);
-    setTransformSaveMessage("AIが画像を自動調整・配置しました。");
+    const currentFreeImages = data?.freeImages ?? [];
+    const currentLayout = currentFreeImages
+      .map(({ id, x, y, width, height }) => `${id}:${x}:${y}:${width}:${height}`)
+      .join("|");
+    let nextFreeImages = arrangeFreeImages(currentFreeImages, activeTemplate, true);
+    let nextLayout = nextFreeImages
+      .map(({ id, x, y, width, height }) => `${id}:${x}:${y}:${width}:${height}`)
+      .join("|");
+    let retryCount = 0;
+    while (currentFreeImages.length > 0 && nextLayout === currentLayout && retryCount < 5) {
+      nextFreeImages = arrangeFreeImages(currentFreeImages, activeTemplate, true);
+      nextLayout = nextFreeImages
+        .map(({ id, x, y, width, height }) => `${id}:${x}:${y}:${width}:${height}`)
+        .join("|");
+      retryCount += 1;
+    }
+    setTransformSaveMessage("AIが画像を別のレイアウトに自動調整・配置しました。");
     if (data) {
       persistZumenPayload({ ...data, imageTransforms: nextTransforms, freeImages: nextFreeImages }, "manual");
     }
